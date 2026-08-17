@@ -184,9 +184,9 @@ Same code, two customers — proves real-world scalability to judges.
 
 | Phases | Owner |
 |---|---|
-| I & II — Casting | _(teammate)_ |
-| III & IV — Schedule & Compliance | _(teammate)_ |
-| V & VI — Audience & Marketing | **Shivam** |
+| I & II — Casting | **Raymond** |
+| III & IV — Schedule & Compliance | **Shriya** |
+| V & VI — Audience & Marketing | **Swati** |
 
 ---
 
