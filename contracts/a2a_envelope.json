@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cinenode/contracts/a2a_envelope.json",
+  "title": "A2A Envelope",
+  "description": "The single message shape every agent uses. See AGENT.md Section 2. Never invent another shape.",
+  "type": "object",
+  "required": ["message_id", "sender", "recipient", "timestamp", "intent", "payload"],
+  "additionalProperties": false,
+  "properties": {
+    "message_id": {
+      "type": "string",
+      "pattern": "^msg_[a-z0-9_]+_[0-9]+$",
+      "description": "msg_<sender-short>_<seq>"
+    },
+    "in_reply_to": {
+      "type": "string",
+      "description": "message_id of the request this replies to. Present on replies only."
+    },
+    "sender": {
+      "type": "string",
+      "pattern": "^agent_[a-z0-9_]+$"
+    },
+    "recipient": {
+      "type": "string",
+      "pattern": "^agent_[a-z0-9_]+$",
+      "description": "Another agent ID, or agent_director_orchestrator for broadcasts."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "intent": {
+      "type": "string",
+      "description": "verb_noun from the vocabulary in AGENT.md Section 5.",
+      "enum": [
+        "verify_regional_compliance", "compliance_result",
+        "check_venue_availability", "venue_offer",
+        "diagnose_engagement_anomaly", "diagnosis_result",
+        "verify_brand_safety", "brand_safety_result",
+        "score_candidate", "hype_scored", "pr_scored", "budget_scored",
+        "review_audition", "audition_scored",
+        "screen_film", "request_audience_insights",
+        "mandate_ready", "candidate_ingested", "media_ready", "leaderboard_ready",
+        "breakdown_ready", "schedule_updated", "task_status_update",
+        "qc_result", "telemetry_update", "personas_ready", "reviews_ready",
+        "simulation_verdict_update", "campaign_plan_ready", "reel_ready",
+        "asset_scheduled", "asset_status_update", "disqualify"
+      ]
+    },
+    "payload": {
+      "type": "object"
+    }
+  }
+}

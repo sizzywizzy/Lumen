@@ -1,0 +1,126 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cinenode/contracts/global_state.json",
+  "title": "GlobalState",
+  "description": "The one JSON object passed through the entire pipeline. See AGENT.md Section 3. Changing this file requires whole-team agreement.",
+  "type": "object",
+  "required": ["project_id", "mode"],
+  "properties": {
+    "project_id": { "type": "string", "pattern": "^PROJ_[A-Z0-9_]+$" },
+    "mode": { "type": "string", "enum": ["enterprise", "indie"] },
+    "script_context": {
+      "type": "object",
+      "description": "genre, tone, demographic targets, IP params"
+    },
+    "role_requirements": {
+      "type": "object",
+      "description": "machine-readable casting mandates, keyed by role_id"
+    },
+    "scoring_weights": {
+      "type": "object",
+      "properties": {
+        "W_A": { "type": "number" },
+        "W_H": { "type": "number" },
+        "W_PR": { "type": "number" },
+        "W_B": { "type": "number" }
+      }
+    },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "status"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "role_id": { "type": "string" },
+          "metadata": { "type": "object" },
+          "media_url": { "type": "string" },
+          "scores": {
+            "type": "object",
+            "description": "audition / hype / pr / budget / composite, each 0-100"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["SOURCING", "SCREENING", "LOCKED", "DISQUALIFIED", "FLAGGED_ACTION_REQUIRED"]
+          },
+          "disqualify_reason": { "type": "string" }
+        }
+      }
+    },
+    "casting_status": { "type": "string", "enum": ["SOURCING", "SCREENING", "LOCKED"] },
+    "schedule": {
+      "type": "object",
+      "properties": {
+        "stripboard": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "scene_id": { "type": "string" },
+              "date": { "type": "string" },
+              "venue": { "type": "string" }
+            }
+          }
+        },
+        "conflicts": { "type": "array" }
+      }
+    },
+    "budget_state": {
+      "type": "object",
+      "properties": {
+        "daily_burn": { "type": "number" },
+        "cap": { "type": "number" },
+        "alerts": { "type": "array" }
+      }
+    },
+    "compliance_state": {
+      "type": "object",
+      "description": "keyed by territory code",
+      "additionalProperties": {
+        "type": "string",
+        "enum": ["CLEARED", "AWAITING_QC", "BLOCKED"]
+      }
+    },
+    "audience_report": {
+      "type": "object",
+      "properties": {
+        "tomatometer": { "type": "number" },
+        "audience_score": { "type": "number" },
+        "heatmap": { "type": "object" },
+        "weakest_scene_id": { "type": "string" }
+      }
+    },
+    "marketing_assets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["asset_id", "type", "status"],
+        "properties": {
+          "asset_id": { "type": "string" },
+          "type": { "type": "string", "enum": ["reel", "meme", "poster", "thumbnail", "copy", "press_release"] },
+          "status": {
+            "type": "string",
+            "enum": ["DRAFT", "PR_REVIEW", "BLOCKED", "APPROVED", "SCHEDULED", "POSTED"]
+          },
+          "source_scene_id": { "type": "string" }
+        }
+      }
+    },
+    "human_escalations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "queue_item": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "event_log": {
+      "type": "array",
+      "description": "every A2A envelope, in order",
+      "items": { "$ref": "a2a_envelope.json" }
+    }
+  }
+}

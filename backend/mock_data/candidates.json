@@ -1,0 +1,37 @@
+[
+  {
+    "id": "CAND_001",
+    "name": "Iris Malenko",
+    "role_id": "ROLE_LEAD",
+    "media_url": "mock://tapes/iris_malenko_4k.mp4",
+    "metadata": { "quote_usd": 18000, "followers": 220000, "recent_press": "festival darling, no controversies" }
+  },
+  {
+    "id": "CAND_002",
+    "name": "Dex Harrow",
+    "role_id": "ROLE_LEAD",
+    "media_url": "mock://tapes/dex_harrow_4k.mp4",
+    "metadata": { "quote_usd": 250000, "followers": 4100000, "recent_press": "A-list attached, agency package" }
+  },
+  {
+    "id": "CAND_003",
+    "name": "Tomas Rey",
+    "role_id": "ROLE_ANTAG",
+    "media_url": "mock://tapes/tomas_rey_4k.mp4",
+    "metadata": { "quote_usd": 22000, "followers": 90000, "recent_press": "ongoing lawsuit; viral on-set outburst last month" }
+  },
+  {
+    "id": "CAND_004",
+    "name": "Ansel Okafor",
+    "role_id": "ROLE_ANTAG",
+    "media_url": "mock://tapes/ansel_okafor_4k.mp4",
+    "metadata": { "quote_usd": 15000, "followers": 480000, "recent_press": "beloved streamer-turned-actor, clean record" }
+  },
+  {
+    "id": "CAND_005",
+    "name": "Vera Lin",
+    "role_id": "ROLE_LEAD",
+    "media_url": "mock://tapes/vera_lin_4k.mp4",
+    "metadata": { "quote_usd": 12000, "followers": 35000, "recent_press": "theater background, first screen lead" }
+  }
+]

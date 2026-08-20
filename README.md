@@ -1,9 +1,13 @@
-# 🎬 The Autonomous Studio
+<p align="center">
+  <img src="assets/logo.svg" alt="CineNode" width="360" />
+</p>
+
+# 🎬 CineNode
 
 > One multi-agent system that takes a film from **script → screen → social launch**.
 > Built for **Agentic Cinema: The Blockbuster Hackathon** (Google Cloud · Replit Track).
 
-The Autonomous Studio is a network of specialized AI agents that run the entire film lifecycle as **six connected phases** — casting, scheduling, compliance, audience testing, and marketing — sharing **one orchestrator, one state object, and one agent-to-agent (A2A) messaging standard**. It runs in two modes: **Big Dawgs** (major-studio scale) and **Indies** (bootstrapped scale).
+CineNode is a network of specialized AI agents that run the entire film lifecycle as **six connected phases** — casting, scheduling, compliance, audience testing, and marketing — sharing **one orchestrator, one state object, and one agent-to-agent (A2A) messaging standard**. It runs in two modes: **Big Dawgs** (major-studio scale) and **Indies** (bootstrapped scale).
 
 It is a true **Multi-Agent System (MAS)**: agents ask each other questions, get answers, and change their own behavior — humans only sign off at the top.
 
@@ -75,32 +79,40 @@ Full spec: see [`MASTER_BLUEPRINT.md`](./MASTER_BLUEPRINT.md). Agent contracts: 
 ## Repository Structure
 
 ```
-autonomous-studio/
+cinenode/
 ├── README.md
-├── MASTER_BLUEPRINT.md          # full product spec, all 6 phases
 ├── AGENT.md                     # agent registry, A2A + GlobalState contracts
+├── assets/                      # logo + brand (the o of Node is the camera)
+├── contracts/                   # SACRED: shared JSON schemas — change only with team agreement
+│   ├── a2a_envelope.json
+│   └── global_state.json
 ├── backend/
-│   ├── main.py                  # FastAPI entrypoint
-│   ├── orchestrator/            # LangGraph graph, GlobalState, routing
-│   │   ├── graph.py
-│   │   ├── state.py             # GlobalState schema
-│   │   └── envelope.py          # A2A envelope helper (shared by ALL agents)
-│   ├── agents/
-│   │   ├── phase1_casting/
-│   │   ├── phase2_audition/
-│   │   ├── phase3_schedule/
-│   │   ├── phase4_compliance/
-│   │   ├── phase5_audience/
-│   │   └── phase6_marketing/
-│   ├── services/                # gemini, imagen, ffmpeg, whisper, tavily, supabase
-│   └── mock_data/               # mock DBs (personas, venues, censorship rules...)
+│   ├── main.py                  # FastAPI entrypoint (mounts one router per domain)
+│   ├── run_demo.py              # CLI: full pipeline on mock data
+│   ├── core/                    # THE BRAIN — shared by everyone
+│   │   ├── config.py            # env vars, model tiers, guardrail constants
+│   │   ├── orchestrator/
+│   │   │   ├── graph.py         # phase DAG + fail-fast edges (LangGraph-shaped)
+│   │   │   └── state.py         # GlobalState Pydantic models
+│   │   └── messaging/
+│   │       └── envelope.py      # A2A envelope helper (shared by ALL agents)
+│   ├── services/                # gemini, supabase (both mock-fallback), mock_db
+│   ├── mock_data/               # script, candidates, venues, censorship rules, personas
+│   └── domains/                 # THE SANDBOXES — one per team member
+│       ├── casting/             # ➔ Raymond (Phases I & II): router, agents/, prompts
+│       ├── production/          # ➔ Shriya (Phases III & IV)
+│       └── launch/              # ➔ Swati (Phases V & VI)
 ├── frontend/
-│   ├── src/
-│   │   ├── components/          # dashboards, LiveAgentTerminal, charts
-│   │   └── pages/               # one view per phase
-│   └── ...
+│   └── src/
+│       ├── shared/LiveAgentTerminal.jsx   # real-time A2A message scroller
+│       ├── features/            # casting/ production/ launch/ — one dashboard each
+│       └── lib/                 # api.js, utils.js
+├── docker-compose.yml
 └── .env.example
 ```
+
+**Zero-key dev loop:** every agent has a mock fallback, so the entire six-phase
+pipeline runs before any API key exists — `python backend/run_demo.py` just works.
 
 ---
 

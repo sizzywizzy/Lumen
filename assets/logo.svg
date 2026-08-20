@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="8 18 404 92" role="img" aria-label="CineNode">
+  <!-- CineNode wordmark: the "o" of Node is a cine camera — lens ring, aperture glass, twin film reels. -->
+  <style>
+    text { font: 700 76px 'Segoe UI', Inter, system-ui, sans-serif; letter-spacing: -1px; }
+    .letters { fill: #131720; }
+    .glass-ring { stroke: #0e94b8; }
+    .glass-core { fill: #0e94b8; }
+    @media (prefers-color-scheme: dark) {
+      .letters { fill: #e6e9f0; }
+      .glass-ring { stroke: #4fd1e9; }
+      .glass-core { fill: #4fd1e9; }
+    }
+  </style>
+  <text class="letters" x="24" y="95" textLength="212" lengthAdjust="spacingAndGlyphs">CineN</text>
+  <g>
+    <!-- twin film reels -->
+    <circle cx="250" cy="41" r="8.5" fill="none" stroke="#e94fb0" stroke-width="5"/>
+    <circle cx="276" cy="41" r="8.5" fill="none" stroke="#e94fb0" stroke-width="5"/>
+    <!-- lens = the letter o -->
+    <circle cx="263" cy="73" r="22" fill="none" stroke="#e94fb0" stroke-width="11"/>
+    <circle cx="263" cy="73" r="12.5" fill="none" class="glass-ring" stroke-width="3.5"/>
+    <circle cx="263" cy="73" r="6" class="glass-core"/>
+    <circle cx="259" cy="69" r="2.4" fill="#ffffff"/>
+  </g>
+  <text class="letters" x="290" y="95">de</text>
+</svg>

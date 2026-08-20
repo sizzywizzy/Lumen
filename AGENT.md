@@ -1,4 +1,4 @@
-# AGENT.md — The Autonomous Studio
+# AGENT.md — CineNode
 
 **Canonical registry of every agent, the shared A2A protocol, and the GlobalState contract.**
 This is the single source of truth. If you add or change an agent, update this file first.

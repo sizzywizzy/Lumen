@@ -6,7 +6,7 @@ Here is the modular directory structure designed for parallel development:
 
 The Root Workspace
 Plaintext
-autonomous-studio/
+cinenode/
 ├── backend/                # Python / FastAPI / LangGraph
 ├── frontend/               # React / Tailwind / shadcn
 ├── contracts/              # Shared JSON schemas (Crucial for A2A)
