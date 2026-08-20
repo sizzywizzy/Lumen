@@ -1,0 +1,23 @@
+{
+  "project_id": "PROJ_NEON_NIGHTS",
+  "script_context": {
+    "title": "Neon Nights",
+    "genre": "neo-noir thriller",
+    "tone": "moody, rain-soaked, synth-heavy",
+    "logline": "A cab-driving ex-detective chases a deepfake blackmail ring through the city's neon underbelly.",
+    "demographic_targets": ["18-24", "25-34"],
+    "ip_params": { "original_ip": true, "franchise_potential": "medium" }
+  },
+  "roles": [
+    { "role_id": "ROLE_LEAD", "name": "Mara Voss", "type": "lead", "description": "ex-detective, weary but sharp, 30s" },
+    { "role_id": "ROLE_ANTAG", "name": "Silas Kade", "type": "antagonist", "description": "charismatic deepfake broker, 40s" }
+  ],
+  "scenes": [
+    { "scene_id": "SCN_001", "int_ext": "EXT", "location_type": "city_street_night", "characters_needed": ["ROLE_LEAD"], "estimated_time_hours": 4, "tags": ["rain", "night"] },
+    { "scene_id": "SCN_002", "int_ext": "INT", "location_type": "taxi_cab", "characters_needed": ["ROLE_LEAD"], "estimated_time_hours": 3, "tags": ["dialogue"] },
+    { "scene_id": "SCN_003", "int_ext": "INT", "location_type": "nightclub", "characters_needed": ["ROLE_LEAD", "ROLE_ANTAG"], "estimated_time_hours": 6, "tags": ["crowd", "music"] },
+    { "scene_id": "SCN_004", "int_ext": "INT", "location_type": "rooftop_bar", "characters_needed": ["ROLE_ANTAG"], "estimated_time_hours": 4, "tags": ["alcohol_reference", "dialogue"] },
+    { "scene_id": "SCN_005", "int_ext": "INT", "location_type": "warehouse", "characters_needed": ["ROLE_LEAD", "ROLE_ANTAG"], "estimated_time_hours": 8, "tags": ["action", "finale"] },
+    { "scene_id": "SCN_006", "int_ext": "EXT", "location_type": "harbor_dawn", "characters_needed": ["ROLE_LEAD"], "estimated_time_hours": 3, "tags": ["resolution"] }
+  ]
+}

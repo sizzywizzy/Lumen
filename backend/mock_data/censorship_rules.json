@@ -1,0 +1,7 @@
+{
+  "US": { "blocked_tags": [], "requires_cuts": [] },
+  "FR": { "blocked_tags": [], "requires_cuts": [] },
+  "IN": { "blocked_tags": [], "requires_cuts": ["alcohol_reference"] },
+  "UAE": { "blocked_tags": ["alcohol_reference"], "requires_cuts": [] },
+  "JP": { "blocked_tags": [], "requires_cuts": [] }
+}

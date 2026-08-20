@@ -1,0 +1,6 @@
+[
+  { "persona_id": "PER_SEED_001", "age_bracket": "18-24", "gender": "M", "region": "US", "genre_affinities": ["thriller", "sci-fi"], "viewer_type": "binger", "attention_span": "short", "cultural_flags": [] },
+  { "persona_id": "PER_SEED_002", "age_bracket": "25-34", "gender": "F", "region": "FR", "genre_affinities": ["noir", "drama"], "viewer_type": "cinephile", "attention_span": "long", "cultural_flags": [] },
+  { "persona_id": "PER_SEED_003", "age_bracket": "18-24", "gender": "NB", "region": "IN", "genre_affinities": ["action", "thriller"], "viewer_type": "casual", "attention_span": "medium", "cultural_flags": ["family_viewing"] },
+  { "persona_id": "PER_SEED_004", "age_bracket": "35-44", "gender": "F", "region": "US", "genre_affinities": ["noir", "mystery"], "viewer_type": "critic_reader", "attention_span": "long", "cultural_flags": [] }
+]

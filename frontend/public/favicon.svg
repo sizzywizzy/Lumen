@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="CineNode mark">
+  <!-- The CineNode camera-o mark: lens + twin film reels. -->
+  <circle cx="23" cy="16.5" r="6" fill="none" stroke="#e94fb0" stroke-width="3.5"/>
+  <circle cx="41" cy="16.5" r="6" fill="none" stroke="#e94fb0" stroke-width="3.5"/>
+  <circle cx="32" cy="38" r="15" fill="none" stroke="#e94fb0" stroke-width="7"/>
+  <circle cx="32" cy="38" r="8" fill="none" stroke="#4fd1e9" stroke-width="2.5"/>
+  <circle cx="32" cy="38" r="4" fill="#4fd1e9"/>
+  <circle cx="29.5" cy="35.5" r="1.6" fill="#ffffff"/>
+</svg>
