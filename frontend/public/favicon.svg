@@ -1,9 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="CineNode mark">
-  <!-- The CineNode camera-o mark: lens + twin film reels. -->
-  <circle cx="23" cy="16.5" r="6" fill="none" stroke="#e94fb0" stroke-width="3.5"/>
-  <circle cx="41" cy="16.5" r="6" fill="none" stroke="#e94fb0" stroke-width="3.5"/>
-  <circle cx="32" cy="38" r="15" fill="none" stroke="#e94fb0" stroke-width="7"/>
-  <circle cx="32" cy="38" r="8" fill="none" stroke="#4fd1e9" stroke-width="2.5"/>
-  <circle cx="32" cy="38" r="4" fill="#4fd1e9"/>
-  <circle cx="29.5" cy="35.5" r="1.6" fill="#ffffff"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -28 168 168" role="img" aria-label="CineNode camera">
+  <!-- The CineNode camera mark (flat cine camera from the team's reference image). -->
+  <rect x="30" y="12" width="18" height="14" rx="3" fill="#3f3a43"/>
+  <rect x="118" y="15" width="24" height="11" rx="3" fill="#3f3a43"/>
+  <path d="M56 26 q3 -14 16 -14 h16 q13 0 16 14 z" fill="#4c4650"/>
+  <rect x="2" y="24" width="164" height="76" rx="14" fill="#5a5460"/>
+  <path d="M2 38 a14 14 0 0 1 14 -14 h24 v76 h-24 a14 14 0 0 1 -14 -14 z" fill="#49434e"/>
+  <circle cx="104" cy="62" r="32" fill="#b9aab5"/>
+  <circle cx="104" cy="62" r="25" fill="#49434e"/>
+  <circle cx="104" cy="62" r="20" fill="#eaf7fd"/>
+  <circle cx="108" cy="66" r="17.5" fill="#c8e8f6"/>
+  <circle cx="150" cy="42" r="3.5" fill="#3f3a43"/>
+  <circle cx="151" cy="80" r="3" fill="#3f3a43"/>
+  <circle cx="19" cy="84" r="3" fill="#3f3a43"/>
 </svg>

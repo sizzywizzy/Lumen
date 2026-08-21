@@ -1,26 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="8 18 404 92" role="img" aria-label="CineNode">
-  <!-- CineNode wordmark: the "o" of Node is a cine camera — lens ring, aperture glass, twin film reels. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="8 24 466 78" role="img" aria-label="CineNode">
+  <!-- CineNode wordmark: the "o" of Node is the team's flat cine camera — its lens lands where the o belongs. -->
   <style>
     text { font: 700 76px 'Segoe UI', Inter, system-ui, sans-serif; letter-spacing: -1px; }
-    .letters { fill: #131720; }
-    .glass-ring { stroke: #0e94b8; }
-    .glass-core { fill: #0e94b8; }
+    .letters { fill: #2c2c2c; }
     @media (prefers-color-scheme: dark) {
-      .letters { fill: #e6e9f0; }
-      .glass-ring { stroke: #4fd1e9; }
-      .glass-core { fill: #4fd1e9; }
+      .letters { fill: #f3f4f4; }
     }
   </style>
   <text class="letters" x="24" y="95" textLength="212" lengthAdjust="spacingAndGlyphs">CineN</text>
-  <g>
-    <!-- twin film reels -->
-    <circle cx="250" cy="41" r="8.5" fill="none" stroke="#e94fb0" stroke-width="5"/>
-    <circle cx="276" cy="41" r="8.5" fill="none" stroke="#e94fb0" stroke-width="5"/>
-    <!-- lens = the letter o -->
-    <circle cx="263" cy="73" r="22" fill="none" stroke="#e94fb0" stroke-width="11"/>
-    <circle cx="263" cy="73" r="12.5" fill="none" class="glass-ring" stroke-width="3.5"/>
-    <circle cx="263" cy="73" r="6" class="glass-core"/>
-    <circle cx="259" cy="69" r="2.4" fill="#ffffff"/>
+  <g transform="translate(240 20.6) scale(0.744)">
+    <rect x="30" y="12" width="18" height="14" rx="3" fill="#3f3a43"/>
+    <rect x="118" y="15" width="24" height="11" rx="3" fill="#3f3a43"/>
+    <path d="M56 26 q3 -14 16 -14 h16 q13 0 16 14 z" fill="#4c4650"/>
+    <rect x="2" y="24" width="164" height="76" rx="14" fill="#5a5460"/>
+    <path d="M2 38 a14 14 0 0 1 14 -14 h24 v76 h-24 a14 14 0 0 1 -14 -14 z" fill="#49434e"/>
+    <circle cx="104" cy="62" r="32" fill="#b9aab5"/>
+    <circle cx="104" cy="62" r="25" fill="#49434e"/>
+    <circle cx="104" cy="62" r="20" fill="#eaf7fd"/>
+    <circle cx="108" cy="66" r="17.5" fill="#c8e8f6"/>
+    <circle cx="150" cy="42" r="3.5" fill="#3f3a43"/>
+    <circle cx="151" cy="80" r="3" fill="#3f3a43"/>
+    <circle cx="19" cy="84" r="3" fill="#3f3a43"/>
   </g>
-  <text class="letters" x="290" y="95">de</text>
+  <text class="letters" x="370" y="95">de</text>
 </svg>

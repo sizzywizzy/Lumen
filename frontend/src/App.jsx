@@ -3,6 +3,7 @@ import { api } from "./lib/api.js";
 import { cn } from "./lib/utils.js";
 import LiveAgentTerminal from "./shared/LiveAgentTerminal.jsx";
 import CineNodeLogo from "./shared/CineNodeLogo.jsx";
+import CoverPage from "./shared/CoverPage.jsx";
 import CastingView from "./features/casting/CastingView.jsx";
 import ProdView from "./features/production/ProdView.jsx";
 import LaunchView from "./features/launch/LaunchView.jsx";
@@ -16,6 +17,7 @@ const TABS = [
 const REVEAL_MS = 60; // terminal replay speed per message
 
 export default function App() {
+  const [view, setView] = useState("cover");
   const [mode, setMode] = useState("indie");
   const [tab, setTab] = useState("casting");
   const [state, setState] = useState(null);
@@ -65,10 +67,23 @@ export default function App() {
 
   const ActiveView = TABS.find((t) => t.key === tab).View;
 
+  if (view === "cover") {
+    return (
+      <CoverPage
+        onEnter={(targetTab) => {
+          setTab(targetTab);
+          setView("studio");
+        }}
+      />
+    );
+  }
+
   return (
     <>
       <div className="topbar">
-        <h1><CineNodeLogo height={30} /></h1>
+        <h1 className="logo-btn" onClick={() => setView("cover")} title="Back to cover">
+          <CineNodeLogo height={30} />
+        </h1>
         <span style={{ color: "var(--muted)", fontSize: 12 }}>{PROJECT_ID}</span>
         <div className="spacer" />
         <select value={mode} onChange={(e) => setMode(e.target.value)}>
