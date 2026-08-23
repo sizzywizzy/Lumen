@@ -6,16 +6,20 @@ NPM ?= npm
 VENV ?= backend/.venv
 PIP := $(VENV)/bin/pip
 PYTHON_BIN := $(VENV)/bin/python
-PYDOCTOR := $(PYTHON_BIN) -m pydoctor
 
-.PHONY: all install setup test build clean dev run backend frontend docs help
+.PHONY: all install setup test build clean dev run backend frontend docs help check-tools
 
 all: install setup test build
 
-install: $(VENV)/bin/activate frontend/node_modules
+check-tools:
+	@command -v $(PYTHON) >/dev/null 2>&1 || { echo "Error: $(PYTHON) not found. Please install Python 3."; exit 1; }
+	@command -v $(NODE) >/dev/null 2>&1 || { echo "Error: $(NODE) not found. Please install Node.js."; exit 1; }
+	@command -v $(NPM) >/dev/null 2>&1 || { echo "Error: $(NPM) not found. Please install npm."; exit 1; }
+
+install: check-tools $(VENV)/bin/activate frontend/node_modules
 
 $(VENV)/bin/activate: backend/requirements.txt
-	$(PYTHON) -m venv $(VENV)
+	@test -d $(VENV) || $(PYTHON) -m venv $(VENV)
 	$(PIP) install --upgrade pip
 	$(PIP) install -r backend/requirements.txt
 
@@ -50,8 +54,8 @@ frontend: install
 	$(NPM) --prefix frontend run dev
 
 docs: install
-	$(PIP) install --upgrade pydoctor
-	$(PYDOCTOR) --make-html \
+	@$(PIP) show pydoctor >/dev/null 2>&1 || $(PIP) install --upgrade pydoctor
+	$(PYTHON_BIN) -m pydoctor --make-html \
 		--html-output=./docs \
 		--project-name="CineNode" \
 		backend/core \
@@ -62,19 +66,21 @@ docs: install
 
 clean:
 	rm -rf $(VENV) frontend/node_modules frontend/dist
-	find backend -type d -name __pycache__ -prune -exec rm -rf {} +
+	find backend -type d -name __pycache__ -delete
+	find backend -type f -name '*.pyc' -delete
 
 help:
 	@printf '%s\n' \
 		'Available targets:' \
-		'  make all       Install dependencies, set up the environment, test, and build' \
-		'  make install   Install Python and frontend dependencies' \
-		'  make setup     Create .env from .env.example when .env is missing' \
-		'  make test      Compile the backend and run the full mock pipeline' \
-		'  make build     Build the frontend for production' \
-		'  make dev       Show commands for starting backend and frontend development servers' \
-		'  make run       Start the full backend and frontend stack with Docker Compose' \
-		'  make backend   Start the backend development server on port 8000' \
-		'  make frontend  Start the frontend development server' \
-		'  make docs      Install Pydoctor and generate HTML API documentation' \
-		'  make clean     Remove generated dependencies, builds, and caches'
+		'  make all         Install dependencies, set up the environment, test, and build' \
+		'  make check-tools Verify required tools (python3, node, npm) are installed' \
+		'  make install     Install Python and frontend dependencies' \
+		'  make setup       Create .env from .env.example when .env is missing' \
+		'  make test        Compile the backend and run the full mock pipeline' \
+		'  make build       Build the frontend for production' \
+		'  make dev         Show commands for starting backend and frontend development servers' \
+		'  make run         Start the full backend and frontend stack with Docker Compose' \
+		'  make backend     Start the backend development server on port 8000' \
+		'  make frontend    Start the frontend development server' \
+		'  make docs        Generate HTML API documentation (pydoctor)' \
+		'  make clean       Remove generated dependencies, builds, and caches'

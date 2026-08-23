@@ -21,5 +21,7 @@ services:
     command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
     ports:
       - "5173:5173"
+    environment:
+      - DOCKER_ENV=true
     depends_on:
       - backend

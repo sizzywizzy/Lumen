@@ -6,7 +6,10 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      "/api": "http://localhost:8000",
+      "/api": {
+        target: process.env.DOCKER_ENV === "true" ? "http://backend:8000" : "http://localhost:8000",
+        changeOrigin: true,
+      },
     },
   },
 });
