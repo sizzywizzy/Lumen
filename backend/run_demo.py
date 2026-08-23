@@ -1,29 +1,33 @@
 """Demo runner — kicks a project through all six phases with mock data.
 
-    python backend/run_demo.py --project PROJ_NEON_NIGHTS --mode indie
+    python backend/run_demo.py --project PROJ_NEON_NIGHTS --budget 250000
 """
 import argparse
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")  # Windows consoles/pipes default to cp1252
 
+from core import config
 from core.orchestrator.graph import Orchestrator
-from core.orchestrator.state import GlobalState
+from core.orchestrator.state import BudgetState, GlobalState
 from services import supabase_client
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the full CineNode pipeline.")
     parser.add_argument("--project", default="PROJ_NEON_NIGHTS")
-    parser.add_argument("--mode", choices=["indie", "enterprise"], default="indie")
+    parser.add_argument("--budget", type=float, default=config.DEFAULT_BUDGET_USD,
+                        help="total production budget in USD (drives casting caps, venues, reach)")
     parser.add_argument("--verbose", action="store_true", help="print every A2A envelope")
     args = parser.parse_args()
 
-    state = GlobalState(project_id=args.project, mode=args.mode)
+    state = GlobalState(project_id=args.project, budget_state=BudgetState(cap=args.budget))
     orchestrator = Orchestrator()
 
-    print(f"🎬 CineNode — {args.project} ({args.mode} mode)\n")
+    print(f"🎬 CineNode — {args.project} (budget ${args.budget:,.0f})\n")
     for node in orchestrator.nodes:
         before = len(state.event_log)
         state = orchestrator.run(state, start=node.key, end=node.key)

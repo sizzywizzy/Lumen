@@ -18,7 +18,7 @@ def _strategist(state: GlobalState) -> dict:
     log_event(state, make_reply(request, "agent_aggregation", "simulation_verdict_update",
                                 state.audience_report.model_dump()))
     plan = gemini_client.generate_json(
-        f"Audience report: {state.audience_report.model_dump()}. Mode: {state.mode}.",
+        f"Audience report: {state.audience_report.model_dump()}. Budget: ${state.budget_state.cap:,.0f}.",
         system=prompts.STRATEGIST_SYSTEM,
         mock={"segments": [
             {"demographic": "18-24", "platform": "tiktok", "tone": "chaotic-ironic", "asset_types": ["meme", "reel"]},

@@ -34,6 +34,12 @@ GEMINI_PRO_MODEL = os.environ.get("GEMINI_PRO_MODEL", "gemini-2.0-pro")
 MAX_NEGOTIATION_ITERATIONS = 2  # never unbounded (AGENT.md Section 1)
 MAX_ASSET_REGENERATIONS = 2     # agent_visual retry cap
 
+# Budget-driven scale: the total budget entered at intake sets every cap below.
+DEFAULT_BUDGET_USD = 250_000
+CASTING_CAP_SHARE = 0.10    # max quote for a single role, as a share of the total budget
+LOCATIONS_SHARE = 0.15      # share of the total budget available for venues
+PERSONA_COUNT = 200         # synthetic viewers per screening (AGENT.md Phase V)
+
 
 def has_gemini() -> bool:
     return bool(GEMINI_API_KEY)

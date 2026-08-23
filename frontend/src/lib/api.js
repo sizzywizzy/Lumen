@@ -14,8 +14,12 @@ async function request(path, options = {}) {
 
 export const api = {
   health: () => request("/api/health"),
-  runPipeline: (project_id, mode) =>
-    request("/api/pipeline/run", { method: "POST", body: JSON.stringify({ project_id, mode }) }),
+  // budget_usd is optional — the backend default applies until the intake form is wired in.
+  runPipeline: (project_id, budget_usd) =>
+    request("/api/pipeline/run", {
+      method: "POST",
+      body: JSON.stringify(budget_usd ? { project_id, budget_usd } : { project_id }),
+    }),
   getState: (projectId) => request(`/api/state/${projectId}`),
   getEvents: (projectId, since = 0) => request(`/api/events/${projectId}?since=${since}`),
   updateProductionSettings: (projectId, settings) => request(`/api/production/settings/${projectId}`, { method: "PUT", body: JSON.stringify(settings) }),

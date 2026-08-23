@@ -10,8 +10,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from core import config
 from core.orchestrator.graph import Orchestrator
-from core.orchestrator.state import GlobalState, Mode
+from core.orchestrator.state import BudgetState, GlobalState
 from domains.casting.router import router as casting_router
 from domains.launch.router import router as launch_router
 from domains.production.router import router as production_router
@@ -33,7 +34,11 @@ app.include_router(launch_router)
 
 class InitRequest(BaseModel):
     project_id: str = "PROJ_NEON_NIGHTS"
-    mode: Mode = "indie"
+    budget_usd: float = config.DEFAULT_BUDGET_USD  # total production budget from the intake form
+
+
+def _new_state(req: InitRequest) -> GlobalState:
+    return GlobalState(project_id=req.project_id, budget_state=BudgetState(cap=req.budget_usd))
 
 
 @app.get("/api/health")
@@ -44,16 +49,15 @@ def health():
 @app.post("/api/pipeline/init")
 def init_pipeline(req: InitRequest):
     """Create (or reset) a project's GlobalState."""
-    state = GlobalState(project_id=req.project_id, mode=req.mode)
+    state = _new_state(req)
     supabase_client.save_state(state)
-    return {"project_id": state.project_id, "mode": state.mode}
+    return {"project_id": state.project_id, "budget_usd": state.budget_state.cap}
 
 
 @app.post("/api/pipeline/run")
 def run_pipeline(req: InitRequest):
     """Full demo: fresh state through all six phases."""
-    state = GlobalState(project_id=req.project_id, mode=req.mode)
-    state = Orchestrator().run(state)
+    state = Orchestrator().run(_new_state(req))
     supabase_client.save_state(state)
     return {
         "project_id": state.project_id,

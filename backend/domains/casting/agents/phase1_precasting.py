@@ -6,6 +6,7 @@ expensive Phase II media work.
 """
 import math
 
+from core import config
 from core.messaging.envelope import broadcast, log_event, make_envelope, make_reply
 from core.orchestrator.state import Candidate, GlobalState
 from domains.casting import prompts
@@ -17,17 +18,14 @@ PR_RED_FLAG_TERMS = ("lawsuit", "outburst", "scandal", "arrest")
 def _profiler(state: GlobalState) -> None:
     script = mock_db.load("script")
     state.script_context = script["script_context"]
-    if state.mode == "enterprise":
-        weights = {"W_A": 0.35, "W_H": 0.2, "W_PR": 0.3, "W_B": 0.15}  # brand-safety weighted
-    else:
-        weights = {"W_A": 0.4, "W_H": 0.15, "W_PR": 0.15, "W_B": 0.3}  # cost weighted
     mandate = gemini_client.generate_json(
-        f"Script context: {state.script_context}. Roles: {script['roles']}. Mode: {state.mode}.",
+        f"Script context: {state.script_context}. Roles: {script['roles']}. "
+        f"Total budget: ${state.budget_state.cap:,.0f}.",
         tier="pro",
         system=prompts.PROFILER_SYSTEM,
         mock={
             "role_requirements": {r["role_id"]: {"name": r["name"], "description": r["description"], "type": r["type"]} for r in script["roles"]},
-            "scoring_weights": weights,
+            "scoring_weights": {"W_A": 0.4, "W_H": 0.2, "W_PR": 0.2, "W_B": 0.2},  # AGENT.md defaults
         },
     )
     state.role_requirements = mandate["role_requirements"]
@@ -81,24 +79,26 @@ def _score_candidate(state: GlobalState, candidate: Candidate) -> None:
                                    {"candidate_id": candidate.id, "reason": candidate.disqualify_reason}))
         return
 
-    # agent_finance — Wallet Check vs budget cap
+    # agent_finance — Wallet Check: a single role may take at most a fixed share of the total budget
     quote = float(candidate.metadata.get("quote_usd", 0))
-    cap = state.budget_state.cap
-    over_budget = quote > cap
-    candidate.scores["budget"] = 0.0 if over_budget else round(100.0 * (1 - quote / cap), 1)
+    role_cap = state.budget_state.cap * config.CASTING_CAP_SHARE
+    over_budget = quote > role_cap
+    candidate.scores["budget"] = 0.0 if over_budget else round(100.0 * (1 - quote / role_cap), 1)
     log_event(state, make_reply(request, "agent_finance", "budget_scored",
-                                {"candidate_id": candidate.id, "budget": candidate.scores["budget"], "quote_usd": quote}))
+                                {"candidate_id": candidate.id, "budget": candidate.scores["budget"],
+                                 "quote_usd": quote, "role_cap_usd": role_cap}))
     if over_budget:
         candidate.status = "DISQUALIFIED"
-        candidate.disqualify_reason = f"Budget: quote ${quote:,.0f} exceeds per-role cap ${cap:,.0f}"
+        candidate.disqualify_reason = (
+            f"Budget: quote ${quote:,.0f} exceeds per-role cap ${role_cap:,.0f} "
+            f"({config.CASTING_CAP_SHARE:.0%} of the ${state.budget_state.cap:,.0f} budget)"
+        )
         log_event(state, broadcast("agent_finance", "disqualify",
                                    {"candidate_id": candidate.id, "reason": candidate.disqualify_reason}))
 
 
 def run_phase1_precasting(state: GlobalState) -> GlobalState:
     _profiler(state)
-    # Per-role casting cap for the fail-fast wallet check.
-    state.budget_state.cap = 500_000 if state.mode == "enterprise" else 25_000
     _intake(state)
     for candidate in state.candidates:
         _score_candidate(state, candidate)

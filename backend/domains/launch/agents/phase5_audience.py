@@ -7,6 +7,7 @@ replays identically; swap for real Gemini calls per batch later.
 """
 import hashlib
 
+from core import config
 from core.messaging.envelope import broadcast, log_event, make_envelope, make_reply
 from core.orchestrator.state import GlobalState
 from domains.launch import prompts
@@ -18,15 +19,14 @@ ANOMALY_SCENE = "SCN_004"  # act-two exposition scene
 
 
 def _foundry(state: GlobalState) -> list[dict]:
-    """Expand the seed personas into a full Persona_DB (20 indie / 200 enterprise)."""
+    """Expand the seed personas into a full Persona_DB."""
     seeds = mock_db.load("personas")
-    target = 20 if state.mode == "indie" else 200
     personas = []
-    for i in range(target):
+    for i in range(config.PERSONA_COUNT):
         seed = seeds[i % len(seeds)]
         personas.append({**seed, "persona_id": f"PER_{i:03d}"})
     log_event(state, broadcast("agent_persona_foundry", "personas_ready", {
-        "count": len(personas), "mode": state.mode,
+        "count": len(personas),
     }))
     return personas
 

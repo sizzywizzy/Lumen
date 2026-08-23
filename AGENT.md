@@ -49,14 +49,13 @@ Rules:
 ```jsonc
 {
   "project_id":       "PROJ_NEON_NIGHTS",
-  "mode":             "enterprise | indie",
   "script_context":   "genre, tone, demographic targets, IP params",
   "role_requirements":{ /* machine-readable casting mandates */ },
   "scoring_weights":  { "W_A": 0.4, "W_H": 0.2, "W_PR": 0.2, "W_B": 0.2 },
   "candidates":       [ { "id", "name", "metadata", "media_url", "scores", "status" } ],
   "casting_status":   "SOURCING | SCREENING | LOCKED",
   "schedule":         { "stripboard": [ /* scene_id, date, venue */ ], "conflicts": [] },
-  "budget_state":     { "daily_burn", "cap", "alerts": [] },
+  "budget_state":     { "daily_burn", "cap" /* total budget from intake — sets every downstream cap */, "alerts": [] },
   "compliance_state": { "<territory>": "CLEARED | AWAITING_QC | BLOCKED" },
   "audience_report":  { "tomatometer", "audience_score", "heatmap", "weakest_scene_id" },
   "marketing_assets": [ { "asset_id", "type", "status", "source_scene_id" } ],
@@ -117,7 +116,7 @@ Intents: emits `leaderboard_ready`; pushes top-N to `human_escalations`.
 
 **`agent_breakdown`** — In: `Script_DB(scene_id, INT/EXT, location_type, characters_needed, estimated_time)`. Out: structured scene requirements. Emits `breakdown_ready`.
 
-**`agent_location`** — In: scene reqs + `Venue_DB(venue_name, cost_per_day, available_dates, indie_friendly)`. Out: venue matches/permits. Handles `check_venue_availability`, emits `venue_offer`.
+**`agent_location`** — In: scene reqs + `Venue_DB(venue_name, cost_per_day, available_dates)`. Out: venue matches/permits. Handles `check_venue_availability`, emits `venue_offer`.
 
 **`agent_scheduler_shoot`** — *Stripboard.* In: breakdown + venues + cast availability. Out: `schedule.stripboard`, budget burn. Sends `check_venue_availability`; emits `schedule_updated`.
 **Demo A2A:** `agent_scheduler_shoot` → `check_venue_availability` (Scene 12, Tue) → `agent_location` replies `venue_offer` (Wed) → scheduler rebuilds stripboard → broadcasts `schedule_updated`.

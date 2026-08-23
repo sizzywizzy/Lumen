@@ -4,10 +4,9 @@
   "title": "GlobalState",
   "description": "The one JSON object passed through the entire pipeline. See AGENT.md Section 3. Changing this file requires whole-team agreement.",
   "type": "object",
-  "required": ["project_id", "mode"],
+  "required": ["project_id"],
   "properties": {
     "project_id": { "type": "string", "pattern": "^PROJ_[A-Z0-9_]+$" },
-    "mode": { "type": "string", "enum": ["enterprise", "indie"] },
     "script_context": {
       "type": "object",
       "description": "genre, tone, demographic targets, IP params"
@@ -79,6 +78,7 @@
     },
     "budget_state": {
       "type": "object",
+      "description": "cap is the total production budget (USD) entered at intake; it drives casting caps, venue choices and territory reach",
       "properties": {
         "daily_burn": { "type": "number" },
         "cap": { "type": "number" },

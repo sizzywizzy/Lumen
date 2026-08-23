@@ -1,0 +1,24 @@
+{
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1120,
+      "h": 800,
+      "title": "Cover → Phase I (prototype)"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "how-to-try",
+      "x": 0,
+      "y": -140,
+      "w": 460,
+      "text": "Clickable prototype. Drop a script file onto the dashed box (or click it to load the sample script), fill budget, dates and notes, then Start pre-production opens Phase I. Back returns to the cover.\nThe left image is a placeholder: replace cover-still.svg with the real still."
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}

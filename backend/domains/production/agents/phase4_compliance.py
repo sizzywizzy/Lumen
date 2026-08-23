@@ -7,9 +7,6 @@ from core.messaging.envelope import broadcast, log_event, make_envelope, make_re
 from core.orchestrator.state import GlobalState
 from services import mock_db
 
-INDIE_TERRITORIES = ["US", "FR", "UAE"]
-ENTERPRISE_TERRITORIES = ["US", "FR", "IN", "UAE", "JP"]
-
 
 def _rights_clearance(state: GlobalState, request: dict) -> dict:
     """agent_rights_clearance: check censorship rules and asset regional rights."""
@@ -52,8 +49,13 @@ def _localization(state: GlobalState) -> None:
     scenes = mock_db.load("script")["scenes"]
     tagged = [{"type": "dialogue", "tags": s["tags"], "scene_id": s["scene_id"]}
               for s in scenes if s["tags"]]
+<<<<<<< HEAD
     tagged.append({"type": "music", "tags": [], "scene_id": "SCN_004", "asset_id": "TRK_992_INDIE_ROCK"})
     territories = INDIE_TERRITORIES if state.mode == "indie" else ENTERPRISE_TERRITORIES
+=======
+    # Every territory with a rule set is a target market.
+    territories = list(mock_db.load("censorship_rules"))
+>>>>>>> 82a68a0 ("Cover page changes")
 
     for territory in territories:
         request = log_event(state, make_envelope(
@@ -89,8 +91,8 @@ def _qc(state: GlobalState) -> None:
 
 def _telemetry(state: GlobalState) -> None:
     log_event(state, broadcast("agent_telemetry", "telemetry_update", {
-        "trailer_views_48h": 12800 if state.mode == "indie" else 2_400_000,
-        "watchlist_adds": 950 if state.mode == "indie" else 88_000,
+        "trailer_views_48h": 12_800,
+        "watchlist_adds": 950,
     }))
 
 

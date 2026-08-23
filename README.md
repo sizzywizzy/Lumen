@@ -7,7 +7,7 @@
 > One multi-agent system that takes a film from **script → screen → social launch**.
 > Built for **Agentic Cinema: The Blockbuster Hackathon** (Google Cloud · Replit Track).
 
-CineNode is a network of specialized AI agents that run the entire film lifecycle as **six connected phases** — casting, scheduling, compliance, audience testing, and marketing — sharing **one orchestrator, one state object, and one agent-to-agent (A2A) messaging standard**. It runs in two modes: **Big Dawgs** (major-studio scale) and **Indies** (bootstrapped scale).
+CineNode is a network of specialized AI agents that run the entire film lifecycle as **six connected phases** — casting, scheduling, compliance, audience testing, and marketing — sharing **one orchestrator, one state object, and one agent-to-agent (A2A) messaging standard**. Scale follows the budget you enter at intake: casting caps, venue choices and territory reach all derive from it.
 
 It is a true **Multi-Agent System (MAS)**: agents ask each other questions, get answers, and change their own behavior — humans only sign off at the top.
 
@@ -155,25 +155,24 @@ npm run dev
 ### 4. Run a full pipeline (demo)
 ```bash
 # kicks off PROJ_NEON_NIGHTS through all six phases with mock data
-python backend/run_demo.py --project PROJ_NEON_NIGHTS --mode indie
+python backend/run_demo.py --project PROJ_NEON_NIGHTS --budget 250000
 ```
 
 ---
 
-## Modes: Big Dawgs vs. Indies
+## Budget-driven scale
 
-Set `mode` in `GlobalState` (or `--mode` on the demo runner):
+There are no tiers or modes. The total budget from the intake cover page lands in `GlobalState.budget_state.cap` and every downstream limit is derived from it (shares live in `backend/core/config.py`):
 
-- `enterprise` → 200+ personas, 50+ territories, union rules, managed vendors, brand-safety-weighted scoring.
-- `indie` → 20–100 personas, 2–3 languages, condensed shoot, free-tier vendors, cost-weighted scoring.
-
-Same code, two customers — proves real-world scalability to judges.
+- **Casting** — a single role may cost at most 10% of the budget; pricier quotes are purged by the fail-fast wallet check.
+- **Locations** — venues are picked cheapest-first, and 15% of the budget spread over the shoot days is the daily burn allowance.
+- **Reach** — every territory with a rule set is cleared; the same code scales from a bootstrapped short to a studio slate.
 
 ---
 
 ## 3-Minute Trailer Script (demo beats)
 
-1. **Upload** a script for `PROJ_NEON_NIGHTS` (Indie mode).
+1. **Drop the script** for `PROJ_NEON_NIGHTS` on the cover page with a $250k budget and a shooting window.
 2. **Phase I/II:** watch an over-budget applicant auto-rejected; a leaderboard builds itself.
 3. **Phase III:** Scheduler ↔ Location Agent negotiate a venue conflict live in the terminal; the Gantt reflows.
 4. **Phase IV:** the UAE cut hits a compliance block; the world map turns that territory red.
@@ -187,7 +186,7 @@ Same code, two customers — proves real-world scalability to judges.
 
 - **Technological Implementation:** genuine A2A MAS with a shared protocol + fail-fast orchestration.
 - **Design:** one coherent product across six phases, with live dashboards.
-- **Potential Impact:** addresses the real, expensive bottlenecks of film production at both studio and indie scale.
+- **Potential Impact:** addresses the real, expensive bottlenecks of film production at any budget, from a bootstrapped short to a studio slate.
 - **Quality of Idea:** agents that negotiate and self-correct, not a chatbot with buttons.
 
 ---
