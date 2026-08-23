@@ -49,13 +49,9 @@ def _localization(state: GlobalState) -> None:
     scenes = mock_db.load("script")["scenes"]
     tagged = [{"type": "dialogue", "tags": s["tags"], "scene_id": s["scene_id"]}
               for s in scenes if s["tags"]]
-<<<<<<< HEAD
     tagged.append({"type": "music", "tags": [], "scene_id": "SCN_004", "asset_id": "TRK_992_INDIE_ROCK"})
-    territories = INDIE_TERRITORIES if state.mode == "indie" else ENTERPRISE_TERRITORIES
-=======
     # Every territory with a rule set is a target market.
     territories = list(mock_db.load("censorship_rules"))
->>>>>>> 82a68a0 ("Cover page changes")
 
     for territory in territories:
         request = log_event(state, make_envelope(

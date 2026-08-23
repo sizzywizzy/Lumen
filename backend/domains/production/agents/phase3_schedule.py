@@ -23,19 +23,11 @@ def _location_offer(state: GlobalState, request: dict) -> dict:
     payload = request["payload"]
     constraints = state.schedule.director_constraints
     venues = [v for v in mock_db.load("venues") if v["location_type"] == payload["location_type"]]
-<<<<<<< HEAD
     if constraints.get("country"):
         venues = [v for v in venues if v.get("country", "USA") == constraints["country"]]
     excluded = set(constraints.get("excluded_states", []))
     venues = [v for v in venues if v.get("state", "") not in excluded]
-    if state.mode == "indie":
-        venues = sorted(venues, key=lambda v: (not v["indie_friendly"], v["cost_per_day"]))
-    else:
-        venues = sorted(venues, key=lambda v: v["cost_per_day"])
-=======
-    # Cheapest viable venue first — the budget, not a tier, decides what we can afford.
     venues = sorted(venues, key=lambda v: v["cost_per_day"])
->>>>>>> 82a68a0 ("Cover page changes")
     preferred_date = payload["preferred_date"]
     for venue in venues:
         date = preferred_date if preferred_date in venue["available_dates"] else venue["available_dates"][0]
@@ -99,13 +91,8 @@ def _scheduler(state: GlobalState, scenes: list[dict]) -> None:
     state.schedule.stripboard = sorted(stripboard, key=lambda e: e.date)
     shoot_days = max(len({e.date for e in stripboard}), 1)
     state.budget_state.daily_burn = round(total_cost / shoot_days, 2)
-<<<<<<< HEAD
-    burn_cap = 30_000 if state.mode == "enterprise" else 4_000
-    state.budget_state.cap = burn_cap
-=======
     # Venues may spend a fixed share of the total budget, spread over the shoot days.
     burn_cap = round(state.budget_state.cap * config.LOCATIONS_SHARE / shoot_days, 2)
->>>>>>> 82a68a0 ("Cover page changes")
     if state.budget_state.daily_burn > burn_cap:
         state.budget_state.alerts.append(
             f"Daily burn ${state.budget_state.daily_burn:,.0f} exceeds the ${burn_cap:,.0f}/day location allowance"

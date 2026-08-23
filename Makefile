@@ -34,7 +34,7 @@ setup:
 
 test: install
 	$(PYTHON_BIN) -m compileall -q backend
-	$(PYTHON_BIN) backend/run_demo.py --project PROJ_NEON_NIGHTS --mode indie
+	$(PYTHON_BIN) backend/run_demo.py --project PROJ_NEON_NIGHTS
 
 build: install
 	$(NPM) --prefix frontend run build

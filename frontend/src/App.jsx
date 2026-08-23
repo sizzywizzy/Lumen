@@ -17,11 +17,7 @@ const REVEAL_MS = 60; // terminal replay speed per message
 
 export default function App() {
   const [view, setView] = useState("cover");
-<<<<<<< HEAD
   const [projectId, setProjectId] = useState("PROJ_NEON_NIGHTS");
-  const [mode, setMode] = useState("indie");
-=======
->>>>>>> 82a68a0 ("Cover page changes")
   const [tab, setTab] = useState("casting");
   const [state, setState] = useState(null);
   const [events, setEvents] = useState([]);
@@ -50,13 +46,8 @@ export default function App() {
     setRevealed(0);
     clearInterval(timerRef.current);
     try {
-<<<<<<< HEAD
-      await api.runPipeline(projectId, mode);
+      await api.runPipeline(projectId);
       const s = await api.getState(projectId);
-=======
-      await api.runPipeline(PROJECT_ID);
-      const s = await api.getState(PROJECT_ID);
->>>>>>> 82a68a0 ("Cover page changes")
       setState(s);
       setEvents(s.event_log);
       // Replay the A2A conversation message-by-message in the terminal.

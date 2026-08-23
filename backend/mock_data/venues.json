@@ -1,19 +1,9 @@
 [
-<<<<<<< HEAD
-  { "venue_name": "Lumen District Backlot", "location_type": "city_street_night", "cost_per_day": 2500, "available_dates": ["2026-09-01", "2026-09-02", "2026-09-03"], "indie_friendly": true },
-  { "venue_name": "Checker Cab Rig (process trailer)", "location_type": "taxi_cab", "cost_per_day": 900, "available_dates": ["2026-09-01", "2026-09-02", "2026-09-04"], "indie_friendly": true },
-  { "venue_name": "Club Vertigo", "location_type": "nightclub", "cost_per_day": 4000, "available_dates": ["2026-09-03"], "indie_friendly": false },
-  { "venue_name": "The Neon Lounge", "location_type": "nightclub", "cost_per_day": 1800, "available_dates": ["2026-09-03", "2026-09-04"], "indie_friendly": true },
-  { "venue_name": "Skyline Rooftop Bar", "location_type": "rooftop_bar", "cost_per_day": 2200, "available_dates": ["2026-09-03", "2026-09-05"], "indie_friendly": true },
-  { "venue_name": "Pier 9 Warehouse", "location_type": "warehouse", "cost_per_day": 1500, "available_dates": ["2026-09-06", "2026-09-07"], "indie_friendly": true },
-  { "venue_name": "East Harbor Docks", "location_type": "harbor_dawn", "cost_per_day": 1200, "available_dates": ["2026-09-06", "2026-09-08"], "indie_friendly": true }
-=======
   { "venue_name": "Lumen District Backlot", "location_type": "city_street_night", "cost_per_day": 2500, "available_dates": ["2026-09-01", "2026-09-02", "2026-09-03"] },
-  { "venue_name": "Checker Cab Rig (process trailer)", "location_type": "taxi_cab", "cost_per_day": 900, "available_dates": ["2026-09-02", "2026-09-04"] },
+  { "venue_name": "Checker Cab Rig (process trailer)", "location_type": "taxi_cab", "cost_per_day": 900, "available_dates": ["2026-09-01", "2026-09-02", "2026-09-04"] },
   { "venue_name": "Club Vertigo", "location_type": "nightclub", "cost_per_day": 4000, "available_dates": ["2026-09-03"] },
   { "venue_name": "The Neon Lounge", "location_type": "nightclub", "cost_per_day": 1800, "available_dates": ["2026-09-03", "2026-09-04"] },
-  { "venue_name": "Skyline Rooftop Bar", "location_type": "rooftop_bar", "cost_per_day": 2200, "available_dates": ["2026-09-05"] },
+  { "venue_name": "Skyline Rooftop Bar", "location_type": "rooftop_bar", "cost_per_day": 2200, "available_dates": ["2026-09-03", "2026-09-05"] },
   { "venue_name": "Pier 9 Warehouse", "location_type": "warehouse", "cost_per_day": 1500, "available_dates": ["2026-09-06", "2026-09-07"] },
-  { "venue_name": "East Harbor Docks", "location_type": "harbor_dawn", "cost_per_day": 1200, "available_dates": ["2026-09-08"] }
->>>>>>> 82a68a0 ("Cover page changes")
+  { "venue_name": "East Harbor Docks", "location_type": "harbor_dawn", "cost_per_day": 1200, "available_dates": ["2026-09-06", "2026-09-08"] }
 ]
