@@ -18,6 +18,7 @@ const REVEAL_MS = 60; // terminal replay speed per message
 export default function App() {
   const [view, setView] = useState("cover");
   const [projectId, setProjectId] = useState("PROJ_NEON_NIGHTS");
+  const [budget, setBudget] = useState(null); // total budget from the intake cover
   const [tab, setTab] = useState("casting");
   const [state, setState] = useState(null);
   const [events, setEvents] = useState([]);
@@ -46,7 +47,7 @@ export default function App() {
     setRevealed(0);
     clearInterval(timerRef.current);
     try {
-      await api.runPipeline(projectId);
+      await api.runPipeline(projectId, budget || undefined);
       const s = await api.getState(projectId);
       setState(s);
       setEvents(s.event_log);
@@ -72,8 +73,9 @@ export default function App() {
   if (view === "cover") {
     return (
       <CoverPage
-        onEnter={(selectedProjectId) => {
+        onEnter={(selectedProjectId, intake) => {
           setProjectId(selectedProjectId);
+          setBudget(intake?.budget ?? null);
           setView("studio");
         }}
       />

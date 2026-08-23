@@ -14,6 +14,12 @@ async function request(path, options = {}) {
 
 export const api = {
   health: () => request("/api/health"),
+  // Seed a project's state from the cover intake form (budget → casting/venue/reach caps).
+  initPipeline: (project_id, budget_usd) =>
+    request("/api/pipeline/init", {
+      method: "POST",
+      body: JSON.stringify(budget_usd ? { project_id, budget_usd } : { project_id }),
+    }),
   // budget_usd is optional — the backend default applies until the intake form is wired in.
   runPipeline: (project_id, budget_usd) =>
     request("/api/pipeline/run", {
