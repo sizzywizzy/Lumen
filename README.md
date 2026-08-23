@@ -13,7 +13,7 @@ It is a true **Multi-Agent System (MAS)**: agents ask each other questions, get 
 
 ---
 
-## The Problem
+## The Problem - me shriya
 
 Turning a screenplay into a finished, marketed film is a two-week-per-step manual grind: breaking down scenes, vetting cast, solving the scheduling constraint puzzle, clearing rights for every territory, guessing at audience reaction, and building a campaign. Every step is a bottleneck, and they don't talk to each other.
 
