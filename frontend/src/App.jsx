@@ -8,7 +8,6 @@ import CastingView from "./features/casting/CastingView.jsx";
 import ProdView from "./features/production/ProdView.jsx";
 import LaunchView from "./features/launch/LaunchView.jsx";
 
-const PROJECT_ID = "PROJ_NEON_NIGHTS";
 const TABS = [
   { key: "casting", label: "I–II Casting", View: CastingView },
   { key: "production", label: "III–IV Production", View: ProdView },
@@ -18,6 +17,7 @@ const REVEAL_MS = 60; // terminal replay speed per message
 
 export default function App() {
   const [view, setView] = useState("cover");
+  const [projectId, setProjectId] = useState("PROJ_NEON_NIGHTS");
   const [mode, setMode] = useState("indie");
   const [tab, setTab] = useState("casting");
   const [state, setState] = useState(null);
@@ -27,15 +27,18 @@ export default function App() {
   const [error, setError] = useState("");
   const timerRef = useRef(null);
 
-  // On load, pick up any previously saved run.
   useEffect(() => {
-    api.getState(PROJECT_ID).then((s) => {
+    if (view !== "studio") return undefined;
+    setState(null);
+    setEvents([]);
+    setRevealed(0);
+    api.getState(projectId).then((s) => {
       setState(s);
       setEvents(s.event_log);
       setRevealed(s.event_log.length);
     }).catch(() => {});
     return () => clearInterval(timerRef.current);
-  }, []);
+  }, [projectId, view]);
 
   async function runPipeline() {
     setRunning(true);
@@ -44,8 +47,8 @@ export default function App() {
     setRevealed(0);
     clearInterval(timerRef.current);
     try {
-      await api.runPipeline(PROJECT_ID, mode);
-      const s = await api.getState(PROJECT_ID);
+      await api.runPipeline(projectId, mode);
+      const s = await api.getState(projectId);
       setState(s);
       setEvents(s.event_log);
       // Replay the A2A conversation message-by-message in the terminal.
@@ -70,8 +73,8 @@ export default function App() {
   if (view === "cover") {
     return (
       <CoverPage
-        onEnter={(targetTab) => {
-          setTab(targetTab);
+        onEnter={(selectedProjectId) => {
+          setProjectId(selectedProjectId);
           setView("studio");
         }}
       />
@@ -84,7 +87,10 @@ export default function App() {
         <h1 className="logo-btn" onClick={() => setView("cover")} title="Back to cover">
           <CineNodeLogo height={30} />
         </h1>
-        <span style={{ color: "var(--muted)", fontSize: 12 }}>{PROJECT_ID}</span>
+        <button className="exit-button" onClick={() => setView("cover")} title="Exit to projects">
+          ← Exit
+        </button>
+        <span style={{ color: "var(--muted)", fontSize: 12 }}>{projectId}</span>
         <div className="spacer" />
         <select value={mode} onChange={(e) => setMode(e.target.value)}>
           <option value="indie">Indies</option>
