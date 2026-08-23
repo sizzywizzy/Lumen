@@ -7,7 +7,7 @@ export default function ProdView({ state, onStateChange }) {
   if (!state) return <div className="empty">No project state yet.</div>;
   const { schedule, budget_state, compliance_state } = state;
   const dates = [...new Set(schedule.stripboard.map((entry) => entry.date))].sort();
-  const cap = budget_state.cap || (state.mode === "enterprise" ? 30000 : 4000);
+  const cap = budget_state.cap || 4000;
   const burnPercent = Math.min((budget_state.daily_burn / cap) * 100, 100);
   const territoryEntries = Object.entries(compliance_state);
   const statusIcon = { CLEARED: "OK", AWAITING_QC: "QC", BLOCKED: "!" };
@@ -56,7 +56,6 @@ export default function ProdView({ state, onStateChange }) {
       <div className="card">
         <div className="section-heading">
           <div><div className="eyebrow">Production control</div><h2>Schedule intelligence</h2></div>
-          <span className="mode-tag">{state.mode === "enterprise" ? "BIG DAWGS" : "INDIE UNIT"}</span>
         </div>
         <div className="metric-row">
           <div className="metric">
