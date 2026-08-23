@@ -34,6 +34,11 @@ body {
 }
 .topbar h1 { font-size: 16px; letter-spacing: 0.5px; }
 .topbar .logo-btn { cursor: pointer; }
+.exit-button {
+  background: transparent; color: var(--muted); border: 1px solid var(--border);
+  border-radius: 5px; padding: 5px 9px; cursor: pointer; font-size: 12px;
+}
+.exit-button:hover { color: var(--text); border-color: var(--accent-text); }
 .topbar .spacer { flex: 1; }
 
 .layout { flex: 1; display: flex; min-height: 0; }
@@ -101,34 +106,63 @@ select {
 
 .empty { color: var(--muted); padding: 30px; text-align: center; }
 
-/* ---- Cover page ---- */
+/* ---- Project picker ---- */
 .cover {
   flex: 1; display: flex; flex-direction: column; align-items: center;
-  justify-content: center; gap: 20px; padding: 48px 24px; text-align: center;
+  justify-content: center; gap: 24px; padding: 48px 24px; text-align: center;
   overflow-y: auto;
   background:
     radial-gradient(900px 480px at 50% -10%, rgba(97, 45, 83, 0.45), transparent 65%),
     radial-gradient(700px 420px at 85% 110%, rgba(133, 57, 83, 0.25), transparent 60%),
     var(--bg);
 }
+.project-heading { display: grid; gap: 7px; }
+.project-heading h1 { font-size: clamp(28px, 5vw, 42px); letter-spacing: -0.5px; }
+.eyebrow { color: var(--accent-text); font-family: var(--mono); font-size: 11px; letter-spacing: 2px; }
 .cover .tagline {
-  color: var(--muted); font-size: 16px; line-height: 1.6; max-width: 560px;
+  color: var(--muted); font-size: 15px; line-height: 1.5; max-width: 560px;
 }
-.cover .tagline strong { color: var(--accent-text); font-weight: 600; }
-.cover .enter { padding: 10px 26px; font-size: 15px; }
-.phase-grid {
-  display: grid; grid-template-columns: repeat(3, minmax(190px, 230px));
-  gap: 12px; margin-top: 12px;
+.project-actions {
+  display: grid; grid-template-columns: minmax(360px, 1.35fr) minmax(280px, 0.65fr);
+  gap: 14px; width: min(900px, 100%); text-align: left;
 }
-@media (max-width: 760px) { .phase-grid { grid-template-columns: 1fr; } }
-.phase-card {
-  font: inherit; color: inherit; text-align: left; cursor: pointer;
-  background: var(--panel); border: 1px solid var(--border);
-  border-radius: 10px; padding: 14px;
-  transition: border-color 0.15s, transform 0.15s, background 0.15s;
+.project-option {
+  background: rgba(54, 54, 54, 0.84); border: 1px solid var(--border); border-radius: 8px; padding: 18px;
 }
-.phase-card:hover { border-color: var(--accent); background: var(--panel-2); transform: translateY(-2px); }
-.phase-card .num { color: var(--accent-text); font-family: var(--mono); font-size: 11px; letter-spacing: 1px; }
-.phase-card h4 { margin: 5px 0 6px; font-size: 14px; }
-.phase-card p { color: var(--muted); font-size: 12px; line-height: 1.45; }
+.option-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.option-heading > div { display: flex; align-items: baseline; gap: 10px; }
+.option-number { color: var(--accent-text); font-family: var(--mono); font-size: 11px; }
+.option-heading h2 { font-size: 15px; }
+.option-count { color: var(--muted); font-family: var(--mono); font-size: 10px; white-space: nowrap; }
+.project-list { display: grid; gap: 7px; }
+.project-card, .new-project-button {
+  width: 100%; display: flex; align-items: center; gap: 11px; font: inherit; color: inherit; text-align: left;
+  background: var(--panel-2); border: 1px solid transparent; border-radius: 6px; padding: 10px; cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.project-card:hover, .new-project-button:hover { border-color: var(--accent); background: #484848; }
+.project-mark, .plus { display: grid; place-items: center; flex: 0 0 32px; width: 32px; height: 32px; border-radius: 4px; background: var(--accent-2); color: var(--accent-text); font-family: var(--mono); font-weight: 700; }
+.project-copy { display: grid; gap: 3px; flex: 1; min-width: 0; }
+.project-copy small, .new-project-button small { color: var(--muted); font-size: 11px; }
+.project-status { font-family: var(--mono); font-size: 9px; letter-spacing: 0.7px; }
+.project-status.active { color: var(--ok); }
+.project-status.draft { color: var(--warn); }
+.project-status.ready { color: var(--accent-text); }
+.project-arrow { color: var(--accent-text); font-size: 18px; }
+.new-project-option { display: flex; flex-direction: column; }
+.new-project-button { flex: 1; min-height: 100px; }
+.new-project-button > span:nth-child(2) { display: grid; gap: 4px; flex: 1; }
+.plus { background: transparent; border: 1px dashed var(--accent-text); font-size: 22px; font-weight: 400; }
+.new-project-form { display: grid; gap: 8px; }
+.new-project-form label { color: var(--muted); font-size: 12px; }
+.new-project-form input { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 5px; padding: 9px 10px; font: inherit; }
+.new-project-form input:focus { outline: 1px solid var(--accent-text); border-color: var(--accent-text); }
+.form-actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 5px; }
+.quiet-button { background: transparent; color: var(--muted); border: 0; padding: 7px 8px; cursor: pointer; }
 .cover footer { color: var(--muted); font-size: 12px; margin-top: 14px; }
+@media (max-width: 760px) {
+  .cover { justify-content: flex-start; padding: 40px 16px 28px; }
+  .cover > svg { width: 180px; height: auto; }
+  .project-actions { grid-template-columns: 1fr; }
+  .new-project-button { min-height: 80px; }
+}
