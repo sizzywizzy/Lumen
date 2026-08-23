@@ -59,11 +59,22 @@
             "properties": {
               "scene_id": { "type": "string" },
               "date": { "type": "string" },
-              "venue": { "type": "string" }
+              "venue": { "type": "string" },
+              "location_type": { "type": "string" },
+              "int_ext": { "type": "string" },
+              "estimated_time_hours": { "type": "number" },
+              "characters_needed": { "type": "array", "items": { "type": "string" } },
+              "cost_per_day": { "type": "number" },
+              "status": { "type": "string", "enum": ["PLANNED", "PARTIAL", "COMPLETED"] },
+              "director_note": { "type": "string" }
             }
           }
         },
-        "conflicts": { "type": "array" }
+        "conflicts": { "type": "array" },
+        "director_constraints": { "type": "object" },
+        "shoot_settings": { "type": "object" },
+        "shoot_notes": { "type": "array" },
+        "reshoots": { "type": "array" }
       }
     },
     "budget_state": {
@@ -71,7 +82,11 @@
       "properties": {
         "daily_burn": { "type": "number" },
         "cap": { "type": "number" },
-        "alerts": { "type": "array" }
+        "alerts": { "type": "array" },
+        "expenses": { "type": "array" },
+        "total_budget": { "type": "number" },
+        "spent": { "type": "number" },
+        "remaining": { "type": "number" }
       }
     },
     "compliance_state": {
