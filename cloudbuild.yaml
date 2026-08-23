@@ -1,0 +1,73 @@
+# Cloud Build configuration for CineNode
+# Automated CI/CD pipeline for both backend and frontend
+
+steps:
+  # Step 1: Build backend Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/cinenode-backend:$COMMIT_SHA', '-t', 'gcr.io/$PROJECT_ID/cinenode-backend:latest', '.']
+
+  # Step 2: Push backend image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/cinenode-backend:$COMMIT_SHA', 'gcr.io/$PROJECT_ID/cinenode-backend:latest']
+
+  # Step 3: Build frontend Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/cinenode-frontend:$COMMIT_SHA', '-t', 'gcr.io/$PROJECT_ID/cinenode-frontend:latest', '.']
+    dir: 'frontend'
+
+  # Step 4: Push frontend image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/cinenode-frontend:$COMMIT_SHA', 'gcr.io/$PROJECT_ID/cinenode-frontend:latest']
+
+  # Step 5: Deploy backend to Cloud Run
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'cinenode-backend'
+      - '--image=gcr.io/$PROJECT_ID/cinenode-backend:$COMMIT_SHA'
+      - '--platform=managed'
+      - '--region=us-central1'
+      - '--allow-unauthenticated'
+      - '--port=8000'
+      - '--cpu=1'
+      - '--memory=512Mi'
+      - '--max-instances=10'
+      - '--min-instances=0'
+      - '--timeout=300s'
+      - '--set-env-vars=GEMINI_API_KEY=$_GEMINI_API_KEY,SUPABASE_URL=$_SUPABASE_URL,SUPABASE_KEY=$_SUPABASE_KEY,CLOUD_SQL_CONNECTION_NAME=$_CLOUD_SQL_CONNECTION_NAME,DB_USER=$_DB_USER,DB_PASS=$_DB_PASS,DB_NAME=$_DB_NAME'
+
+  # Step 6: Deploy frontend to Cloud Run
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'cinenode-frontend'
+      - '--image=gcr.io/$PROJECT_ID/cinenode-frontend:$COMMIT_SHA'
+      - '--platform=managed'
+      - '--region=us-central1'
+      - '--allow-unauthenticated'
+      - '--port=80'
+      - '--cpu=0.5'
+      - '--memory=256Mi'
+      - '--max-instances=10'
+      - '--min-instances=0'
+      - '--timeout=60s'
+
+# Substitutions for secrets (set in Cloud Build triggers)
+substitutions:
+  _GEMINI_API_KEY: ''
+  _SUPABASE_URL: ''
+  _SUPABASE_KEY: ''
+  _CLOUD_SQL_CONNECTION_NAME: ''
+  _DB_USER: ''
+  _DB_PASS: ''
+  _DB_NAME: ''
+
+# Images to be built
+images:
+  - 'gcr.io/$PROJECT_ID/cinenode-backend:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/cinenode-frontend:$COMMIT_SHA'
+
+# Timeout for the build
+timeout: '1800s'

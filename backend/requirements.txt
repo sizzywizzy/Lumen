@@ -9,3 +9,7 @@ pydantic>=2.6
 # tavily-python>=0.3         # web search for hype/PR agents
 # langgraph>=0.2             # swap core/orchestrator/graph.py runner for a StateGraph
 # openai-whisper             # or Whisper API for audition transcripts
+
+# Google Cloud SQL (uncomment when using Cloud SQL instead of Supabase)
+# google-cloud-sql>=3.0
+# pymysql>=1.1

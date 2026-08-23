@@ -26,6 +26,12 @@ TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY", "")
 WHISPER_API_KEY = os.environ.get("WHISPER_API_KEY", "")
 IMAGEN_API_KEY = os.environ.get("IMAGEN_API_KEY", "")
 
+# Google Cloud SQL configuration (takes precedence over Supabase when configured)
+CLOUD_SQL_CONNECTION_NAME = os.environ.get("CLOUD_SQL_CONNECTION_NAME", "")
+DB_USER = os.environ.get("DB_USER", "")
+DB_PASS = os.environ.get("DB_PASS", "")
+DB_NAME = os.environ.get("DB_NAME", "")
+
 # Model tiering (AGENT.md guardrails): Flash by default, Pro only for heavy reasoning.
 GEMINI_FLASH_MODEL = os.environ.get("GEMINI_FLASH_MODEL", "gemini-2.0-flash")
 GEMINI_PRO_MODEL = os.environ.get("GEMINI_PRO_MODEL", "gemini-2.0-pro")
@@ -47,3 +53,7 @@ def has_gemini() -> bool:
 
 def has_supabase() -> bool:
     return bool(SUPABASE_URL and SUPABASE_KEY)
+
+
+def has_cloudsql() -> bool:
+    return bool(CLOUD_SQL_CONNECTION_NAME and DB_USER and DB_PASS and DB_NAME)
