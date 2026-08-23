@@ -29,17 +29,36 @@ class StripboardEntry(BaseModel):
     scene_id: str
     date: str
     venue: str
+    location_type: str = ""
+    int_ext: str = ""
+    estimated_time_hours: float = 0.0
+    characters_needed: list[str] = Field(default_factory=list)
+    cost_per_day: float = 0.0
+    status: Literal["PLANNED", "PARTIAL", "COMPLETED"] = "PLANNED"
+    director_note: str = ""
 
 
 class Schedule(BaseModel):
     stripboard: list[StripboardEntry] = Field(default_factory=list)
     conflicts: list[dict[str, Any]] = Field(default_factory=list)
+    director_constraints: dict[str, Any] = Field(default_factory=dict)
+    shoot_settings: dict[str, Any] = Field(default_factory=dict)
+    shoot_notes: list[dict[str, Any]] = Field(default_factory=list)
+    reshoots: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class BudgetState(BaseModel):
     daily_burn: float = 0.0
     cap: float = 0.0
     alerts: list[str] = Field(default_factory=list)
+    expenses: list[dict[str, Any]] = Field(default_factory=lambda: [
+        {"category": "Cast", "description": "Cast deposits", "amount": 18000},
+        {"category": "Equipment", "description": "Camera package", "amount": 7200},
+        {"category": "Crew", "description": "Production crew payroll", "amount": 9500},
+    ])
+    total_budget: float = 100000.0
+    spent: float = 34700.0
+    remaining: float = 65300.0
 
 
 class AudienceReport(BaseModel):

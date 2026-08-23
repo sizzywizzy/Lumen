@@ -111,7 +111,7 @@ export default function App() {
               </button>
             ))}
           </div>
-          <ActiveView state={state} />
+          <ActiveView state={state} onStateChange={setState} />
           {state?.human_escalations?.length > 0 && (
             <div className="card">
               <h3>Human Sign-off Queue</h3>
