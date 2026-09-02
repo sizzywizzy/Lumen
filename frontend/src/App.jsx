@@ -1,130 +1,44 @@
-import { useEffect, useRef, useState } from "react";
-import { api } from "./lib/api.js";
-import { cn } from "./lib/utils.js";
-import LiveAgentTerminal from "./shared/LiveAgentTerminal.jsx";
-import CineNodeLogo from "./shared/CineNodeLogo.jsx";
-import CoverPage from "./shared/CoverPage.jsx";
+import { Navigate, Route, Routes } from "react-router-dom";
+import AppShell from "./shared/AppShell.jsx";
+import RequireAuth from "./shared/RequireAuth.jsx";
+import LoginPage from "./features/auth/LoginPage.jsx";
+import RegisterPage from "./features/auth/RegisterPage.jsx";
+import JoinPage from "./features/auth/JoinPage.jsx";
+import IntakePage from "./features/intake/IntakePage.jsx";
 import CastingView from "./features/casting/CastingView.jsx";
 import ProdView from "./features/production/ProdView.jsx";
 import LaunchView from "./features/launch/LaunchView.jsx";
+import LogsPage from "./features/logs/LogsPage.jsx";
+import TeamPage from "./features/team/TeamPage.jsx";
+import SettingsPage from "./features/settings/SettingsPage.jsx";
 
-const TABS = [
-  { key: "casting", label: "I–II Casting", View: CastingView },
-  { key: "production", label: "III–IV Production", View: ProdView },
-  { key: "launch", label: "V–VI Launch", View: LaunchView },
-];
-const REVEAL_MS = 60; // terminal replay speed per message
-
+// Route table. Every entry in shared/navigation.js resolves here, so no nav
+// item points at a screen that does not exist.
+//
+// Public: sign-in, production sign-up, and invite redemption.
+// Everything else sits behind RequireAuth and inside AppShell; the backend
+// independently checks membership on every request, so the guard below is
+// convenience rather than the security boundary.
 export default function App() {
-  const [view, setView] = useState("cover");
-  const [projectId, setProjectId] = useState("PROJ_NEON_NIGHTS");
-  const [budget, setBudget] = useState(null); // total budget from the intake cover
-  const [tab, setTab] = useState("casting");
-  const [state, setState] = useState(null);
-  const [events, setEvents] = useState([]);
-  const [revealed, setRevealed] = useState(0);
-  const [running, setRunning] = useState(false);
-  const [error, setError] = useState("");
-  const timerRef = useRef(null);
-
-  useEffect(() => {
-    if (view !== "studio") return undefined;
-    setState(null);
-    setEvents([]);
-    setRevealed(0);
-    api.getState(projectId).then((s) => {
-      setState(s);
-      setEvents(s.event_log);
-      setRevealed(s.event_log.length);
-    }).catch(() => {});
-    return () => clearInterval(timerRef.current);
-  }, [projectId, view]);
-
-  async function runPipeline() {
-    setRunning(true);
-    setError("");
-    setEvents([]);
-    setRevealed(0);
-    clearInterval(timerRef.current);
-    try {
-      await api.runPipeline(projectId, budget || undefined);
-      const s = await api.getState(projectId);
-      setState(s);
-      setEvents(s.event_log);
-      // Replay the A2A conversation message-by-message in the terminal.
-      timerRef.current = setInterval(() => {
-        setRevealed((r) => {
-          if (r >= s.event_log.length) {
-            clearInterval(timerRef.current);
-            return r;
-          }
-          return r + 1;
-        });
-      }, REVEAL_MS);
-    } catch (e) {
-      setError(String(e.message || e));
-    } finally {
-      setRunning(false);
-    }
-  }
-
-  const ActiveView = TABS.find((t) => t.key === tab).View;
-
-  if (view === "cover") {
-    return (
-      <CoverPage
-        onEnter={(selectedProjectId, intake) => {
-          setProjectId(selectedProjectId);
-          setBudget(intake?.budget ?? null);
-          setView("studio");
-        }}
-      />
-    );
-  }
-
   return (
-    <>
-      <div className="topbar">
-        <h1 className="logo-btn" onClick={() => setView("cover")} title="Back to cover">
-          <CineNodeLogo height={30} />
-        </h1>
-        <button className="exit-button" onClick={() => setView("cover")} title="Exit to projects">
-          ← Exit
-        </button>
-        <span style={{ color: "var(--muted)", fontSize: 12 }}>{projectId}</span>
-        <div className="spacer" />
-        {state?.budget_state?.cap > 0 && (
-          <span style={{ color: "var(--muted)", fontSize: 12 }}>
-            Budget ${Math.round(state.budget_state.cap).toLocaleString()}
-          </span>
-        )}
-        <button className="primary" onClick={runPipeline} disabled={running}>
-          {running ? "Agents working…" : "▶ Run pipeline"}
-        </button>
-      </div>
-      <div className="layout">
-        <div className="main">
-          {error && <div className="card" style={{ color: "var(--bad)" }}>{error}</div>}
-          <div className="tabs">
-            {TABS.map((t) => (
-              <button key={t.key} className={cn("tab", tab === t.key && "active")}
-                      onClick={() => setTab(t.key)}>
-                {t.label}
-              </button>
-            ))}
-          </div>
-          <ActiveView state={state} onStateChange={setState} />
-          {state?.human_escalations?.length > 0 && (
-            <div className="card">
-              <h3>Human Sign-off Queue</h3>
-              {state.human_escalations.map((e, i) => (
-                <div key={i}>✋ <strong>{e.queue_item}</strong> — {e.reason}</div>
-              ))}
-            </div>
-          )}
-        </div>
-        <LiveAgentTerminal events={events} revealed={revealed} />
-      </div>
-    </>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/join/:token" element={<JoinPage />} />
+      <Route path="/join" element={<JoinPage />} />
+
+      <Route element={<RequireAuth />}>
+        <Route element={<AppShell />}>
+          <Route index element={<IntakePage />} />
+          <Route path="casting" element={<CastingView />} />
+          <Route path="schedule" element={<ProdView />} />
+          <Route path="marketing" element={<LaunchView />} />
+          <Route path="logs" element={<LogsPage />} />
+          <Route path="team" element={<TeamPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Route>
+    </Routes>
   );
 }

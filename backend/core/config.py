@@ -33,8 +33,25 @@ DB_PASS = os.environ.get("DB_PASS", "")
 DB_NAME = os.environ.get("DB_NAME", "")
 
 # Model tiering (AGENT.md guardrails): Flash by default, Pro only for heavy reasoning.
-GEMINI_FLASH_MODEL = os.environ.get("GEMINI_FLASH_MODEL", "gemini-2.0-flash")
-GEMINI_PRO_MODEL = os.environ.get("GEMINI_PRO_MODEL", "gemini-2.0-pro")
+# NOTE: the previous defaults (gemini-2.0-flash / gemini-2.0-pro) 404 on current
+# API keys — Google retired them for new users. These are ids verified against a
+# live key; both stay env-overridable.
+GEMINI_FLASH_MODEL = os.environ.get("GEMINI_FLASH_MODEL", "gemini-3.6-flash")
+GEMINI_PRO_MODEL = os.environ.get("GEMINI_PRO_MODEL", "gemini-3.6-flash")
+
+# Tried in order when the configured model is unavailable (404 retired /
+# 429 quota / 503 overloaded), so a run degrades instead of dying.
+GEMINI_FALLBACK_MODELS = [
+    m.strip()
+    for m in os.environ.get(
+        "GEMINI_FALLBACK_MODELS", "gemini-3.6-flash,gemini-3.5-flash,gemini-3-flash-preview"
+    ).split(",")
+    if m.strip()
+]
+
+# Per-request timeout (ms) and bounded concurrency for batched agent work.
+GEMINI_TIMEOUT_MS = int(os.environ.get("GEMINI_TIMEOUT_MS", "60000"))
+GEMINI_MAX_CONCURRENCY = int(os.environ.get("GEMINI_MAX_CONCURRENCY", "3"))
 
 # Guardrails
 MAX_NEGOTIATION_ITERATIONS = 2  # never unbounded (AGENT.md Section 1)
@@ -51,8 +68,36 @@ def has_gemini() -> bool:
     return bool(GEMINI_API_KEY)
 
 
+def has_tavily() -> bool:
+    return bool(TAVILY_API_KEY)
+
+
+_supabase_warned = False
+
+
 def has_supabase() -> bool:
-    return bool(SUPABASE_URL and SUPABASE_KEY)
+    """True only when Supabase is configured AND the client library is present.
+
+    Credentials in .env without `pip install supabase` used to take every store
+    down the Supabase branch and raise ModuleNotFoundError on the first read.
+    Falling back to the local JSON store keeps the app running and says so once.
+    """
+    global _supabase_warned
+    if not (SUPABASE_URL and SUPABASE_KEY):
+        return False
+    try:
+        import supabase  # noqa: F401
+    except ImportError:
+        if not _supabase_warned:
+            _supabase_warned = True
+            print(
+                "[cinenode] SUPABASE_URL/KEY are set but the 'supabase' package is not "
+                "installed - falling back to local JSON state under backend/.state/. "
+                "Run: pip install supabase",
+                flush=True,
+            )
+        return False
+    return True
 
 
 def has_cloudsql() -> bool:

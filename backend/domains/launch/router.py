@@ -1,6 +1,7 @@
 """API endpoints for Phases V & VI (launch). Mounted under /api/launch."""
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
+from core.auth.deps import require_producer
 from core.orchestrator.graph import Orchestrator
 from services import supabase_client
 
@@ -8,7 +9,7 @@ router = APIRouter(prefix="/api/launch", tags=["launch"])
 
 
 @router.post("/run/{project_id}")
-def run_launch(project_id: str):
+def run_launch(project_id: str, _member=Depends(require_producer)):
     """Run Phase V (audience sim) + Phase VI (marketing) on the stored state."""
     state = supabase_client.load_state(project_id)
     if state is None:

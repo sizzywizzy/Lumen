@@ -3,10 +3,20 @@ fastapi>=0.110
 uvicorn[standard]>=0.29
 pydantic>=2.6
 
+# Required for live Gemini calls (audience simulation, agent reasoning).
+# Without it the pipeline still runs on each agent's mock fallback.
+google-genai>=1.0            # services/gemini_client.py
+
+# Screenplay text extraction for the intake dropzone (PDF branch).
+# .txt/.fountain/.fdx need no package; only PDFs use this.
+pypdf>=4.0                   # services/script_intake.py
+
 # Live integrations — uncomment as keys land (mock fallbacks work without them)
-# google-genai>=1.0          # Gemini 2.0 Flash/Pro + Imagen (services/gemini_client.py)
-# supabase>=2.4              # GlobalState persistence (services/supabase_client.py)
-# tavily-python>=0.3         # web search for hype/PR agents
+# supabase>=2.4              # GlobalState + auth + simulation persistence
+#                              (set SUPABASE_URL/KEY too; without the package the
+#                               app falls back to local JSON under backend/.state/)
+# Tavily needs no package — services/tavily_client.py calls its REST API with
+# urllib. Set TAVILY_API_KEY to enable web-grounded cultural research.
 # langgraph>=0.2             # swap core/orchestrator/graph.py runner for a StateGraph
 # openai-whisper             # or Whisper API for audition transcripts
 
