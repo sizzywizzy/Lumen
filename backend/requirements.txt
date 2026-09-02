@@ -11,10 +11,12 @@ google-genai>=1.0            # services/gemini_client.py
 # .txt/.fountain/.fdx need no package; only PDFs use this.
 pypdf>=4.0                   # services/script_intake.py
 
-# Live integrations — uncomment as keys land (mock fallbacks work without them)
-# supabase>=2.4              # GlobalState + auth + simulation persistence
-#                              (set SUPABASE_URL/KEY too; without the package the
-#                               app falls back to local JSON under backend/.state/)
+# Shared persistence. Required for any deployment whose filesystem is ephemeral
+# (Replit, Cloud Run) - without it, accounts and simulations are lost on redeploy.
+# Activates only when SUPABASE_URL + SUPABASE_KEY are set; otherwise the app
+# falls back to local JSON under backend/.state/. Force either side with
+# CINENODE_STATE_BACKEND=local|supabase.
+supabase>=2.4                # services/{supabase_client,auth_store,simulation_store}.py
 # Tavily needs no package — services/tavily_client.py calls its REST API with
 # urllib. Set TAVILY_API_KEY to enable web-grounded cultural research.
 # langgraph>=0.2             # swap core/orchestrator/graph.py runner for a StateGraph

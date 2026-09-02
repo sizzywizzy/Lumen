@@ -35,7 +35,7 @@ steps:
       - '--max-instances=10'
       - '--min-instances=0'
       - '--timeout=300s'
-      - '--set-env-vars=GEMINI_API_KEY=$_GEMINI_API_KEY,SUPABASE_URL=$_SUPABASE_URL,SUPABASE_KEY=$_SUPABASE_KEY,CLOUD_SQL_CONNECTION_NAME=$_CLOUD_SQL_CONNECTION_NAME,DB_USER=$_DB_USER,DB_PASS=$_DB_PASS,DB_NAME=$_DB_NAME'
+      - '--set-env-vars=GEMINI_API_KEY=$_GEMINI_API_KEY,SUPABASE_URL=$_SUPABASE_URL,SUPABASE_KEY=$_SUPABASE_KEY,TAVILY_API_KEY=$_TAVILY_API_KEY'
 
   # Step 6: Deploy frontend to Cloud Run
   - name: 'gcr.io/cloud-builders/gcloud'
@@ -59,10 +59,7 @@ substitutions:
   _GEMINI_API_KEY: ''
   _SUPABASE_URL: ''
   _SUPABASE_KEY: ''
-  _CLOUD_SQL_CONNECTION_NAME: ''
-  _DB_USER: ''
-  _DB_PASS: ''
-  _DB_NAME: ''
+  _TAVILY_API_KEY: ''
 
 # Images to be built
 images:

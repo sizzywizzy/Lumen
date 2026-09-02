@@ -2,6 +2,10 @@
 
 Every external key is optional: with no keys set, the whole pipeline runs on
 mock data so anyone can develop and demo without credentials.
+
+Only two integrations are read anywhere in the codebase - Gemini (all agent
+reasoning) and Supabase (shared persistence). Tavily is optional and gates the
+cultural-research step on its own.
 """
 import os
 from pathlib import Path
@@ -23,14 +27,14 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
 TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY", "")
-WHISPER_API_KEY = os.environ.get("WHISPER_API_KEY", "")
-IMAGEN_API_KEY = os.environ.get("IMAGEN_API_KEY", "")
 
-# Google Cloud SQL configuration (takes precedence over Supabase when configured)
-CLOUD_SQL_CONNECTION_NAME = os.environ.get("CLOUD_SQL_CONNECTION_NAME", "")
-DB_USER = os.environ.get("DB_USER", "")
-DB_PASS = os.environ.get("DB_PASS", "")
-DB_NAME = os.environ.get("DB_NAME", "")
+# Where shared state lives:
+#   auto     - Supabase when URL+KEY are set and the client is installed, else local JSON
+#   supabase - require Supabase; fail loudly rather than silently using local files
+#   local    - always local JSON, even with credentials present
+# Replit's filesystem does not survive a redeploy, so deployments must run on
+# "auto" (with Supabase configured) or "supabase". "local" is for offline dev.
+STATE_BACKEND = os.environ.get("CINENODE_STATE_BACKEND", "auto").strip().lower()
 
 # Model tiering (AGENT.md guardrails): Flash by default, Pro only for heavy reasoning.
 # NOTE: the previous defaults (gemini-2.0-flash / gemini-2.0-pro) 404 on current
@@ -83,11 +87,22 @@ def has_supabase() -> bool:
     Falling back to the local JSON store keeps the app running and says so once.
     """
     global _supabase_warned
+    if STATE_BACKEND == "local":
+        return False
     if not (SUPABASE_URL and SUPABASE_KEY):
+        if STATE_BACKEND == "supabase":
+            raise RuntimeError(
+                "CINENODE_STATE_BACKEND=supabase but SUPABASE_URL/SUPABASE_KEY are not set."
+            )
         return False
     try:
         import supabase  # noqa: F401
     except ImportError:
+        if STATE_BACKEND == "supabase":
+            raise RuntimeError(
+                "CINENODE_STATE_BACKEND=supabase but the 'supabase' package is not installed. "
+                "Run: pip install -r backend/requirements.txt"
+            ) from None
         if not _supabase_warned:
             _supabase_warned = True
             print(
@@ -99,6 +114,3 @@ def has_supabase() -> bool:
         return False
     return True
 
-
-def has_cloudsql() -> bool:
-    return bool(CLOUD_SQL_CONNECTION_NAME and DB_USER and DB_PASS and DB_NAME)
