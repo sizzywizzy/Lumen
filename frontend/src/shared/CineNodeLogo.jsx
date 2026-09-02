@@ -7,7 +7,7 @@ import { CameraArt } from "./CameraArt.jsx";
 const letterStyle = {
   font: "700 76px 'Segoe UI', Inter, system-ui, sans-serif",
   letterSpacing: "-1px",
-  fill: "var(--text)",
+  fill: "var(--on-surface)",
 };
 
 export default function CineNodeLogo({ height = 30 }) {

@@ -6,17 +6,21 @@
 Mounts one router per team workspace plus shared pipeline/state/event endpoints
 (the Live Agent Terminal polls /api/events).
 """
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from core import config
+from core.auth.deps import current_user, membership_for, require_member, require_producer
+from core.auth.models import User, role_at_least
 from core.orchestrator.graph import Orchestrator
 from core.orchestrator.state import BudgetState, GlobalState
+from domains.audience.router import router as audience_router
+from domains.auth.router import router as auth_router
 from domains.casting.router import router as casting_router
 from domains.launch.router import router as launch_router
 from domains.production.router import router as production_router
-from services import supabase_client
+from services import auth_store, supabase_client
 
 app = FastAPI(title="CineNode", version="0.1.0")
 
@@ -27,6 +31,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth_router)
+app.include_router(audience_router)
 app.include_router(casting_router)
 app.include_router(production_router)
 app.include_router(launch_router)
@@ -47,16 +53,22 @@ def health():
 
 
 @app.post("/api/pipeline/init")
-def init_pipeline(req: InitRequest):
-    """Create (or reset) a project's GlobalState."""
+def init_pipeline(req: InitRequest, user: User = Depends(current_user)):
+    """Create (or reset) a project's GlobalState. Producer or owner only."""
+    membership = membership_for(user, req.project_id)
+    if not role_at_least(membership.role, "producer"):
+        raise HTTPException(403, "Your role on this production is read-only.")
     state = _new_state(req)
     supabase_client.save_state(state)
     return {"project_id": state.project_id, "budget_usd": state.budget_state.cap}
 
 
 @app.post("/api/pipeline/run")
-def run_pipeline(req: InitRequest):
-    """Full demo: fresh state through all six phases."""
+def run_pipeline(req: InitRequest, user: User = Depends(current_user)):
+    """Full demo: fresh state through all six phases. Producer or owner only."""
+    membership = membership_for(user, req.project_id)
+    if not role_at_least(membership.role, "producer"):
+        raise HTTPException(403, "Your role on this production is read-only.")
     state = Orchestrator().run(_new_state(req))
     supabase_client.save_state(state)
     return {
@@ -69,12 +81,18 @@ def run_pipeline(req: InitRequest):
 
 
 @app.get("/api/projects")
-def list_projects():
-    return {"projects": supabase_client.list_projects()}
+def list_projects(user: User = Depends(current_user)):
+    """Only the productions this account is a member of."""
+    out = []
+    for membership in auth_store.memberships_for_user(user.id):
+        production = auth_store.get_production(membership.project_id)
+        if production:
+            out.append({"project_id": production.id, "name": production.name, "role": membership.role})
+    return {"projects": out}
 
 
 @app.get("/api/state/{project_id}")
-def get_state(project_id: str):
+def get_state(project_id: str, _member=Depends(require_member)):
     state = supabase_client.load_state(project_id)
     if state is None:
         raise HTTPException(404, f"No state for {project_id}")
@@ -82,7 +100,7 @@ def get_state(project_id: str):
 
 
 @app.get("/api/events/{project_id}")
-def get_events(project_id: str, since: int = 0):
+def get_events(project_id: str, since: int = 0, _member=Depends(require_member)):
     """Live Agent Terminal feed: A2A envelopes from index `since` onward."""
     state = supabase_client.load_state(project_id)
     if state is None:

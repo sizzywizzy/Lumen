@@ -129,14 +129,12 @@ pipeline runs before any API key exists — `python backend/run_demo.py` just wo
 Copy `.env.example` to `.env` and fill in:
 
 ```bash
-GEMINI_API_KEY=...
-SUPABASE_URL=...
+GEMINI_API_KEY=...         # all agent reasoning; mock fallbacks work without it
+SUPABASE_URL=...           # shared persistence; required for any deployment
 SUPABASE_KEY=...
 TAVILY_API_KEY=...
 WHISPER_API_KEY=...        # or use local whisper
 IMAGEN_API_KEY=...         # same Google project
-DATABASE_URL=postgresql://... # PostgreSQL with the pgvector extension
-TMDB_API_KEY=...           # actor metadata and credited roles
 ```
 
 > On Replit, put these in **Secrets**, not in the repo.

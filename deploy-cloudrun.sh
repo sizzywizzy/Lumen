@@ -35,10 +35,7 @@ gcloud run deploy $SERVICE_NAME \
   --set-env-vars GEMINI_API_KEY=\$GEMINI_API_KEY \
   --set-env-vars SUPABASE_URL=\$SUPABASE_URL \
   --set-env-vars SUPABASE_KEY=\$SUPABASE_KEY \
-  --set-env-vars CLOUD_SQL_CONNECTION_NAME=\$CLOUD_SQL_CONNECTION_NAME \
-  --set-env-vars DB_USER=\$DB_USER \
-  --set-env-vars DB_PASS=\$DB_PASS \
-  --set-env-vars DB_NAME=\$DB_NAME
+  --set-env-vars TAVILY_API_KEY=\$TAVILY_API_KEY
 
 echo "Deployment complete!"
 echo "Service URL: $(gcloud run services describe $SERVICE_NAME --region $REGION --format 'value(status.url)')"

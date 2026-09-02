@@ -2,6 +2,10 @@
 
 Every external key is optional: with no keys set, the whole pipeline runs on
 mock data so anyone can develop and demo without credentials.
+
+Only two integrations are read anywhere in the codebase - Gemini (all agent
+reasoning) and Supabase (shared persistence). Tavily is optional and gates the
+cultural-research step on its own.
 """
 import os
 from pathlib import Path
@@ -23,6 +27,14 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
 TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY", "")
+
+# Where shared state lives:
+#   auto     - Supabase when URL+KEY are set and the client is installed, else local JSON
+#   supabase - require Supabase; fail loudly rather than silently using local files
+#   local    - always local JSON, even with credentials present
+# Replit's filesystem does not survive a redeploy, so deployments must run on
+# "auto" (with Supabase configured) or "supabase". "local" is for offline dev.
+STATE_BACKEND = os.environ.get("CINENODE_STATE_BACKEND", "auto").strip().lower()
 WHISPER_API_KEY = os.environ.get("WHISPER_API_KEY", "")
 IMAGEN_API_KEY = os.environ.get("IMAGEN_API_KEY", "")
 
@@ -40,8 +52,25 @@ EMBEDDING_MODEL = os.environ.get(
 EMBEDDING_DIMENSIONS = int(os.environ.get("EMBEDDING_DIMENSIONS", "384"))
 
 # Model tiering (AGENT.md guardrails): Flash by default, Pro only for heavy reasoning.
-GEMINI_FLASH_MODEL = os.environ.get("GEMINI_FLASH_MODEL", "gemini-2.0-flash")
-GEMINI_PRO_MODEL = os.environ.get("GEMINI_PRO_MODEL", "gemini-2.0-pro")
+# NOTE: the previous defaults (gemini-2.0-flash / gemini-2.0-pro) 404 on current
+# API keys — Google retired them for new users. These are ids verified against a
+# live key; both stay env-overridable.
+GEMINI_FLASH_MODEL = os.environ.get("GEMINI_FLASH_MODEL", "gemini-3.6-flash")
+GEMINI_PRO_MODEL = os.environ.get("GEMINI_PRO_MODEL", "gemini-3.6-flash")
+
+# Tried in order when the configured model is unavailable (404 retired /
+# 429 quota / 503 overloaded), so a run degrades instead of dying.
+GEMINI_FALLBACK_MODELS = [
+    m.strip()
+    for m in os.environ.get(
+        "GEMINI_FALLBACK_MODELS", "gemini-3.6-flash,gemini-3.5-flash,gemini-3-flash-preview"
+    ).split(",")
+    if m.strip()
+]
+
+# Per-request timeout (ms) and bounded concurrency for batched agent work.
+GEMINI_TIMEOUT_MS = int(os.environ.get("GEMINI_TIMEOUT_MS", "60000"))
+GEMINI_MAX_CONCURRENCY = int(os.environ.get("GEMINI_MAX_CONCURRENCY", "3"))
 
 # Guardrails
 MAX_NEGOTIATION_ITERATIONS = 2  # never unbounded (AGENT.md Section 1)
@@ -58,7 +87,48 @@ def has_gemini() -> bool:
     return bool(GEMINI_API_KEY)
 
 
+def has_tavily() -> bool:
+    return bool(TAVILY_API_KEY)
+
+
+_supabase_warned = False
+
+
 def has_supabase() -> bool:
+    """True only when Supabase is configured AND the client library is present.
+
+    Credentials in .env without `pip install supabase` used to take every store
+    down the Supabase branch and raise ModuleNotFoundError on the first read.
+    Falling back to the local JSON store keeps the app running and says so once.
+    """
+    global _supabase_warned
+    if STATE_BACKEND == "local":
+        return False
+    if not (SUPABASE_URL and SUPABASE_KEY):
+        if STATE_BACKEND == "supabase":
+            raise RuntimeError(
+                "CINENODE_STATE_BACKEND=supabase but SUPABASE_URL/SUPABASE_KEY are not set."
+            )
+        return False
+    try:
+        import supabase  # noqa: F401
+    except ImportError:
+        if STATE_BACKEND == "supabase":
+            raise RuntimeError(
+                "CINENODE_STATE_BACKEND=supabase but the 'supabase' package is not installed. "
+                "Run: pip install -r backend/requirements.txt"
+            ) from None
+        if not _supabase_warned:
+            _supabase_warned = True
+            print(
+                "[cinenode] SUPABASE_URL/KEY are set but the 'supabase' package is not "
+                "installed - falling back to local JSON state under backend/.state/. "
+                "Run: pip install supabase",
+                flush=True,
+            )
+        return False
+    return True
+
     return bool(SUPABASE_URL and SUPABASE_KEY)
 
 

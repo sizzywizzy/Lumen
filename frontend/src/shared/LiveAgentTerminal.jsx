@@ -1,7 +1,17 @@
 import { useEffect, useRef } from "react";
+import AgentLog from "./AgentLog.jsx";
+import { cn } from "../lib/utils.js";
 
 // The proof it's a real MAS: every A2A envelope, streamed in order.
-export default function LiveAgentTerminal({ events, revealed }) {
+// Same props as before (events + revealed count); the presentation is now the
+// Stitch terminal. Reused by the docked rail, the mobile drawer and /logs.
+export default function LiveAgentTerminal({
+  events = [],
+  revealed = events.length,
+  flush = false,
+  compact = false,
+  className,
+}) {
   const bodyRef = useRef(null);
   const visible = events.slice(0, revealed);
 
@@ -10,24 +20,8 @@ export default function LiveAgentTerminal({ events, revealed }) {
   }, [revealed]);
 
   return (
-    <div className="terminal-pane">
-      <div className="terminal-header">
-        ▌LIVE AGENT TERMINAL — {visible.length}/{events.length} messages
-      </div>
-      <div className="terminal-body" ref={bodyRef}>
-        {visible.length === 0 && <div className="empty">Run the pipeline to watch the agents talk.</div>}
-        {visible.map((e) => (
-          <div className="msg" key={e.message_id}>
-            <div>
-              <span className="route">
-                {e.sender} {e.in_reply_to ? <span className="reply-marker">↩</span> : "→"} {e.recipient}
-              </span>{" "}
-              <span className="intent">{e.intent}</span>
-            </div>
-            <pre>{JSON.stringify(e.payload)}</pre>
-          </div>
-        ))}
-      </div>
+    <div className={cn("terminal", flush && "terminal--flush", compact && "terminal--compact", className)} ref={bodyRef}>
+      <AgentLog events={visible} connected={events.length > 0} compact={compact} />
     </div>
   );
 }
