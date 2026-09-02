@@ -31,6 +31,13 @@ CLOUD_SQL_CONNECTION_NAME = os.environ.get("CLOUD_SQL_CONNECTION_NAME", "")
 DB_USER = os.environ.get("DB_USER", "")
 DB_PASS = os.environ.get("DB_PASS", "")
 DB_NAME = os.environ.get("DB_NAME", "")
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
+TMDB_API_KEY = os.environ.get("TMDB_API_KEY", "")
+TMDB_LANGUAGE = os.environ.get("TMDB_LANGUAGE", "en-US")
+EMBEDDING_MODEL = os.environ.get(
+    "EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2"
+)
+EMBEDDING_DIMENSIONS = int(os.environ.get("EMBEDDING_DIMENSIONS", "384"))
 
 # Model tiering (AGENT.md guardrails): Flash by default, Pro only for heavy reasoning.
 GEMINI_FLASH_MODEL = os.environ.get("GEMINI_FLASH_MODEL", "gemini-2.0-flash")
@@ -57,3 +64,8 @@ def has_supabase() -> bool:
 
 def has_cloudsql() -> bool:
     return bool(CLOUD_SQL_CONNECTION_NAME and DB_USER and DB_PASS and DB_NAME)
+
+
+def has_database() -> bool:
+    """Return whether the actor KB can use a PostgreSQL connection."""
+    return bool(DATABASE_URL) or has_cloudsql()

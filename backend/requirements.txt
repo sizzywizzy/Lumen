@@ -13,3 +13,8 @@ pydantic>=2.6
 # Google Cloud SQL (uncomment when using Cloud SQL instead of Supabase)
 # google-cloud-sql>=3.0
 # pymysql>=1.1
+
+# Phase I actor knowledge base
+psycopg[binary]>=3.2
+requests>=2.32
+sentence-transformers>=3.0

@@ -88,6 +88,7 @@ cinenode/
 │   └── global_state.json
 ├── backend/
 │   ├── main.py                  # FastAPI entrypoint (mounts one router per domain)
+│   ├── migrations/               # PostgreSQL/pgvector schema migrations
 │   ├── run_demo.py              # CLI: full pipeline on mock data
 │   ├── core/                    # THE BRAIN — shared by everyone
 │   │   ├── config.py            # env vars, model tiers, guardrail constants
@@ -96,7 +97,7 @@ cinenode/
 │   │   │   └── state.py         # GlobalState Pydantic models
 │   │   └── messaging/
 │   │       └── envelope.py      # A2A envelope helper (shared by ALL agents)
-│   ├── services/                # gemini, supabase (both mock-fallback), mock_db
+│   ├── services/                # gemini, supabase, mock_db, casting_kb
 │   ├── mock_data/               # script, candidates, venues, censorship rules, personas
 │   └── domains/                 # THE SANDBOXES — one per team member
 │       ├── casting/             # ➔ Raymond (Phases I & II): router, agents/, prompts
@@ -134,6 +135,8 @@ SUPABASE_KEY=...
 TAVILY_API_KEY=...
 WHISPER_API_KEY=...        # or use local whisper
 IMAGEN_API_KEY=...         # same Google project
+DATABASE_URL=postgresql://... # PostgreSQL with the pgvector extension
+TMDB_API_KEY=...           # actor metadata and credited roles
 ```
 
 > On Replit, put these in **Secrets**, not in the repo.
@@ -157,6 +160,28 @@ npm run dev
 # kicks off PROJ_NEON_NIGHTS through all six phases with mock data
 python backend/run_demo.py --project PROJ_NEON_NIGHTS --budget 250000
 ```
+
+### Actor knowledge base (Phase I)
+
+The actor KB connection code is in `backend/services/casting_kb/` and its
+schema is `backend/migrations/001_actor_knowledge_base.sql`. Run the migration
+against a PostgreSQL database with pgvector enabled, then install the backend
+requirements and set `DATABASE_URL`, `TMDB_API_KEY`, and optionally
+`EMBEDDING_MODEL`/`EMBEDDING_DIMENSIONS`.
+
+Populate and search it through the casting API:
+
+```bash
+curl -X POST http://localhost:8000/api/casting/actors/ingest \
+  -H 'Content-Type: application/json' \
+  -d '{"actor_ids":[6193,500]}'
+curl -X POST http://localhost:8000/api/casting/actors/embeddings
+curl 'http://localhost:8000/api/casting/actors/search?character_description= cunning detective in her forties&gender=1&min_age=35&max_age=49'
+```
+
+TMDb does not normally provide physical measurements or appearance traits, so
+the ingestion code stores only explicitly supplied trait fields and does not
+infer sensitive attributes from photos or names.
 
 ---
 
