@@ -1,7 +1,8 @@
 """Phase VI — Marketing, PR & Autonomous Social Launch.
 
 agent_campaign_strategist -> agent_reel_cutter -> agent_visual <-> agent_pr_risk
-(regenerate on rejection, max 2 tries) -> agent_publisher.
+(regenerate on rejection, max 2 tries) -> agent_copywriter <-> agent_pr_risk
+-> agent_publisher.
 """
 from core import config
 from core.messaging.envelope import broadcast, log_event, make_envelope, make_reply
@@ -97,6 +98,50 @@ def _visual(state: GlobalState) -> None:
     }))
 
 
+def _copywriter(state: GlobalState, plan: dict) -> None:
+    """agent_copywriter: platform-native copy per campaign segment plus a press
+    release, in one Flash call. Every draft goes through agent_pr_risk like the
+    memes do; a blocked draft is escalated rather than retried (bounded cost)."""
+    segments = plan.get("segments", [])
+    copy = gemini_client.generate_json(
+        f"Title: {state.script_context.get('title')}. Campaign segments: {segments}. "
+        f"Audience report: {state.audience_report.model_dump()}.",
+        system=prompts.COPYWRITER_SYSTEM, mock=prompts.MOCK_COPY,
+    )
+    drafts = [
+        ("copy", f"AST_COPY_{i + 1:04d}",
+         {"platform": post.get("platform", ""), "demographic": post.get("demographic", ""),
+          "caption": str(post.get("caption", "")), "hashtags": list(post.get("hashtags", []) or [])})
+        for i, post in enumerate(copy.get("posts", []) or [])
+    ]
+    release = copy.get("press_release") or {}
+    drafts.append(("press_release", "AST_PRESS_0001", {
+        "headline": str(release.get("headline", "")), "body": str(release.get("body", "")),
+        "caption": f"{release.get('headline', '')} {release.get('body', '')}".strip(),
+    }))
+
+    scene = _best_scene(state)
+    for asset_type, asset_id, content in drafts:
+        asset = MarketingAsset(asset_id=asset_id, type=asset_type, status="PR_REVIEW",
+                               source_scene_id=scene, content=content)
+        state.marketing_assets.append(asset)
+        request = log_event(state, make_envelope(
+            "agent_copywriter", "agent_pr_risk", "verify_brand_safety",
+            {"asset_id": asset.asset_id, "caption": content["caption"]},
+        ))
+        verdict = _pr_risk_check(state, request)
+        update = {"asset_id": asset.asset_id, "type": asset_type}
+        if verdict["status"] == "APPROVED":
+            asset.status = "APPROVED"
+        else:
+            asset.status = "BLOCKED"
+            asset.content["blocked_reasons"] = verdict["reasons"]
+            update["blocker_details"] = {"blocked_by_agent": "agent_pr_risk",
+                                         "reasons": verdict["reasons"], "auto_retry": False}
+            state.escalate(f"asset:{asset.asset_id}", f"Copy blocked by PR risk: {verdict['reasons']}")
+        log_event(state, broadcast("agent_copywriter", "asset_status_update", {**update, "status": asset.status}))
+
+
 def _publisher(state: GlobalState, plan: dict) -> None:
     """Mock social APIs: put every APPROVED asset on the campaign calendar."""
     slots = ["2026-09-20T17:00:00Z", "2026-09-21T17:00:00Z", "2026-09-22T17:00:00Z"]
@@ -115,5 +160,6 @@ def run_phase6_marketing(state: GlobalState) -> GlobalState:
     plan = _strategist(state)
     _reel_cutter(state)
     _visual(state)
+    _copywriter(state, plan)
     _publisher(state, plan)
     return state

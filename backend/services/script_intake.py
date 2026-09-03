@@ -21,6 +21,9 @@ from typing import Optional
 from xml.etree import ElementTree
 
 MAX_CHARS = 400_000
+# The keys upload_script writes onto GlobalState.script_context. Phase agents
+# that rewrite the context keep these, and a pipeline run carries them over.
+INTAKE_KEYS = ("raw_text", "source_filename", "source_format", "char_count", "truncated", "fingerprint")
 PLAIN_SUFFIXES = (".txt", ".fountain", ".md", ".markdown", ".text")
 
 

@@ -5,6 +5,7 @@ configured; otherwise JSON files under backend/.state/ so local dev and the
 demo need zero credentials. Same interface either way.
 """
 import json
+import os
 from typing import Optional
 
 from core import config
@@ -29,7 +30,11 @@ def save_state(state: GlobalState) -> None:
         return
     config.LOCAL_STATE_DIR.mkdir(exist_ok=True)
     path = config.LOCAL_STATE_DIR / f"{state.project_id}.json"
-    path.write_text(state.model_dump_json(indent=2), encoding="utf-8")
+    # Write beside the target and rename, so a concurrent reader never sees a
+    # half-written file (advisor runs save while the dashboard polls /api/state).
+    tmp = path.with_suffix(".json.tmp")
+    tmp.write_text(state.model_dump_json(indent=2), encoding="utf-8")
+    os.replace(tmp, path)
 
 
 def load_state(project_id: str) -> Optional[GlobalState]:

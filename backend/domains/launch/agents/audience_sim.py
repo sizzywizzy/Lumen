@@ -66,7 +66,7 @@ def analyse_material(state: GlobalState, material: str, trace: list) -> dict:
     ))
     prompt = (
         "Analyse this film material for audience research.\n\n"
-        f"--- MATERIAL START ---\n{material[:24000]}\n--- MATERIAL END ---"
+        f"--- MATERIAL START ---\n{material[:config.SCRIPT_ANALYSIS_MAX_CHARS]}\n--- MATERIAL END ---"
     )
     analysis, meta = gemini_client.generate_json_traced(
         prompt, tier="pro", system=P.ANALYSIS_SYSTEM, mock=P.MOCK_ANALYSIS

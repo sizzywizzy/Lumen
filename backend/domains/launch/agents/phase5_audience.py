@@ -38,7 +38,7 @@ def _seeded_score(persona_id: str, scene_id: str) -> float:
 
 
 def _viewers(state: GlobalState, personas: list[dict]) -> list[dict]:
-    scenes = [s["scene_id"] for s in mock_db.load("script")["scenes"]]
+    scenes = [s["scene_id"] for s in (state.script_context.get("scenes") or mock_db.load("script")["scenes"])]
     verdicts = []
     for start in range(0, len(personas), VIEWER_BATCH_SIZE):
         batch = personas[start:start + VIEWER_BATCH_SIZE]
@@ -49,7 +49,8 @@ def _viewers(state: GlobalState, personas: list[dict]) -> list[dict]:
         for persona in batch:
             scene_scores = {sc: _seeded_score(persona["persona_id"], sc) for sc in scenes}
             # The anomaly: young male viewers check out during the act-two exposition.
-            if persona["age_bracket"] == ANOMALY_SEGMENT["age_bracket"] and persona["gender"] == ANOMALY_SEGMENT["gender"]:
+            if (persona["age_bracket"] == ANOMALY_SEGMENT["age_bracket"] and persona["gender"] == ANOMALY_SEGMENT["gender"]
+                    and ANOMALY_SCENE in scene_scores):
                 scene_scores[ANOMALY_SCENE] = round(scene_scores[ANOMALY_SCENE] * 0.45, 1)
             overall = round(sum(scene_scores.values()) / len(scene_scores), 2)
             verdicts.append({

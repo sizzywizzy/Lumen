@@ -46,7 +46,7 @@ def _rights_clearance(state: GlobalState, request: dict) -> dict:
 
 
 def _localization(state: GlobalState) -> None:
-    scenes = mock_db.load("script")["scenes"]
+    scenes = state.script_context.get("scenes") or mock_db.load("script")["scenes"]
     tagged = [{"type": "dialogue", "tags": s["tags"], "scene_id": s["scene_id"]}
               for s in scenes if s["tags"]]
     tagged.append({"type": "music", "tags": [], "scene_id": "SCN_004", "asset_id": "TRK_992_INDIE_ROCK"})

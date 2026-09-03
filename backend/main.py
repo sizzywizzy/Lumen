@@ -20,7 +20,8 @@ from domains.auth.router import router as auth_router
 from domains.casting.router import router as casting_router
 from domains.launch.router import router as launch_router
 from domains.production.router import router as production_router
-from services import auth_store, supabase_client
+from domains.skills.router import router as skills_router
+from services import auth_store, script_intake, supabase_client
 
 app = FastAPI(title="CineNode", version="0.1.0")
 
@@ -36,6 +37,7 @@ app.include_router(audience_router)
 app.include_router(casting_router)
 app.include_router(production_router)
 app.include_router(launch_router)
+app.include_router(skills_router)
 
 
 class InitRequest(BaseModel):
@@ -69,7 +71,13 @@ def run_pipeline(req: InitRequest, user: User = Depends(current_user)):
     membership = membership_for(user, req.project_id)
     if not role_at_least(membership.role, "producer"):
         raise HTTPException(403, "Your role on this production is read-only.")
-    state = Orchestrator().run(_new_state(req))
+    state = _new_state(req)
+    # A run resets the pipeline's output, not the material: keep the screenplay
+    # dropped at intake so every phase and advisor reads the real script.
+    stored = supabase_client.load_state(req.project_id)
+    if stored is not None:
+        state.script_context = {k: v for k, v in (stored.script_context or {}).items() if k in script_intake.INTAKE_KEYS}
+    state = Orchestrator().run(state)
     supabase_client.save_state(state)
     return {
         "project_id": state.project_id,

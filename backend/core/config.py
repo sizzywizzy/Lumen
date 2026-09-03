@@ -23,6 +23,10 @@ BACKEND_DIR = Path(__file__).resolve().parents[1]
 MOCK_DATA_DIR = BACKEND_DIR / "mock_data"
 LOCAL_STATE_DIR = BACKEND_DIR / ".state"  # fallback persistence when Supabase is not configured
 
+# Agent skills: skills/<name>/SKILL.md at the repo root, next to backend/.
+# CINENODE_SKILLS_DIR overrides it for containers that copy the folder elsewhere.
+SKILLS_DIR = Path(os.environ.get("CINENODE_SKILLS_DIR") or (BACKEND_DIR.parent / "skills"))
+
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
@@ -70,6 +74,9 @@ GEMINI_FALLBACK_MODELS = [
 
 # Per-request timeout (ms) and bounded concurrency for batched agent work.
 GEMINI_TIMEOUT_MS = int(os.environ.get("GEMINI_TIMEOUT_MS", "60000"))
+# How much of an uploaded screenplay a single model read gets (profiler, scene
+# breakdown, audience analysis). 120k characters covers a full feature script.
+SCRIPT_ANALYSIS_MAX_CHARS = int(os.environ.get("SCRIPT_ANALYSIS_MAX_CHARS", "120000"))
 GEMINI_MAX_CONCURRENCY = int(os.environ.get("GEMINI_MAX_CONCURRENCY", "3"))
 
 # Guardrails

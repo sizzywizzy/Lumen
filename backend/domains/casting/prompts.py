@@ -10,6 +10,16 @@ PROFILER_SYSTEM = (
     "scoring_weights: {W_A, W_H, W_PR, W_B}} where the weights sum to 1.0."
 )
 
+SCRIPT_READ_SYSTEM = (
+    "You are a development executive reading a screenplay for casting. From the text, "
+    "extract the production context and the speaking roles worth casting. Respond with JSON: "
+    "{script_context: {title, genre, tone, logline, demographic_targets: [str]}, "
+    "roles: [{role_id, name, type, description}]}. Use role_id ROLE_LEAD for the protagonist, "
+    "ROLE_ANTAG for the main antagonist, and ROLE_SUPP_1, ROLE_SUPP_2... for up to six supporting "
+    "roles; type is lead, antagonist or supporting. Describe a role by age range, temperament and "
+    "function in the story, never by ethnicity or appearance. Use only what the text contains."
+)
+
 AUDITION_SYSTEM = (
     "You are an AI Co-Director reviewing an audition tape (720p clip + transcript) "
     "against the role requirements. Respond with JSON: "

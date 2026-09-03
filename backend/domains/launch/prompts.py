@@ -26,6 +26,14 @@ VISUAL_SYSTEM = (
     "{caption, image_prompt, alt_text}."
 )
 
+COPYWRITER_SYSTEM = (
+    "You are a film marketing copywriter. From the campaign plan and the audience "
+    "report, write platform-native social copy for each campaign segment and one "
+    "short press release. Never reveal plot twists, deaths or the ending. Respond "
+    "with JSON: {posts: [{platform, demographic, caption, hashtags: [str]}], "
+    "press_release: {headline, body}}."
+)
+
 # --- Mock outputs ------------------------------------------------------------
 
 MOCK_RECUT_DIAGNOSIS = {
@@ -47,5 +55,21 @@ MOCK_MEME_DRAFTS = [
     {"caption": "When Silas turns out to be the deepfake all along 💀", "image_prompt": "warehouse finale still, neon rim light", "alt_text": "finale twist meme"},
     {"caption": "POV: your cab driver has seen some things 🌧️", "image_prompt": "Mara in the cab, rain bokeh", "alt_text": "moody cab meme"},
 ]
+
+# Spoiler-free on purpose: the copywriter's drafts go through the same PR gate
+# as every other asset, so the offline output must pass it.
+MOCK_COPY = {
+    "posts": [
+        {"platform": "tiktok", "demographic": "18-24",
+         "caption": "POV: your cab driver has seen some things 🌧️", "hashtags": ["#NeonNights", "#neonoir"]},
+        {"platform": "instagram", "demographic": "25-34",
+         "caption": "The city remembers everything. Neon Nights, this fall.", "hashtags": ["#NeonNights"]},
+    ],
+    "press_release": {
+        "headline": "Neon Nights brings synth-noir back to the big screen",
+        "body": "An ex-detective turned cab driver hunts a deepfake blackmail ring through a "
+                "rain-soaked city in Neon Nights, a neo-noir thriller shot on location this autumn.",
+    },
+}
 
 SPOILER_TERMS = ("turns out", "all along", "twist", "dies", "killer is")

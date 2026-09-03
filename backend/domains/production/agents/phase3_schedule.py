@@ -3,17 +3,77 @@
 agent_breakdown -> agent_scheduler_shoot <-> agent_location (negotiation, max 2 iterations)
 -> stripboard + burn-rate budget.
 """
+import re
 from datetime import date, timedelta
 from core import config
 from core.messaging.envelope import broadcast, log_event, make_envelope, make_reply
 from core.orchestrator.state import GlobalState, StripboardEntry
-from services import mock_db
+from domains.production import prompts
+from services import gemini_client, mock_db
+
+MAX_SCENES = 30  # the venue database is small; more scenes than this cannot be placed sensibly
+SCENE_ID_RE = re.compile(r"^SCN_[A-Z0-9_]{1,12}$")
+
+
+def _valid_scenes(scenes, venue_types: set[str], role_ids: set[str]) -> list[dict]:
+    """Keep only scenes a venue can host and the cast can be called for."""
+    out, seen = [], set()
+    for scene in scenes if isinstance(scenes, list) else []:
+        if not isinstance(scene, dict):
+            continue
+        location = str(scene.get("location_type", "")).strip().lower()
+        if location not in venue_types:
+            continue
+        scene_id = str(scene.get("scene_id") or "").strip().upper()
+        if not SCENE_ID_RE.match(scene_id) or scene_id in seen:
+            scene_id = f"SCN_{len(out) + 1:03d}"
+            while scene_id in seen:
+                scene_id += "_B"
+        try:
+            hours = float(scene.get("estimated_time_hours", 3))
+        except (TypeError, ValueError):
+            hours = 3.0
+        characters = [str(c).strip().upper() for c in (scene.get("characters_needed") or [])
+                      if str(c).strip().upper() in role_ids]
+        tags = [re.sub(r"[^a-z0-9]+", "_", str(t).strip().lower()).strip("_")
+                for t in (scene.get("tags") or []) if str(t).strip()][:8]
+        out.append({
+            "scene_id": scene_id,
+            "int_ext": "EXT" if str(scene.get("int_ext", "INT")).strip().upper().startswith("EXT") else "INT",
+            "location_type": location,
+            "characters_needed": characters,
+            "estimated_time_hours": round(max(1.0, min(10.0, hours)), 1),
+            "tags": [t for t in tags if t],
+        })
+        seen.add(scene_id)
+        if len(out) >= MAX_SCENES:
+            break
+    return out
 
 
 def _breakdown(state: GlobalState) -> list[dict]:
-    scenes = mock_db.load("script")["scenes"]
+    """agent_breakdown: scenes from the screenplay dropped at intake, constrained
+    to venue types the location agent can actually offer. Demo scenes otherwise."""
+    demo = mock_db.load("script")["scenes"]
+    scenes, source = demo, "demo"
+    raw = ((state.script_context or {}).get("raw_text") or "").strip()
+    if raw:
+        venue_types = sorted({v["location_type"] for v in mock_db.load("venues")})
+        role_ids = list(state.role_requirements) or [r["role_id"] for r in mock_db.load("script")["roles"]]
+        limit = config.SCRIPT_ANALYSIS_MAX_CHARS
+        read = gemini_client.generate_json(
+            f"AVAILABLE VENUE TYPES: {venue_types}\nROLE IDS: {role_ids}\nMAX SCENES: {MAX_SCENES}\n\n"
+            f"SCREENPLAY (first {min(len(raw), limit):,} characters):\n{raw[:limit]}",
+            tier="pro", system=prompts.BREAKDOWN_SYSTEM, mock={"scenes": demo, "source": "demo"},
+        )
+        if isinstance(read, dict) and read.get("source") != "demo":
+            extracted = _valid_scenes(read.get("scenes"), set(venue_types), set(role_ids))
+            if extracted:
+                scenes, source = extracted, "script"
+    # Later phases (compliance tags, audience heatmap) read the same breakdown.
+    state.script_context["scenes"] = scenes
     log_event(state, broadcast("agent_breakdown", "breakdown_ready", {
-        "scene_count": len(scenes), "scenes": [s["scene_id"] for s in scenes],
+        "scene_count": len(scenes), "scenes": [s["scene_id"] for s in scenes], "source": source,
     }))
     return scenes
 
