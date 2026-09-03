@@ -76,7 +76,7 @@ Each entry: **ID** · role · model · inputs → outputs · intents it sends/ha
 ### Phase I — Pre-Casting Intelligence & Compliance
 
 **`agent_profiler`** — *Corporate Profiler / "Vibe Checker."*
-Model: Gemini Pro. In: `script_context`, exec brief. Out: `role_requirements`, `scoring_weights`.
+Model: Gemini Pro. In: `script_context`, exec brief; reads the screenplay dropped at intake when one is stored (`script_context.raw_text`), the demo script otherwise. Out: `role_requirements`, `scoring_weights`.
 Intents: emits `mandate_ready`.
 
 **`agent_intake`** — *Sourcing / Intake Gateway (webhook).*
@@ -114,7 +114,7 @@ Intents: emits `leaderboard_ready`; pushes top-N to `human_escalations`.
 
 ### Phase III — Script → Schedule
 
-**`agent_breakdown`** — In: `Script_DB(scene_id, INT/EXT, location_type, characters_needed, estimated_time)`. Out: structured scene requirements. Emits `breakdown_ready`.
+**`agent_breakdown`** — Model: Gemini Pro when a screenplay is stored, else none. In: the uploaded screenplay (scenes constrained to venue types in `Venue_DB` and to the profiler's role ids, capped at 30) or `Script_DB(scene_id, INT/EXT, location_type, characters_needed, estimated_time_hours)`. Out: structured scene requirements, also kept on `script_context.scenes` for Phases IV and V. Emits `breakdown_ready`.
 
 **`agent_location`** — In: scene reqs + `Venue_DB(venue_name, cost_per_day, available_dates)`. Out: venue matches/permits. Handles `check_venue_availability`, emits `venue_offer`.
 
@@ -159,6 +159,18 @@ Intents: emits `leaderboard_ready`; pushes top-N to `human_escalations`.
 
 **`agent_publisher`** — Model: none (mock APIs). In: approved assets. Out: `Campaign_Calendar` entries + mock `Social_Metrics_DB`. Emits `asset_scheduled`.
 **Demo A2A:** `agent_visual` → `verify_brand_safety` (meme) → `agent_pr_risk` replies `brand_safety_result` (BLOCKED: spoiler + gesture) → visual regenerates → `agent_publisher` schedules; visual broadcasts `asset_status_update`.
+
+### Skills — SKILL.md-driven advisors (cross-phase)
+
+Each advisor runs the procedure written in `skills/<name>/SKILL.md` (Section 8): it gathers facts from `GlobalState`, runs the prerequisite phase agents above when the state is empty, then makes one Gemini call with the SKILL.md body as its system instruction. All four return the same envelope (`summary`, `highlights`, `findings`, `next_actions`, `confidence`, `data`) and run on a background thread behind `POST /api/skills/<name>/run/<project_id>`.
+
+**`agent_casting_advisor`** — *skill `casting`.* Model: Gemini Pro. In: `role_requirements`, `scoring_weights`, `candidates`, `budget_state.cap`. Out: per-role recommendation, runners-up, budget check. Runs Phases I–II first if the pool is empty. Broadcasts `task_status_update`.
+
+**`agent_schedule_advisor`** — *skill `scheduling`.* Model: Gemini Flash. In: `schedule.*`, `budget_state`. Out: day-load, company-move and cast-load findings, proposed moves. Runs Phase III first if the stripboard is empty. Broadcasts `task_status_update`.
+
+**`agent_audience_analyst`** — *skill `audience-simulation`.* Model: Gemini Pro. In: `script_context.raw_text`. Out: producer's brief over the simulated panel; reuses the Phase V staged simulator (`screen_film`, `simulation_verdict_update`). Broadcasts `task_status_update`.
+
+**`agent_cultural_researcher`** — *skill `cultural-research`.* Model: Gemini Pro + Tavily (optional). In: `script_context.raw_text`, target markets. Out: per-market risk, sourced findings, remediation. Goes through the sensitivity pass (`verify_regional_compliance` / `compliance_result`). Broadcasts `task_status_update`.
 
 ---
 
@@ -211,3 +223,16 @@ Broadcasts (to orchestrator): `mandate_ready`, `candidate_ingested`, `media_read
 4. Return structured JSON only.
 5. Add a fail-fast / `max_iterations` guard.
 6. Append all its traffic to `event_log` so it shows in the Live Agent Terminal.
+
+---
+
+## 8. Skills (SKILL.md)
+
+A skill is a procedure an agent follows, stored at `skills/<name>/SKILL.md` in the repo root (next to `backend/`). Frontmatter: `name`, `description` (when to use it), and `metadata` (`agent`, `phase`, `model`, `owner`, `reads`, `writes`, `intents`, `version`, plus skill-specific defaults such as `panel_size` or `markets`). The Markdown body is the agent's system instruction and ends with the exact JSON shape it returns.
+
+- Registry: `backend/core/skills/registry.py` — parsed fresh on every run, so edits need no restart.
+- Runners: `backend/domains/skills/agents.py`, one per skill, keyed by `name`; every runner has an offline fallback so the zero-key demo still works.
+- API: `GET /api/skills`, `POST /api/skills/<name>/run/<project_id>` (producer or owner), `GET /api/skills/runs/<project_id>`.
+- Every run records the SKILL.md fingerprint and whether each model call was live or the fallback.
+- Skill agents reuse the intent vocabulary in Section 5; adding a skill never adds an intent.
+- The catalogue of every skill and shared capability, with inputs, outputs, failure modes and which agents use them, is `skills.md` at the repo root.

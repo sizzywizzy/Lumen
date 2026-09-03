@@ -34,8 +34,12 @@ export function setUnauthorizedHandler(fn) {
   onUnauthorized = fn;
 }
 
-async function request(path, options = {}) {
-  const token = loadStoredToken();
+// `anonymous` marks the calls that establish a session (sign-in, sign-up):
+// no bearer token is attached, and a 401 from them means the credentials
+// were rejected, not that a session expired, so the server's own message is
+// surfaced instead of the session being dropped.
+async function request(path, { anonymous = false, ...options } = {}) {
+  const token = anonymous ? null : loadStoredToken();
   const res = await fetch(path, {
     ...options,
     headers: {
@@ -45,7 +49,7 @@ async function request(path, options = {}) {
     },
   });
 
-  if (res.status === 401) {
+  if (res.status === 401 && !anonymous) {
     onUnauthorized?.();
     throw new AuthError("Your session has expired. Sign in again.");
   }
@@ -67,14 +71,15 @@ async function request(path, options = {}) {
   return res.json();
 }
 
-const post = (path, body) => request(path, { method: "POST", body: JSON.stringify(body) });
+const post = (path, body, extra = {}) =>
+  request(path, { method: "POST", body: JSON.stringify(body), ...extra });
 
 export const api = {
   health: () => request("/api/health"),
 
   // ---- authentication -----------------------------------------------------
-  register: (payload) => post("/api/auth/register", payload),
-  login: (email, password) => post("/api/auth/login", { email, password }),
+  register: (payload) => post("/api/auth/register", payload, { anonymous: true }),
+  login: (email, password) => post("/api/auth/login", { email, password }, { anonymous: true }),
   logout: () => post("/api/auth/logout"),
   me: () => request("/api/auth/me"),
   listProjects: () => request("/api/projects"),
@@ -124,6 +129,15 @@ export const api = {
   // (and anything else) analyses the real screenplay rather than a logline.
   uploadScript: (projectId, payload) => post(`/api/production/script/${projectId}`, payload),
   getScript: (projectId) => request(`/api/production/script/${projectId}`),
+
+  // ---- agent skills (skills/<name>/SKILL.md) --------------------------------
+  // A run executes on a background thread; poll the run list until it settles.
+  listSkills: () => request("/api/skills"),
+  getSkill: (name) => request(`/api/skills/${encodeURIComponent(name)}`),
+  runSkill: (name, projectId, params = {}) =>
+    post(`/api/skills/${encodeURIComponent(name)}/run/${projectId}`, { params }),
+  listSkillRuns: (projectId) => request(`/api/skills/runs/${projectId}`),
+  getSkillRun: (projectId, runId) => request(`/api/skills/runs/${projectId}/${runId}`),
 
   // ---- production ---------------------------------------------------------
   updateProductionSettings: (projectId, settings) =>

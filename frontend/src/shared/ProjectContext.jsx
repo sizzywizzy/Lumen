@@ -85,6 +85,16 @@ export function ProjectProvider({ children }) {
     }
   }, [projectId, budget, canEdit]);
 
+  // Re-read the stored GlobalState, e.g. after a skill run appended agent
+  // traffic to the event log on the server.
+  const refreshState = useCallback(async () => {
+    if (!projectId) return;
+    const s = await api.getState(projectId);
+    setState(s);
+    setEvents(s.event_log);
+    setRevealed(s.event_log.length);
+  }, [projectId]);
+
   // Called by the intake screen once the project has been seeded.
   const startProject = useCallback((_nextProjectId, nextIntake) => {
     setIntake(nextIntake || null);
@@ -124,10 +134,11 @@ export function ProjectProvider({ children }) {
       error,
       setError,
       runPipeline,
+      refreshState,
       applyCandidateUpdate,
       canEdit,
     }),
-    [projectId, budget, intake, startProject, state, events, revealed, running, error, runPipeline, applyCandidateUpdate, canEdit]
+    [projectId, budget, intake, startProject, state, events, revealed, running, error, runPipeline, refreshState, applyCandidateUpdate, canEdit]
   );
 
   return <ProjectContext.Provider value={value}>{children}</ProjectContext.Provider>;

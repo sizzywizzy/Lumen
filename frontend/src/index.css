@@ -1082,3 +1082,28 @@ table.data tbody tr.current-row { background: var(--primary-soft); }
 .stack--md { gap: 24px; }
 .grow { flex: 1; min-width: 0; }
 .relative { position: relative; }
+
+/* ------------------------------------------------------------- skills --- */
+
+.skill-card { display: flex; flex-direction: column; gap: 16px; }
+.skill-card[data-focus="true"] { border-color: var(--primary); box-shadow: var(--primary-glow); }
+.skill-head { display: flex; align-items: flex-start; gap: 12px; }
+.skill-head > .material-symbols-outlined { font-size: 28px; color: var(--primary); }
+.skill-head h3 { font-family: var(--font-headline); font-size: 20px; font-weight: 600; margin: 0; overflow-wrap: anywhere; }
+.skill-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.skill-desc { font-size: 14px; line-height: 20px; color: var(--on-surface-variant); margin: 0; }
+.skill-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.skill-actions a.btn { text-decoration: none; }
+.skill-instructions {
+  background: var(--terminal-bg); border: 1px solid var(--terminal-border);
+  border-radius: var(--radius-lg); padding: 12px 14px; max-height: 380px; overflow: auto;
+}
+.skill-instructions pre {
+  margin: 0; font-family: var(--font-mono); font-size: 12px; line-height: 18px;
+  white-space: pre-wrap; word-break: break-word; color: var(--terminal-fg);
+}
+.skill-result { display: flex; flex-direction: column; gap: 14px; }
+.skill-summary { font-size: 15px; line-height: 22px; color: var(--on-surface); margin: 0; }
+.skill-section-title { display: block; margin-bottom: 8px; }
+.skill-actions-list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; line-height: 20px; }
+.page-header-actions a.btn { text-decoration: none; }

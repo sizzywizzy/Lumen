@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import Panel, { PanelFoot } from "../../shared/Panel.jsx";
 import PageHeader from "../../shared/PageHeader.jsx";
 import MetricCard, { MetricRow } from "../../shared/MetricCard.jsx";
@@ -97,11 +98,17 @@ export default function CastingView() {
         sub={`Real-time candidate evaluation for ${state?.project_id || "this project"}. Ranks are sorted on the composite of audition, hype, PR and budget fit.`}
         meta={STAGE_BY_PATH["/casting"]}
         actions={
-          <MetricRow>
-            <MetricCard label="Total pool" value={ranked.length} />
-            <MetricCard label="Locked" value={locked} tone={locked ? "ok" : "plain"} />
-            <MetricCard label="Screening" value={screening} tone={screening ? "warn" : "plain"} />
-          </MetricRow>
+          <>
+            <MetricRow>
+              <MetricCard label="Total pool" value={ranked.length} />
+              <MetricCard label="Locked" value={locked} tone={locked ? "ok" : "plain"} />
+              <MetricCard label="Screening" value={screening} tone={screening ? "warn" : "plain"} />
+            </MetricRow>
+            <Link to="/advisors?advisor=casting" className="btn btn--ghost" title="Ask the Casting Advisor for a recommendation">
+              <Icon name="auto_awesome" />
+              Casting Advisor
+            </Link>
+          </>
         }
       />
 

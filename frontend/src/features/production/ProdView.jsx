@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import Panel, { PanelFoot, PanelHead } from "../../shared/Panel.jsx";
 import PageHeader from "../../shared/PageHeader.jsx";
 import MetricCard, { MetricRow } from "../../shared/MetricCard.jsx";
@@ -171,6 +172,10 @@ export default function ProdView() {
         }
         actions={
           <>
+            <Link to="/advisors?advisor=scheduling" className="btn btn--ghost" title="Ask the Schedule Advisor for a review">
+              <Icon name="auto_awesome" />
+              Schedule Advisor
+            </Link>
             <button type="button" className="btn btn--ghost" onClick={() => window.print()}>
               <Icon name="print" />
               Export report

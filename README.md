@@ -83,6 +83,7 @@ cinenode/
 ├── README.md
 ├── AGENT.md                     # agent registry, A2A + GlobalState contracts
 ├── assets/                      # logo + brand (the o of Node is the camera)
+├── skills/                      # SKILL.md procedures the advisor agents follow (skills/README.md)
 ├── contracts/                   # SACRED: shared JSON schemas — change only with team agreement
 │   ├── a2a_envelope.json
 │   └── global_state.json
@@ -180,6 +181,16 @@ curl 'http://localhost:8000/api/casting/actors/search?character_description= cun
 TMDb does not normally provide physical measurements or appearance traits, so
 the ingestion code stores only explicitly supplied trait fields and does not
 infer sensitive attributes from photos or names.
+
+### Agent skills
+
+`skills/<name>/SKILL.md` files (casting, scheduling, audience-simulation,
+cultural-research) are procedures the advisor agents follow: the Markdown body
+is the agent's system instruction. Open **Agent Skills** in the dashboard and
+press **Run** on a card, or call `POST /api/skills/<name>/run/<project_id>`.
+Runs work offline on a deterministic fallback and go live once `GEMINI_API_KEY`
+is set. The dashboard calls them **AI Advisors**. See `skills.md` for the full
+catalogue, `skills/README.md` for the file format, and `AGENT.md` Section 8.
 
 ---
 

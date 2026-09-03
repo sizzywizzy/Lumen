@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import Panel, { PanelFoot, PanelHead } from "../../shared/Panel.jsx";
 import PageHeader from "../../shared/PageHeader.jsx";
 import MetricCard, { MetricRow } from "../../shared/MetricCard.jsx";
@@ -58,6 +59,10 @@ export default function LaunchView() {
         meta={STAGE_BY_PATH["/marketing"]}
         actions={
           <>
+            <Link to="/advisors?advisor=audience-simulation" className="btn btn--ghost" title="Audience Analyst and Cultural Researcher">
+              <Icon name="auto_awesome" />
+              AI Advisors
+            </Link>
             <button type="button" className="btn btn--ghost" onClick={() => window.print()}>
               <Icon name="download" />
               Export report

@@ -11,6 +11,7 @@ import LaunchView from "./features/launch/LaunchView.jsx";
 import LogsPage from "./features/logs/LogsPage.jsx";
 import TeamPage from "./features/team/TeamPage.jsx";
 import SettingsPage from "./features/settings/SettingsPage.jsx";
+import AdvisorsPage from "./features/advisors/AdvisorsPage.jsx";
 
 // Route table. Every entry in shared/navigation.js resolves here, so no nav
 // item points at a screen that does not exist.
@@ -33,6 +34,7 @@ export default function App() {
           <Route path="casting" element={<CastingView />} />
           <Route path="schedule" element={<ProdView />} />
           <Route path="marketing" element={<LaunchView />} />
+          <Route path="advisors" element={<AdvisorsPage />} />
           <Route path="logs" element={<LogsPage />} />
           <Route path="team" element={<TeamPage />} />
           <Route path="settings" element={<SettingsPage />} />

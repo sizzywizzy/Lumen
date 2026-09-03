@@ -30,6 +30,8 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy application code
 COPY backend/ .
+# SKILL.md files live beside backend/ in the repo; keep that layout in the image
+COPY skills/ /skills/
 
 # Expose port for Cloud Run
 EXPOSE 8000

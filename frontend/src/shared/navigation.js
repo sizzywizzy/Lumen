@@ -5,6 +5,7 @@ export const PRIMARY_NAV = [
   { to: "/casting", label: "Casting", short: "Casting", icon: "groups" },
   { to: "/schedule", label: "Schedule", short: "Schedule", icon: "event_note" },
   { to: "/marketing", label: "Marketing", short: "Launch", icon: "campaign" },
+  { to: "/advisors", label: "AI Advisors", short: "Advisors", icon: "auto_awesome" },
 ];
 
 export const SECONDARY_NAV = [
@@ -19,4 +20,5 @@ export const STAGE_BY_PATH = {
   "/casting": "Pre-casting & Audition",
   "/schedule": "Schedule & Compliance",
   "/marketing": "Audience & Marketing",
+  "/advisors": "Advisors that work from SKILL.md procedures",
 };
