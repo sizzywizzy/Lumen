@@ -89,9 +89,30 @@ CASTING_CAP_SHARE = 0.10    # max quote for a single role, as a share of the tot
 LOCATIONS_SHARE = 0.15      # share of the total budget available for venues
 PERSONA_COUNT = 200         # synthetic viewers per screening (AGENT.md Phase V)
 
+# Google Cloud ADC / Vertex AI integration
+GOOGLE_CLOUD_PROJECT = os.environ.get("GOOGLE_CLOUD_PROJECT", "impactful-veld-504511-v4")
+GOOGLE_CLOUD_LOCATION = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
+VERTEX_FLASH_MODEL = os.environ.get("VERTEX_FLASH_MODEL", "gemini-2.5-flash")
+VERTEX_PRO_MODEL = os.environ.get("VERTEX_PRO_MODEL", "gemini-2.5-flash")  # strictly use Flash to save credits
+GOOGLE_APPLICATION_CREDENTIALS = os.environ.get(
+    "GOOGLE_APPLICATION_CREDENTIALS",
+    str(Path.home() / ".config" / "gcloud" / "application_default_credentials.json"),
+)
+
+
+def has_adc() -> bool:
+    """True if Google Cloud Application Default Credentials exist locally."""
+    if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
+        return Path(os.environ["GOOGLE_APPLICATION_CREDENTIALS"]).exists()
+    default_adc = Path.home() / ".config" / "gcloud" / "application_default_credentials.json"
+    if default_adc.exists():
+        return True
+    legacy = Path.home() / ".config" / "gcloud" / "legacy_credentials"
+    return legacy.exists() and any(legacy.glob("*/adc.json"))
+
 
 def has_gemini() -> bool:
-    return bool(GEMINI_API_KEY)
+    return bool(GEMINI_API_KEY) or has_adc()
 
 
 def has_tavily() -> bool:

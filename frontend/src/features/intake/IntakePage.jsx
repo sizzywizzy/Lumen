@@ -19,6 +19,7 @@ export default function IntakePage() {
   const fileName = file?.name || null;
   const [dragging, setDragging] = useState(false);
   const [budget, setBudget] = useState("250000");
+  const [locality, setLocality] = useState("Atlanta, GA");
   const [start, setStart] = useState("2026-09-01");
   const [wrap, setWrap] = useState("2026-09-26");
   const [notes, setNotes] = useState("");
@@ -70,7 +71,7 @@ export default function IntakePage() {
     // before the first run. The project id comes from the signed-in member's
     // active production — it is never chosen by the client.
     try {
-      await api.initPipeline(projectId, budgetNum || undefined);
+      await api.initPipeline(projectId, budgetNum || undefined, locality, notes);
     } catch (e) {
       setBusy(false);
       setError(String(e.message || e));
@@ -93,7 +94,7 @@ export default function IntakePage() {
 
     setBusy(false);
     startProject(projectId, {
-      budget: budgetNum || undefined, start, wrap, notes,
+      budget: budgetNum || undefined, start, wrap, notes, locality,
       fileName, script: scriptInfo,
     });
     navigate("/casting");
@@ -229,6 +230,28 @@ export default function IntakePage() {
             </div>
             <p className="mono-data muted" style={{ marginTop: 10 }}>
               {windowLine}
+            </p>
+          </Panel>
+
+          <Panel className="panel--pad">
+            <label className="mono-label muted" htmlFor="intake-locality" style={{ display: "block", marginBottom: 8 }}>
+              Filming Locality / Talent Market
+            </label>
+            <div className="input-group">
+              <span className="mono-data muted" style={{ padding: "0 12px" }}>
+                📍
+              </span>
+              <span className="divider" />
+              <input
+                id="intake-locality"
+                className="input"
+                placeholder="e.g. Atlanta, GA or London, UK"
+                value={locality}
+                onChange={(e) => setLocality(e.target.value)}
+              />
+            </div>
+            <p className="mono-data muted" style={{ marginTop: 10 }}>
+              Directs Google Cloud agents to crawl local hire talent within budget.
             </p>
           </Panel>
         </div>

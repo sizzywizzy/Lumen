@@ -29,4 +29,4 @@ supabase>=2.4                # services/{supabase_client,auth_store,simulation_s
 # Phase I actor knowledge base
 psycopg[binary]>=3.2
 requests>=2.32
-sentence-transformers>=3.0
+# sentence-transformers>=3.0    # optional: actor vector embeddings (pulls ~500MB PyTorch)

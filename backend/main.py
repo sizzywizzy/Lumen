@@ -6,6 +6,7 @@
 Mounts one router per team workspace plus shared pipeline/state/event endpoints
 (the Live Agent Terminal polls /api/events).
 """
+from typing import Optional
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -43,10 +44,23 @@ app.include_router(skills_router)
 class InitRequest(BaseModel):
     project_id: str = "PROJ_NEON_NIGHTS"
     budget_usd: float = config.DEFAULT_BUDGET_USD  # total production budget from the intake form
+    locality: Optional[str] = "Los Angeles, CA"
+    director_notes: Optional[str] = ""
 
 
 def _new_state(req: InitRequest) -> GlobalState:
-    return GlobalState(project_id=req.project_id, budget_state=BudgetState(cap=req.budget_usd))
+    loc = req.locality or "Los Angeles, CA"
+    notes = req.director_notes or ""
+    return GlobalState(
+        project_id=req.project_id,
+        budget_state=BudgetState(cap=req.budget_usd),
+        locality=loc,
+        director_notes=notes,
+        script_context={
+            "locality": loc,
+            "director_notes": notes,
+        },
+    )
 
 
 @app.get("/api/health")
@@ -61,8 +75,14 @@ def init_pipeline(req: InitRequest, user: User = Depends(current_user)):
     if not role_at_least(membership.role, "producer"):
         raise HTTPException(403, "Your role on this production is read-only.")
     state = _new_state(req)
+    stored = supabase_client.load_state(req.project_id)
+    if stored is not None:
+        state.script_context = {
+            **(state.script_context or {}),
+            **{k: v for k, v in (stored.script_context or {}).items() if k in script_intake.INTAKE_KEYS},
+        }
     supabase_client.save_state(state)
-    return {"project_id": state.project_id, "budget_usd": state.budget_state.cap}
+    return {"project_id": state.project_id, "budget_usd": state.budget_state.cap, "locality": state.locality}
 
 
 @app.post("/api/pipeline/run")
@@ -76,7 +96,14 @@ def run_pipeline(req: InitRequest, user: User = Depends(current_user)):
     # dropped at intake so every phase and advisor reads the real script.
     stored = supabase_client.load_state(req.project_id)
     if stored is not None:
-        state.script_context = {k: v for k, v in (stored.script_context or {}).items() if k in script_intake.INTAKE_KEYS}
+        intake_context = {k: v for k, v in (stored.script_context or {}).items() if k in script_intake.INTAKE_KEYS}
+        state.script_context = {**(state.script_context or {}), **intake_context}
+        if not req.director_notes and stored.director_notes:
+            state.director_notes = stored.director_notes
+            state.script_context["director_notes"] = stored.director_notes
+        if not req.locality and stored.locality:
+            state.locality = stored.locality
+            state.script_context["locality"] = stored.locality
     state = Orchestrator().run(state)
     supabase_client.save_state(state)
     return {

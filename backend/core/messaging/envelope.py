@@ -23,6 +23,7 @@ REQUEST_REPLY_INTENTS = {
     "score_candidate", "hype_scored", "pr_scored", "budget_scored",
     "review_audition", "audition_scored",
     "screen_film", "request_audience_insights",
+    "scout_local_talent", "talent_scouted",
 }
 BROADCAST_INTENTS = {
     "mandate_ready", "candidate_ingested", "media_ready", "leaderboard_ready",
@@ -30,6 +31,7 @@ BROADCAST_INTENTS = {
     "qc_result", "telemetry_update", "personas_ready", "reviews_ready",
     "simulation_verdict_update", "campaign_plan_ready", "reel_ready",
     "asset_scheduled", "asset_status_update", "disqualify",
+    "crawl_locality_started", "crawl_locality_completed",
 }
 ALL_INTENTS = REQUEST_REPLY_INTENTS | BROADCAST_INTENTS
 

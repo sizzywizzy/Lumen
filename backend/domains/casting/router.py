@@ -1,7 +1,7 @@
 """API endpoints for Phases I & II (casting). Mounted under /api/casting."""
-from fastapi import APIRouter, HTTPException, Query
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
-from fastapi import APIRouter, Depends, HTTPException
 
 from core.auth.deps import require_member, require_producer
 from core.auth.models import CandidateStatusRequest
@@ -44,12 +44,29 @@ def _recompute_casting_status(state) -> None:
         state.casting_status = "SOURCING"
 
 
+class CastingRunRequest(BaseModel):
+    locality: Optional[str] = None
+    director_notes: Optional[str] = None
+
+
 @router.post("/run/{project_id}")
-def run_casting(project_id: str, _member=Depends(require_producer)):
-    """Run Phase I (pre-casting) + Phase II (auditions) on the stored state."""
+def run_casting(
+    project_id: str,
+    req: Optional[CastingRunRequest] = None,
+    _member=Depends(require_producer),
+):
+    """Run Phase I (pre-casting crawler) + Phase II (auditions) on the stored state."""
     state = supabase_client.load_state(project_id)
     if state is None:
         raise HTTPException(404, f"No state for {project_id}. POST /api/pipeline/init first.")
+    if req:
+        if req.locality:
+            state.locality = req.locality
+            state.script_context["locality"] = req.locality
+        if req.director_notes:
+            state.director_notes = req.director_notes
+            state.script_context["director_notes"] = req.director_notes
+    state.candidates = []
     state = Orchestrator().run(state, start="phase1", end="phase2")
     supabase_client.save_state(state)
     return {
@@ -59,6 +76,7 @@ def run_casting(project_id: str, _member=Depends(require_producer)):
             {"id": c.id, "name": c.name, "reason": c.disqualify_reason}
             for c in state.candidates if c.status == "DISQUALIFIED"
         ],
+        "event_log": state.event_log,
     }
 
 

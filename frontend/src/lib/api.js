@@ -96,12 +96,21 @@ export const api = {
   joinProduction: (payload) => post("/api/auth/join", payload),
 
   // ---- pipeline + state ---------------------------------------------------
-  // Seed a project's state from the cover intake form (budget → casting/venue/reach caps).
-  initPipeline: (project_id, budget_usd) =>
-    post("/api/pipeline/init", budget_usd ? { project_id, budget_usd } : { project_id }),
-  // budget_usd is optional — the backend default applies until the intake form is wired in.
-  runPipeline: (project_id, budget_usd) =>
-    post("/api/pipeline/run", budget_usd ? { project_id, budget_usd } : { project_id }),
+  // Seed a project's state from the cover intake form (budget → casting/venue/reach caps, locality, director notes).
+  initPipeline: (project_id, budget_usd, locality, director_notes) =>
+    post("/api/pipeline/init", {
+      project_id,
+      budget_usd: budget_usd ? Number(budget_usd) : undefined,
+      locality: locality || undefined,
+      director_notes: director_notes || undefined,
+    }),
+  runPipeline: (project_id, budget_usd, locality, director_notes) =>
+    post("/api/pipeline/run", {
+      project_id,
+      budget_usd: budget_usd ? Number(budget_usd) : undefined,
+      locality: locality || undefined,
+      director_notes: director_notes || undefined,
+    }),
   getState: (projectId) => request(`/api/state/${projectId}`),
   getEvents: (projectId, since = 0) => request(`/api/events/${projectId}?since=${since}`),
 
@@ -113,6 +122,8 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify({ status, reason }),
     }),
+  // Run or re-run the Google Cloud casting crawler agent with optional custom locality and notes
+  runCasting: (projectId, payload = {}) => post(`/api/casting/run/${projectId}`, payload),
 
   // ---- audience simulation (Phase V) --------------------------------------
   // Runs execute on a background thread server-side; start returns immediately

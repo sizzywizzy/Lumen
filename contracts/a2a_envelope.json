@@ -44,7 +44,9 @@
         "breakdown_ready", "schedule_updated", "task_status_update",
         "qc_result", "telemetry_update", "personas_ready", "reviews_ready",
         "simulation_verdict_update", "campaign_plan_ready", "reel_ready",
-        "asset_scheduled", "asset_status_update", "disqualify"
+        "asset_scheduled", "asset_status_update", "disqualify",
+        "scout_local_talent", "talent_scouted",
+        "crawl_locality_started", "crawl_locality_completed"
       ]
     },
     "payload": {

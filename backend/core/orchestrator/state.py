@@ -82,6 +82,8 @@ class HumanEscalation(BaseModel):
 
 class GlobalState(BaseModel):
     project_id: str
+    locality: str = "Los Angeles, CA"
+    director_notes: str = ""
     script_context: dict[str, Any] = Field(default_factory=dict)
     role_requirements: dict[str, Any] = Field(default_factory=dict)
     scoring_weights: dict[str, float] = Field(

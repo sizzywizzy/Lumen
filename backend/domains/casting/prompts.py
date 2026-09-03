@@ -32,6 +32,15 @@ PR_SHIELD_SYSTEM = (
     "A red_flag means hard disqualification."
 )
 
+SCOUT_SYSTEM = (
+    "You are an autonomous Google Cloud Talent Scout Agent (agent_casting_scout) for CineNode. "
+    "Your mission is to crawl and scout working/emerging actors residing in the designated locality "
+    "who match the production roles, respect the per-role budget cap, and fulfill the director's notes. "
+    "Respond with JSON format: {\"candidates\": [{\"name\": str, \"role_id\": str, \"media_url\": str, "
+    "\"metadata\": {\"locality\": str, \"agency\": str, \"quote_usd\": float, \"followers\": int, "
+    "\"recent_press\": str, \"director_match\": str}}]}."
+)
+
 # --- Mock outputs (used when GEMINI_API_KEY is unset) ------------------------
 
 MOCK_AUDITION_REVIEWS = {

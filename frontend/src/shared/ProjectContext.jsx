@@ -17,7 +17,9 @@ export function ProjectProvider({ children }) {
   const { activeProjectId, user, canEdit } = useAuth();
   const projectId = activeProjectId;
   const [budget, setBudget] = useState(null); // total budget captured on the intake screen
-  const [intake, setIntake] = useState(null); // { budget, start, wrap, notes, fileName }
+  const [locality, setLocality] = useState("Los Angeles, CA");
+  const [directorNotes, setDirectorNotes] = useState("");
+  const [intake, setIntake] = useState(null); // { budget, start, wrap, notes, locality, fileName }
   const [state, setState] = useState(null);
   const [events, setEvents] = useState([]);
   const [revealed, setRevealed] = useState(0);
@@ -39,6 +41,8 @@ export function ProjectProvider({ children }) {
       .then((s) => {
         if (cancelled) return;
         setState(s);
+        if (s.locality) setLocality(s.locality);
+        if (s.director_notes) setDirectorNotes(s.director_notes);
         setEvents(s.event_log);
         setRevealed(s.event_log.length);
       })
@@ -64,7 +68,7 @@ export function ProjectProvider({ children }) {
     setRevealed(0);
     clearInterval(timerRef.current);
     try {
-      await api.runPipeline(projectId, budget || undefined);
+      await api.runPipeline(projectId, budget || undefined, locality, directorNotes);
       const s = await api.getState(projectId);
       setState(s);
       setEvents(s.event_log);
@@ -83,7 +87,44 @@ export function ProjectProvider({ children }) {
     } finally {
       setRunning(false);
     }
-  }, [projectId, budget, canEdit]);
+  }, [projectId, budget, locality, directorNotes, canEdit]);
+
+  // Re-run casting crawler specifically with updated locality and notes
+  const runCasting = useCallback(async (customLocality, customNotes) => {
+    if (!projectId || !canEdit) {
+      setError("Your role on this production is read-only.");
+      return;
+    }
+    const targetLocality = customLocality || locality;
+    const targetNotes = customNotes !== undefined ? customNotes : directorNotes;
+    if (customLocality) setLocality(customLocality);
+    if (customNotes !== undefined) setDirectorNotes(customNotes);
+
+    setRunning(true);
+    setError("");
+    clearInterval(timerRef.current);
+    try {
+      await api.runCasting(projectId, { locality: targetLocality, director_notes: targetNotes });
+      const s = await api.getState(projectId);
+      setState(s);
+      setEvents(s.event_log);
+      timerRef.current = setInterval(() => {
+        setRevealed((r) => {
+          if (r >= s.event_log.length) {
+            clearInterval(timerRef.current);
+            return r;
+          }
+          return r + 1;
+        });
+      }, REVEAL_MS);
+      return s;
+    } catch (e) {
+      setError(String(e.message || e));
+      throw e;
+    } finally {
+      setRunning(false);
+    }
+  }, [projectId, locality, directorNotes, canEdit]);
 
   // Re-read the stored GlobalState, e.g. after a skill run appended agent
   // traffic to the event log on the server.
@@ -91,6 +132,8 @@ export function ProjectProvider({ children }) {
     if (!projectId) return;
     const s = await api.getState(projectId);
     setState(s);
+    if (s.locality) setLocality(s.locality);
+    if (s.director_notes) setDirectorNotes(s.director_notes);
     setEvents(s.event_log);
     setRevealed(s.event_log.length);
   }, [projectId]);
@@ -99,6 +142,8 @@ export function ProjectProvider({ children }) {
   const startProject = useCallback((_nextProjectId, nextIntake) => {
     setIntake(nextIntake || null);
     setBudget(nextIntake?.budget ?? null);
+    if (nextIntake?.locality) setLocality(nextIntake.locality);
+    if (nextIntake?.notes) setDirectorNotes(nextIntake.notes);
   }, []);
 
   // Applies a candidate-status change returned by the casting endpoint without
@@ -123,6 +168,10 @@ export function ProjectProvider({ children }) {
     () => ({
       projectId,
       budget,
+      locality,
+      setLocality,
+      directorNotes,
+      setDirectorNotes,
       intake,
       startProject,
       state,
@@ -134,11 +183,29 @@ export function ProjectProvider({ children }) {
       error,
       setError,
       runPipeline,
+      runCasting,
       refreshState,
       applyCandidateUpdate,
       canEdit,
     }),
-    [projectId, budget, intake, startProject, state, events, revealed, running, error, runPipeline, refreshState, applyCandidateUpdate, canEdit]
+    [
+      projectId,
+      budget,
+      locality,
+      directorNotes,
+      intake,
+      startProject,
+      state,
+      events,
+      revealed,
+      running,
+      error,
+      runPipeline,
+      runCasting,
+      refreshState,
+      applyCandidateUpdate,
+      canEdit,
+    ]
   );
 
   return <ProjectContext.Provider value={value}>{children}</ProjectContext.Provider>;

@@ -21,13 +21,21 @@ def main() -> None:
     parser.add_argument("--project", default="PROJ_NEON_NIGHTS")
     parser.add_argument("--budget", type=float, default=config.DEFAULT_BUDGET_USD,
                         help="total production budget in USD (drives casting caps, venues, reach)")
+    parser.add_argument("--locality", default="Atlanta, GA", help="filming locality for local talent scouting")
+    parser.add_argument("--notes", default="", help="director's notes and casting directives")
     parser.add_argument("--verbose", action="store_true", help="print every A2A envelope")
     args = parser.parse_args()
 
-    state = GlobalState(project_id=args.project, budget_state=BudgetState(cap=args.budget))
+    state = GlobalState(
+        project_id=args.project,
+        budget_state=BudgetState(cap=args.budget),
+        locality=args.locality,
+        director_notes=args.notes,
+        script_context={"locality": args.locality, "director_notes": args.notes},
+    )
     orchestrator = Orchestrator()
 
-    print(f"🎬 CineNode — {args.project} (budget ${args.budget:,.0f})\n")
+    print(f"🎬 CineNode — {args.project} (budget ${args.budget:,.0f} | locality: {args.locality})\n")
     for node in orchestrator.nodes:
         before = len(state.event_log)
         state = orchestrator.run(state, start=node.key, end=node.key)

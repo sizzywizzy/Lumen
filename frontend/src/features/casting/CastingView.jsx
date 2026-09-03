@@ -27,11 +27,32 @@ function toCsv(rows) {
 // Phase I & II — the casting leaderboard. Ranking, scores and disqualifications
 // all come from GlobalState.candidates; the layout is the Stitch leaderboard.
 export default function CastingView() {
-  const { state, running, canEdit, projectId, applyCandidateUpdate } = useProject();
+  const { state, running, canEdit, projectId, applyCandidateUpdate, locality, directorNotes, runCasting } = useProject();
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [savingId, setSavingId] = useState(null);
   const [statusError, setStatusError] = useState("");
+  const [showScoutModal, setShowScoutModal] = useState(false);
+
+  const activeLocality = state?.locality || state?.script_context?.locality || locality || "Atlanta, GA";
+  const activeNotes = state?.director_notes || state?.script_context?.director_notes || directorNotes || "";
+  const [scoutLocality, setScoutLocality] = useState(activeLocality);
+  const [scoutNotes, setScoutNotes] = useState(activeNotes);
+  const [scouting, setScouting] = useState(false);
+
+  async function triggerScout(e) {
+    if (e) e.preventDefault();
+    setScouting(true);
+    setStatusError("");
+    try {
+      await runCasting(scoutLocality, scoutNotes);
+      setShowScoutModal(false);
+    } catch (err) {
+      setStatusError(`Google Cloud Talent Scout Agent error: ${err.message || err}`);
+    } finally {
+      setScouting(false);
+    }
+  }
 
   // Persist to the shared GlobalState so the whole team sees the decision,
   // then reflect the server's own copy of the row in the UI immediately.
@@ -95,8 +116,28 @@ export default function CastingView() {
     <>
       <PageHeader
         title="Casting Leaderboard"
-        sub={`Real-time candidate evaluation for ${state?.project_id || "this project"}. Ranks are sorted on the composite of audition, hype, PR and budget fit.`}
-        meta={STAGE_BY_PATH["/casting"]}
+        sub={`Real-time candidate evaluation for ${state?.project_id || "this project"}. Sourcing and ranking powered by Google Cloud Autonomous Talent Scout Agent.`}
+        meta={
+          <div className="stack stack--xs">
+            {STAGE_BY_PATH["/casting"]}
+            <div className="row row--tight" style={{ gap: 8, marginTop: 4, flexWrap: "wrap" }}>
+              <span className="badge" title="Target Locality for Local Hire Actors" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <Icon name="location_on" size={13} />
+                <span>Locality: <strong>{activeLocality}</strong></span>
+              </span>
+              <span className="badge" title="Maximum per-role budget allocation" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <Icon name="attach_money" size={13} />
+                <span>Role Cap: <strong>${Math.round((state?.budget_state?.cap || 250000) * 0.1).toLocaleString()}</strong></span>
+              </span>
+              {activeNotes && (
+                <span className="badge" title={`Director Notes: ${activeNotes}`} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  <Icon name="movie" size={13} />
+                  <span>Notes: <strong>{activeNotes.length > 30 ? activeNotes.slice(0, 30) + "…" : activeNotes}</strong></span>
+                </span>
+              )}
+            </div>
+          </div>
+        }
         actions={
           <>
             <MetricRow>
@@ -104,13 +145,95 @@ export default function CastingView() {
               <MetricCard label="Locked" value={locked} tone={locked ? "ok" : "plain"} />
               <MetricCard label="Screening" value={screening} tone={screening ? "warn" : "plain"} />
             </MetricRow>
-            <Link to="/advisors?advisor=casting" className="btn btn--ghost" title="Ask the Casting Advisor for a recommendation">
-              <Icon name="auto_awesome" />
-              Casting Advisor
-            </Link>
+            <div className="row row--tight" style={{ gap: 8 }}>
+              <button
+                type="button"
+                className="btn btn--primary"
+                onClick={() => {
+                  setScoutLocality(activeLocality);
+                  setScoutNotes(activeNotes);
+                  setShowScoutModal((s) => !s);
+                }}
+                disabled={running || scouting || !canEdit}
+                title="Crawl and scout local actors using Google Cloud Agent"
+              >
+                <Icon name={scouting ? "progress_activity" : "radar"} className={scouting ? "spin" : undefined} />
+                <span>{scouting ? "Scouting..." : "Scout Local Talent"}</span>
+              </button>
+              <Link to="/advisors?advisor=casting" className="btn btn--ghost" title="Ask the Casting Advisor for a recommendation">
+                <Icon name="auto_awesome" />
+                Casting Advisor
+              </Link>
+            </div>
           </>
         }
       />
+
+      {showScoutModal && (
+        <Panel className="panel--pad stack" style={{ border: "1px solid var(--primary)", background: "var(--surface-elevated, #161a22)", borderRadius: 8 }}>
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+            <h3 className="panel-title mono-label" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Icon name="travel_explore" />
+              Google Cloud Talent Scout Agent — Crawler Configuration
+            </h3>
+            <button type="button" className="btn btn--icon btn--ghost" onClick={() => setShowScoutModal(false)}>
+              <Icon name="close" size={16} />
+            </button>
+          </div>
+          <p className="body-sm muted">
+            Directs the Google Cloud casting agent to crawl local agency rosters, actor databases, and casting calls in your locality, strictly vetted to fit within your per-role budget cap and director notes.
+          </p>
+          <div className="grid grid--2" style={{ gap: 16 }}>
+            <div>
+              <label className="mono-label muted" style={{ display: "block", marginBottom: 6 }}>
+                Filming Locality / Talent Market
+              </label>
+              <input
+                className="input"
+                value={scoutLocality}
+                onChange={(e) => setScoutLocality(e.target.value)}
+                placeholder="e.g. Atlanta, GA or London, UK or New York, NY"
+              />
+            </div>
+            <div>
+              <label className="mono-label muted" style={{ display: "block", marginBottom: 6 }}>
+                Per-Role Budget Cap (USD)
+              </label>
+              <input
+                className="input"
+                disabled
+                value={`$${Math.round((state?.budget_state?.cap || 250000) * 0.1).toLocaleString()} USD (10% of total budget)`}
+              />
+            </div>
+          </div>
+          <div>
+            <label className="mono-label muted" style={{ display: "block", marginBottom: 6 }}>
+              Director's Casting Notes & Specific Requirements
+            </label>
+            <textarea
+              className="textarea"
+              rows={3}
+              value={scoutNotes}
+              onChange={(e) => setScoutNotes(e.target.value)}
+              placeholder="e.g. Gritty realism, martial arts stunt experience, local theater roots, bilingual..."
+            />
+          </div>
+          <div className="row" style={{ justifyContent: "flex-end", gap: 8 }}>
+            <button type="button" className="btn btn--ghost" onClick={() => setShowScoutModal(false)}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="btn btn--primary"
+              onClick={triggerScout}
+              disabled={running || scouting || !canEdit}
+            >
+              <Icon name={scouting ? "progress_activity" : "search"} className={scouting ? "spin" : undefined} />
+              <span>{scouting ? "Google Cloud Agent Crawling..." : "Crawl & Scout Candidates"}</span>
+            </button>
+          </div>
+        </Panel>
+      )}
 
       {statusError && (
         <div className="banner" data-tone="bad" role="alert">
@@ -158,12 +281,12 @@ export default function CastingView() {
 
         {ranked.length === 0 ? (
           <EmptyState
-            icon={running ? "progress_activity" : "groups"}
-            title={running ? "Agents are sourcing candidates…" : "No candidates yet"}
+            icon={running || scouting ? "progress_activity" : "groups"}
+            title={running || scouting ? "Google Cloud Agent is crawling talent..." : "No candidates yet"}
           >
-            {running
-              ? "The pre-casting agents are ingesting the talent pool."
-              : "Run the pipeline to let the pre-casting and audition agents build the leaderboard."}
+            {running || scouting
+              ? `The Google Cloud Agent is crawling talent agencies and local rosters in ${activeLocality} within your budget cap.`
+              : `Click "Scout Local Talent" or run the pipeline to crawl actors in ${activeLocality} matching your director notes.`}
           </EmptyState>
         ) : (
           <>
@@ -207,7 +330,26 @@ export default function CastingView() {
                               <div className="name">{c.name}</div>
                               <div className="sub">
                                 {c.role_id || "unassigned role"}
+                                {c.metadata?.locality ? ` • 📍 ${c.metadata.locality}` : ""}
                                 {c.metadata?.agency ? ` • ${c.metadata.agency}` : ""}
+                                {c.metadata?.quote_usd ? ` • Quote: $${Number(c.metadata.quote_usd).toLocaleString()}` : ""}
+                              </div>
+                              <div className="row row--tight" style={{ gap: 6, marginTop: 3, flexWrap: "wrap" }}>
+                                {c.metadata?.is_live_scouted ? (
+                                  <span className="badge" style={{ fontSize: 10, padding: "1px 6px", color: "var(--status-ok, #3fb950)", borderColor: "rgba(63, 185, 80, 0.4)" }} title="Live scouted via Google Cloud Gemini + Google Search Grounding">
+                                    🟢 Live Google Search
+                                  </span>
+                                ) : (
+                                  <span className="badge" style={{ fontSize: 10, padding: "1px 6px", color: "var(--text-muted, #8b949e)" }} title="Generated via locality-based synthesis fallback (no GEMINI_API_KEY set)">
+                                    ⚪ Offline Locality Synthesis
+                                  </span>
+                                )}
+                                {c.metadata?.director_match && (
+                                  <span className="muted body-sm" style={{ fontSize: 11 }}>
+                                    <span style={{ color: "var(--primary)", fontWeight: 500 }}>🎯 Match:</span>{" "}
+                                    {c.metadata.director_match}
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>

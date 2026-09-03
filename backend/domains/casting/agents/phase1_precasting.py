@@ -73,13 +73,23 @@ def _read_script(state: GlobalState) -> dict:
     }
 
 
+from domains.casting.agents.agent_scout import scout_candidates
+
+
 def _profiler(state: GlobalState) -> None:
     script = _read_script(state)
     preserved = {k: v for k, v in (state.script_context or {}).items() if k in PRESERVED_CONTEXT_KEYS}
     state.script_context = {**script["script_context"], **preserved}
+    
+    locality = getattr(state, "locality", None) or state.script_context.get("locality") or "Los Angeles, CA"
+    director_notes = getattr(state, "director_notes", None) or state.script_context.get("director_notes") or ""
+    state.script_context["locality"] = locality
+    state.script_context["director_notes"] = director_notes
+
     brief = {k: v for k, v in state.script_context.items() if k not in PRESERVED_CONTEXT_KEYS}
     mandate = gemini_client.generate_json(
         f"Script context: {brief}. Roles: {script['roles']}. "
+        f"Locality: {locality}. Director Notes: {director_notes}. "
         f"Total budget: ${state.budget_state.cap:,.0f}.",
         tier="pro",
         system=prompts.PROFILER_SYSTEM,
@@ -100,16 +110,15 @@ def _profiler(state: GlobalState) -> None:
     log_event(state, broadcast("agent_profiler", "mandate_ready", {
         "roles": list(state.role_requirements), "scoring_weights": state.scoring_weights,
         "source": script["source"],
+        "locality": locality,
+        "director_notes": director_notes,
     }))
 
 
 def _intake(state: GlobalState) -> None:
-    for raw in mock_db.load("candidates"):
-        candidate = Candidate(**raw, status="SOURCING")
-        state.candidates.append(candidate)
-        log_event(state, broadcast("agent_intake", "candidate_ingested", {
-            "candidate_id": candidate.id, "name": candidate.name, "role_id": candidate.role_id,
-        }))
+    """Use the Google Cloud Talent Scout Agent to crawl for local actors fitting budget & director notes."""
+    scouted = scout_candidates(state)
+    state.candidates.extend(scouted)
 
 
 def _hype_score(followers: int) -> float:

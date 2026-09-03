@@ -12,6 +12,7 @@ actually served the call, whether it fell back, and whether the result is real
 or mock — so the UI can never present mock output as a live model result.
 """
 import json
+import os
 import random
 import threading
 import time
@@ -39,27 +40,55 @@ def _get_client():
             from google import genai  # imported lazily so mock mode needs no install
             from google.genai import types
 
-            _client = genai.Client(
-                api_key=config.GEMINI_API_KEY,
-                http_options=types.HttpOptions(timeout=config.GEMINI_TIMEOUT_MS),
-            )
+            if config.GEMINI_API_KEY:
+                _client = genai.Client(
+                    api_key=config.GEMINI_API_KEY,
+                    http_options=types.HttpOptions(timeout=config.GEMINI_TIMEOUT_MS),
+                )
+            else:
+                # Direct Google Cloud ADC via Vertex AI — no explicit API key needed
+                _client = genai.Client(
+                    vertexai=True,
+                    project=config.GOOGLE_CLOUD_PROJECT,
+                    location=config.GOOGLE_CLOUD_LOCATION,
+                    http_options=types.HttpOptions(timeout=config.GEMINI_TIMEOUT_MS),
+                )
     return _client
 
 
 def _candidates(tier: str) -> list[str]:
-    preferred = config.GEMINI_PRO_MODEL if tier == "pro" else config.GEMINI_FLASH_MODEL
-    ordered = [preferred] + [m for m in config.GEMINI_FALLBACK_MODELS if m != preferred]
+    if config.GEMINI_API_KEY:
+        preferred = config.GEMINI_FLASH_MODEL
+        ordered = [preferred] + [m for m in config.GEMINI_FALLBACK_MODELS if m != preferred]
+    else:
+        # Vertex AI: enforce gemini-2.5-flash everywhere to conserve Google Cloud credits
+        vertex_flash = getattr(config, "VERTEX_FLASH_MODEL", "gemini-2.5-flash")
+        ordered = [vertex_flash]
     return ordered
 
 
 def _extract_json(text: str) -> Any:
-    """Models occasionally wrap JSON in a fence despite the mime type."""
+    """Models occasionally wrap JSON in a fence or preamble despite the mime type."""
     cleaned = (text or "").strip()
     if cleaned.startswith("```"):
         cleaned = cleaned.split("\n", 1)[-1]
         if cleaned.rstrip().endswith("```"):
             cleaned = cleaned.rstrip()[:-3]
-    return json.loads(cleaned)
+    try:
+        return json.loads(cleaned)
+    except Exception:
+        # If response has reasoning prose or markdown, isolate the first JSON structure
+        first_brace = cleaned.find("{")
+        first_bracket = cleaned.find("[")
+        if first_brace != -1 and (first_bracket == -1 or first_brace < first_bracket):
+            last_brace = cleaned.rfind("}")
+            if last_brace > first_brace:
+                return json.loads(cleaned[first_brace : last_brace + 1])
+        elif first_bracket != -1:
+            last_bracket = cleaned.rfind("]")
+            if last_bracket > first_bracket:
+                return json.loads(cleaned[first_bracket : last_bracket + 1])
+        raise
 
 
 def generate_json_traced(
@@ -127,6 +156,66 @@ def generate_json(
     """Original contract, unchanged for existing agents."""
     data, _trace = generate_json_traced(prompt, tier=tier, system=system, mock=mock)
     return data
+
+
+def generate_json_with_search(
+    prompt: str,
+    *,
+    tier: str = "pro",
+    system: Optional[str] = None,
+    mock: Optional[dict[str, Any]] = None,
+    attempts_per_model: int = 2,
+) -> tuple[Any, dict[str, Any]]:
+    """Run a prompt with Google Search grounding enabled via Google GenAI SDK.
+
+    Uses types.Tool(google_search=types.GoogleSearch()) to allow the Google Cloud
+    Gemini agent to crawl the web and ground talent discoveries in live web data.
+    """
+    if not config.has_gemini():
+        if mock is not None:
+            return mock, {"source": "mock", "model": None, "reason": "no_api_key"}
+        raise GeminiUnavailable("GEMINI_API_KEY not set and no mock provided for this call.")
+
+    from google.genai import types
+
+    client = _get_client()
+    models = _candidates(tier)
+    last_error = ""
+    total_attempts = 0
+    search_tool = types.Tool(google_search=types.GoogleSearch())
+
+    for model_index, model in enumerate(models):
+        for attempt in range(attempts_per_model):
+            total_attempts += 1
+            try:
+                response = client.models.generate_content(
+                    model=model,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system,
+                        tools=[search_tool],
+                    ),
+                )
+                return _extract_json(response.text), {
+                    "source": "gemini_grounded",
+                    "model": model,
+                    "attempts": total_attempts,
+                    "fell_back": model_index > 0,
+                }
+            except Exception as exc:  # noqa: BLE001
+                last_error = f"{type(exc).__name__}: {exc}"
+                text = str(exc)
+                if any(code in text for code in _MODEL_GONE):
+                    break
+                if any(code in text for code in _RETRYABLE) and attempt + 1 < attempts_per_model:
+                    time.sleep(1.5 * (attempt + 1) + random.random())
+                    continue
+                break
+
+    if mock is not None:
+        reason = "adc_reauth_required" if "Reauthentication" in last_error else "all_models_failed"
+        return mock, {"source": "mock", "model": None, "reason": reason, "error": last_error[:300]}
+    raise GeminiUnavailable(last_error or "All Gemini models failed.")
 
 
 def map_concurrent(items: Iterable, worker: Callable, max_workers: Optional[int] = None) -> list:
