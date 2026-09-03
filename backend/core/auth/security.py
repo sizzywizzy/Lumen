@@ -14,6 +14,7 @@ import hashlib
 import hmac
 import secrets
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 
 # OWASP Password Storage Cheat Sheet (2023) for PBKDF2-HMAC-SHA256.
 PBKDF2_ITERATIONS = 600_000
@@ -21,6 +22,8 @@ _ALGO = "pbkdf2_sha256"
 
 SESSION_TTL_HOURS = 12
 INVITE_TTL_HOURS = 72
+
+PASSWORD_MIN_LENGTH = 10
 
 
 def now() -> datetime:
@@ -44,6 +47,18 @@ def is_expired(expires_at: str) -> bool:
         return now() >= parse_iso(expires_at)
     except (ValueError, TypeError):
         return True
+
+
+def password_problem(password: str) -> Optional[str]:
+    """The one strength rule shared by sign-up, invite redemption and the
+    password-reset script. Returns the reason a password is rejected, or None."""
+    if len(password) < PASSWORD_MIN_LENGTH:
+        return f"Password must be at least {PASSWORD_MIN_LENGTH} characters."
+    if password.strip() != password:
+        return "Password must not start or end with whitespace."
+    if password.isdigit() or password.isalpha():
+        return "Password must mix letters with numbers or symbols."
+    return None
 
 
 def hash_password(password: str) -> str:

@@ -223,6 +223,11 @@ def delete_session(token: str) -> None:
     _delete("cn_sessions", "token_fingerprint", security.fingerprint(token))
 
 
+def delete_sessions_for_user(user_id: str) -> None:
+    """Sign an account out everywhere, e.g. after a password reset."""
+    _delete("cn_sessions", "user_id", user_id)
+
+
 def purge_expired_sessions() -> None:
     """Cheap housekeeping on the local-file backend; Supabase can use a cron."""
     if config.has_supabase():

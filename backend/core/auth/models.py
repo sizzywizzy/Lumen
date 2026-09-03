@@ -8,6 +8,8 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
+from core.auth import security
+
 # Pydantic's EmailStr needs the email-validator package; this project keeps its
 # dependency list to fastapi/uvicorn/pydantic, so we validate with a plain rule.
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s.]+(\.[^@\s.]+)+$")
@@ -91,10 +93,9 @@ class RegisterRequest(BaseModel):
     @field_validator("password")
     @classmethod
     def password_strength(cls, v: str) -> str:
-        if v.strip() != v:
-            raise ValueError("Password must not start or end with whitespace.")
-        if v.isdigit() or v.isalpha():
-            raise ValueError("Password must mix letters with numbers or symbols.")
+        problem = security.password_problem(v)
+        if problem:
+            raise ValueError(problem)
         return v
 
 

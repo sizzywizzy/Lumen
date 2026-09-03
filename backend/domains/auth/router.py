@@ -273,10 +273,9 @@ def join(req: JoinRequest, user: Optional[User] = Depends(optional_user)):
 
 def _check_password_strength(password: str) -> None:
     """Apply the same strength rule the register endpoint enforces."""
-    if len(password) < 10:
-        raise HTTPException(422, "Password must be at least 10 characters.")
-    if password.isdigit() or password.isalpha():
-        raise HTTPException(422, "Password must mix letters with numbers or symbols.")
+    problem = security.password_problem(password)
+    if problem:
+        raise HTTPException(422, problem)
 
 
 # --------------------------------------------------------------------- team --
