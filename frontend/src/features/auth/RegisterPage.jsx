@@ -13,7 +13,7 @@ export default function RegisterPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  if (ready && user) return <Navigate to="/" replace />;
+  if (ready && user) return <Navigate to="/overview" replace />;
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
   const weak = form.password.length > 0 && form.password.length < 10;
@@ -24,7 +24,7 @@ export default function RegisterPage() {
     setError("");
     try {
       await register(form);
-      navigate("/", { replace: true });
+      navigate("/new", { replace: true });
     } catch (err) {
       setError(String(err.message || err));
     } finally {

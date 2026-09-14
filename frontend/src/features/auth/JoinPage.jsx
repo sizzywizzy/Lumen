@@ -48,7 +48,7 @@ export default function JoinPage() {
       await join(payload);
       if (preview?.project_id) selectProduction(preview.project_id);
       await refresh().catch(() => {});
-      navigate("/", { replace: true });
+      navigate("/overview", { replace: true });
     } catch (err) {
       setError(String(err.message || err));
     } finally {
@@ -90,7 +90,7 @@ export default function JoinPage() {
         <EmptyState icon="task_alt" title="You're already on this production">
           Signed in as {preview.signed_in_as}.
         </EmptyState>
-        <button type="button" className="btn btn--primary btn--lg" onClick={() => navigate("/")}>
+        <button type="button" className="btn btn--primary btn--lg" onClick={() => navigate("/overview")}>
           <Icon name="dashboard" />
           Open the dashboard
         </button>

@@ -1,89 +1,99 @@
 /* ============================================================================
    Lumen design system
-   Two warm themes taken from the logo's golden-hour palette:
-     dark  = dusk   (warm charcoal, cream text, gold highlights)
-     light = paper  (warm paper, ink text, amber highlights)
-   The whole set of custom properties swaps on <html data-theme>. Every surface,
-   text, border, input, table, chart and badge below reads from these
-   variables — nothing hardcodes a colour. Text pairs meet WCAG AA contrast.
+   Light by default, with an optional dark theme:
+     light = warm grey pages, white cards, ink text, amber highlights
+     dark  = warm charcoal pages, dark cards, cream text, amber highlights
+   Text uses each device's own system font. The whole set of custom properties
+   swaps on <html data-theme>; every surface, text, border and chart reads from
+   these variables, and text pairs meet WCAG AA contrast.
    ========================================================================= */
 
 :root {
-  /* --- dark: dusk (application default) --- */
-  --background: #17110d;
-  --surface: #17110d;
-  --surface-dim: #17110d;
-  --surface-bright: #473e36;
-  --surface-container-lowest: #0f0b08;
-  --surface-container-low: #1d1712;
-  --surface-container: #221b16;
-  --surface-container-high: #2c251f;
-  --surface-container-highest: #372e27;
-  --surface-variant: #372e27;
-  --surface-charcoal: #1c1611;
-  --surface-raised: #231d17;
+  /* --- light (default) --- */
+  --background: #f3f1ed;
+  --surface: #f3f1ed;
+  --surface-dim: #ddd6cc;
+  --surface-bright: #ffffff;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #f6f3ee;
+  --surface-container: #efebe5;
+  --surface-container-high: #e9e4dc;
+  --surface-container-highest: #e4ded5;
+  --surface-variant: #e4ded5;
+  --surface-charcoal: #f6f3ee;
+  --surface-raised: #ffffff;
 
-  --on-background: #f5f0e1;
-  --on-surface: #f5f0e1;
-  --on-surface-variant: #c9bca9;
-  --outline: #928473;
-  --outline-variant: #453b33;
+  --on-background: #1c1917;
+  --on-surface: #1c1917;
+  --on-surface-variant: #6b645c;
+  --outline: #9b948b;
+  --outline-variant: #e6e0d7;
 
-  --primary: #fac33d;
-  --on-primary: #2b2018;
-  --primary-container: #5b3a13;
-  --on-primary-container: #fcde79;
+  --primary: #1c1917;
+  --on-primary: #ffffff;
+  --primary-container: #ebe6de;
+  --on-primary-container: #1c1917;
   --inverse-primary: #f6a121;
-  --secondary: #f6a121;
-  --secondary-container: #4a3221;
-  --on-secondary-container: #edd4ab;
-  --tertiary: #b6aca0;
-  --tertiary-container: #4f463c;
+  --secondary: #b45309;
+  --secondary-container: #f6f3ee;
+  --on-secondary-container: #1c1917;
+  --tertiary: #6b645c;
+  --tertiary-container: #e4ded5;
 
-  /* the filled call-to-action colour */
-  --accent: #fac33d;
-  --on-accent: #2b2018;
+  /* filled buttons */
+  --accent: #1c1917;
+  --on-accent: #ffffff;
+  /* the one colour for charts, meters and highlights: the logo's amber */
+  --highlight: #f6a121;
+  --highlight-soft: #fcebc9;
+  --on-highlight-soft: #6b5a45;
+  --hatch: #cfc6ba;
+  /* the dark "feature" card (budget, top pick, closing call to action) */
+  --feature-bg: #1c1917;
+  --feature-fg: #ffffff;
+  --feature-muted: #a8a29e;
 
-  --error: #ee8266;
-  --error-container: #612517;
-  --status-success: #99c77f;
-  --status-warning: #f6a121;
-  --status-error: #ee8266;
+  --error: #b42318;
+  --error-container: #fde7e4;
+  --status-success: #15803d;
+  --status-warning: #b45309;
+  --status-error: #b42318;
 
-  --primary-soft: rgba(250, 195, 61, 0.14);
-  --primary-glow: 0 0 0 3px rgba(250, 195, 61, 0.18);
-  --scrim: rgba(12, 9, 7, 0.6);
-  --panel-shadow: 0 1px 2px rgba(0, 0, 0, 0.24), 0 8px 24px rgba(0, 0, 0, 0.16);
+  --primary-soft: rgba(28, 25, 23, 0.06);
+  --primary-glow: 0 0 0 3px rgba(28, 25, 23, 0.12);
+  --scrim: rgba(28, 25, 23, 0.4);
+  --panel-shadow: none;
+  --float-shadow: 0 18px 50px rgba(28, 25, 23, 0.1);
 
-  /* the agent log stays ink-dark in both themes */
-  --terminal-bg: #120e0b;
-  --terminal-border: #372e27;
-  --terminal-fg: #e9dfcd;
+  /* the agent log stays dark in both themes */
+  --terminal-bg: #1c1917;
+  --terminal-border: #36312c;
+  --terminal-fg: #ece6dc;
   --json-key: #b3a58f;
   --json-string: #fcde79;
-  --json-number: #99c77f;
-  --json-punct: #6f6252;
+  --json-number: #9cc98a;
+  --json-punct: #7a6c5c;
 
   /* the logo (assets/logo.svg) keeps its own golden-hour colours */
-  --logo-wordmark: #f5f0e1;
-  --logo-unlit: #534c45;
-  --logo-lit: #fac33d;
-  --logo-beam: #fac33d;
-  --logo-beam-opacity: 0.16;
-  --logo-camera: #f6a121;
-  --logo-glass: #fcde79;
+  --logo-wordmark: #1c1917;
+  --logo-unlit: #2b2018;
+  --logo-lit: #e87822;
+  --logo-beam: #fcde79;
+  --logo-beam-opacity: 0.6;
+  --logo-camera: #2b2018;
+  --logo-glass: #fac33d;
 
-  --font-headline: "DM Serif Display", Georgia, "Times New Roman", serif;
-  --font-body: "DM Sans", "Segoe UI", system-ui, sans-serif;
-  --font-label: "DM Sans", "Segoe UI", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
-  --headline-tracking: -0.005em;
+  --font-headline: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-label: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", Consolas, Menlo, monospace;
+  --headline-tracking: -0.02em;
 
   /* shape — soft, rounded corners */
-  --radius-sm: 4px;
-  --radius: 8px;
-  --radius-lg: 10px;
-  --radius-xl: 16px;
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 22px;
   --radius-pill: 999px;
 
   /* spacing — 4px baseline, 16px gutter, 32px desktop margin */
@@ -94,72 +104,75 @@
   --sidebar-w: 256px;
   --rail-w: 380px;
 
-  color-scheme: dark;
+  color-scheme: light;
 }
 
-:root[data-theme="light"] {
-  /* --- light: paper --- */
-  --background: #faf6ee;
-  --surface: #faf6ee;
-  --surface-dim: #dcd3c6;
-  --surface-bright: #fffdfa;
-  --surface-container-lowest: #fffdfa;
-  --surface-container-low: #f5efe6;
-  --surface-container: #f1eae0;
-  --surface-container-high: #eae2d6;
-  --surface-container-highest: #e3d9cd;
-  --surface-variant: #e3d9cd;
-  --surface-charcoal: #f5efe6;
-  --surface-raised: #fffdfa;
+:root[data-theme="dark"] {
+  /* --- dark (optional) --- */
+  --background: #141210;
+  --surface: #141210;
+  --surface-dim: #141210;
+  --surface-bright: #3b3530;
+  --surface-container-lowest: #0f0d0b;
+  --surface-container-low: #1b1916;
+  --surface-container: #211e1b;
+  --surface-container-high: #2a2622;
+  --surface-container-highest: #332e29;
+  --surface-variant: #332e29;
+  --surface-charcoal: #1b1916;
+  --surface-raised: #1f1c19;
 
-  --on-background: #2b2018;
-  --on-surface: #2b2018;
-  --on-surface-variant: #68574a;
-  --outline: #8d7d6e;
-  --outline-variant: #ddd3c5;
+  --on-background: #f3efe8;
+  --on-surface: #f3efe8;
+  --on-surface-variant: #b5ada3;
+  --outline: #8a8279;
+  --outline-variant: #34302b;
 
-  --primary: #a05000;
-  --on-primary: #fffdfa;
-  --primary-container: #f7dba1;
-  --on-primary-container: #5c300b;
-  --inverse-primary: #e87822;
-  --secondary: #9d580c;
-  --secondary-container: #f5e1c8;
-  --on-secondary-container: #573b28;
-  --tertiary: #706052;
-  --tertiary-container: #dfcfb4;
+  --primary: #f3efe8;
+  --on-primary: #141210;
+  --primary-container: #332e29;
+  --on-primary-container: #f3efe8;
+  --inverse-primary: #f6a121;
+  --secondary: #f6a121;
+  --secondary-container: #2a2622;
+  --on-secondary-container: #f3efe8;
+  --tertiary: #b5ada3;
+  --tertiary-container: #332e29;
 
-  --accent: #f6a121;
-  --on-accent: #2b2018;
+  --accent: #f3efe8;
+  --on-accent: #141210;
+  --highlight: #f6a121;
+  --highlight-soft: #3a2c16;
+  --on-highlight-soft: #e3cfa8;
+  --hatch: #4a433c;
+  --feature-bg: #f3efe8;
+  --feature-fg: #141210;
+  --feature-muted: #6b645c;
 
-  --error: #b23a26;
-  --error-container: #ffdfd6;
-  --status-success: #427138;
-  --status-warning: #9d580c;
-  --status-error: #b23a26;
+  --error: #f28b82;
+  --error-container: #4a1f1b;
+  --status-success: #6fcf97;
+  --status-warning: #f6a121;
+  --status-error: #f28b82;
 
-  --primary-soft: rgba(246, 161, 33, 0.16);
-  --primary-glow: 0 0 0 3px rgba(246, 161, 33, 0.22);
-  --scrim: rgba(43, 32, 24, 0.4);
-  --panel-shadow: 0 1px 2px rgba(43, 32, 24, 0.05), 0 6px 20px rgba(43, 32, 24, 0.06);
+  --primary-soft: rgba(243, 239, 232, 0.08);
+  --primary-glow: 0 0 0 3px rgba(243, 239, 232, 0.14);
+  --scrim: rgba(0, 0, 0, 0.6);
+  --panel-shadow: none;
+  --float-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
 
-  --terminal-bg: #1c1612;
-  --terminal-border: #3a3029;
-  --terminal-fg: #efe6d6;
-  --json-key: #b8a88f;
-  --json-string: #fcde79;
-  --json-number: #a6d08f;
-  --json-punct: #7a6c5c;
+  --terminal-bg: #0f0d0b;
+  --terminal-border: #34302b;
 
-  --logo-wordmark: #2b2018;
-  --logo-unlit: #2b2018;
-  --logo-lit: #e87822;
-  --logo-beam: #fcde79;
-  --logo-beam-opacity: 0.6;
-  --logo-camera: #2b2018;
-  --logo-glass: #fac33d;
+  --logo-wordmark: #f5f0e1;
+  --logo-unlit: #534c45;
+  --logo-lit: #fac33d;
+  --logo-beam: #fac33d;
+  --logo-beam-opacity: 0.16;
+  --logo-camera: #f6a121;
+  --logo-glass: #fcde79;
 
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 /* ---------------------------------------------------------------- base --- */
@@ -175,8 +188,6 @@ body {
   font-size: 16px;
   line-height: 24px;
   -webkit-font-smoothing: antialiased;
-  /* DM Serif Display ships one weight; never fake a bold from it */
-  font-synthesis-weight: none;
 }
 
 ::selection { background: var(--primary-soft); }
@@ -211,17 +222,17 @@ a { color: inherit; text-decoration: none; }
 
 .headline-xl {
   font-family: var(--font-headline);
-  font-size: 44px; line-height: 52px; font-weight: 400;
+  font-size: 40px; line-height: 48px; font-weight: 600;
   letter-spacing: var(--headline-tracking); color: var(--on-surface);
 }
 .headline-lg {
   font-family: var(--font-headline);
-  font-size: 34px; line-height: 42px; font-weight: 400;
+  font-size: 32px; line-height: 40px; font-weight: 600;
   letter-spacing: var(--headline-tracking); color: var(--on-surface);
 }
 .headline-md {
   font-family: var(--font-headline);
-  font-size: 26px; line-height: 34px; font-weight: 400; color: var(--on-surface);
+  font-size: 24px; line-height: 32px; font-weight: 600; letter-spacing: -0.01em; color: var(--on-surface);
 }
 .body-lg { font-size: 18px; line-height: 28px; }
 .body-md { font-size: 16px; line-height: 24px; }
@@ -242,8 +253,8 @@ a { color: inherit; text-decoration: none; }
 .nums { font-variant-numeric: tabular-nums; }
 
 @media (max-width: 768px) {
-  .headline-xl { font-size: 34px; line-height: 42px; }
-  .headline-lg { font-size: 30px; line-height: 38px; }
+  .headline-xl { font-size: 32px; line-height: 40px; }
+  .headline-lg { font-size: 28px; line-height: 36px; }
 }
 
 /* -------------------------------------------------------------- shell --- */
@@ -464,7 +475,7 @@ a { color: inherit; text-decoration: none; }
 
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 9px 18px; border-radius: var(--radius-lg); cursor: pointer;
+  padding: 10px 18px; border-radius: var(--radius-pill); cursor: pointer;
   font-family: var(--font-body); font-size: 14px; line-height: 20px;
   font-weight: 600; letter-spacing: 0; text-transform: none;
   border: 1px solid transparent; background: none; color: var(--on-surface);
@@ -472,13 +483,13 @@ a { color: inherit; text-decoration: none; }
   white-space: nowrap;
 }
 .btn .material-symbols-outlined { font-size: 18px; }
-.btn--ghost { border-color: var(--outline-variant); color: var(--on-surface); }
+.btn--ghost { border-color: var(--outline-variant); background: var(--surface-raised); color: var(--on-surface); }
 .btn--ghost:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
 .btn--tonal { background: var(--surface-variant); border-color: var(--outline-variant); }
 .btn--tonal:hover:not(:disabled) { background: var(--surface-container-high); }
 .btn--primary { background: var(--accent); color: var(--on-accent); }
-.btn--primary:hover:not(:disabled) { filter: brightness(1.06); }
-.btn--lg { padding: 13px 28px; font-size: 16px; line-height: 22px; }
+.btn--primary:hover:not(:disabled) { opacity: 0.88; }
+.btn--lg { padding: 14px 26px; font-size: 16px; line-height: 22px; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn--icon {
   width: 36px; height: 36px; padding: 0; border-radius: var(--radius-lg);
@@ -618,7 +629,7 @@ table.data tbody tr:hover .avatar-round { border-color: var(--primary); }
 .stat-tile .v {
   display: block;
   font-family: var(--font-headline); font-size: 28px; line-height: 34px;
-  font-weight: 400; color: var(--primary); font-variant-numeric: tabular-nums;
+  font-weight: 600; color: var(--primary); font-variant-numeric: tabular-nums;
 }
 .stat-tile .v[data-tone="warn"] { color: var(--status-warning); }
 .stat-tile .v[data-tone="bad"] { color: var(--status-error); }
@@ -658,7 +669,7 @@ table.data tbody tr:hover .avatar-round { border-color: var(--primary); }
 .gauge-arc { position: relative; flex: 1; display: flex; align-items: flex-start; justify-content: center; min-height: 150px; padding-bottom: 8px; }
 .gauge-arc svg { width: 100%; max-width: 200px; overflow: visible; }
 .gauge-arc .readout { position: absolute; bottom: 0; width: 100%; text-align: center; }
-.gauge-arc .readout .n { display: block; font-family: var(--font-headline); font-size: 36px; line-height: 40px; font-weight: 400; }
+.gauge-arc .readout .n { display: block; font-family: var(--font-headline); font-size: 36px; line-height: 40px; font-weight: 600; }
 .gauge-arc .readout p { font-size: 13px; line-height: 18px; }
 .gauge-scale { margin-top: 16px; display: flex; justify-content: space-between; font-size: 13px; color: var(--on-surface-variant); }
 
@@ -667,7 +678,7 @@ table.data tbody tr:hover .avatar-round { border-color: var(--primary); }
 .gauge-radial .readout { position: absolute; display: flex; flex-direction: column; align-items: center; }
 .gauge-radial .readout .n {
   font-family: var(--font-headline); font-size: 40px; line-height: 46px;
-  font-weight: 400; color: var(--on-surface); font-variant-numeric: tabular-nums;
+  font-weight: 600; color: var(--on-surface); font-variant-numeric: tabular-nums;
 }
 .gauge-stack { display: flex; flex-direction: column; align-items: center; gap: 16px; }
 .gauge-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 32px; }
@@ -741,7 +752,7 @@ table.data tbody tr:hover .avatar-round { border-color: var(--primary); }
 }
 .month-tile:hover, .month-tile.selected { border-color: var(--primary); background: var(--primary-soft); }
 .month-tile { min-width: 0; overflow: hidden; }
-.month-tile strong { display: block; font-family: var(--font-headline); font-size: 18px; font-weight: 400; overflow-wrap: anywhere; }
+.month-tile strong { display: block; font-family: var(--font-headline); font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
 .month-tile small { display: block; margin-top: 6px; color: var(--on-surface-variant); font-size: 13px; line-height: 18px; }
 .month-dots { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 10px; min-height: 5px; }
 .month-dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--primary); display: block; }
@@ -852,7 +863,7 @@ table.data tbody tr:hover .avatar-round { border-color: var(--primary); }
   gap: 10px; padding: 48px 24px; text-align: center; color: var(--on-surface-variant);
 }
 .empty .material-symbols-outlined { font-size: 32px; opacity: 0.6; }
-.empty h4 { font-family: var(--font-headline); font-size: 22px; line-height: 28px; font-weight: 400; color: var(--on-surface); }
+.empty h4 { font-family: var(--font-headline); font-size: 20px; line-height: 26px; font-weight: 600; color: var(--on-surface); }
 .empty p { max-width: 46ch; font-size: 15px; line-height: 22px; }
 
 .banner {
@@ -922,7 +933,7 @@ table.data tbody tr:hover .avatar-round { border-color: var(--primary); }
   background: var(--surface-raised); border: 1px solid var(--outline-variant);
   border-radius: var(--radius-xl); padding: 32px; box-shadow: var(--panel-shadow);
 }
-.auth-brand { display: flex; align-items: center; gap: 16px; color: var(--logo-wordmark); }
+.auth-brand { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; color: var(--logo-wordmark); }
 .auth-brand p { font-size: 17px; line-height: 24px; }
 .auth-footer { text-align: center; }
 .auth-link { color: var(--primary); text-decoration: underline; }
@@ -1096,7 +1107,7 @@ table.data tbody tr.current-row { background: var(--primary-soft); }
 .skill-card[data-focus="true"] { border-color: var(--primary); box-shadow: var(--primary-glow); }
 .skill-head { display: flex; align-items: flex-start; gap: 12px; }
 .skill-head > .material-symbols-outlined { font-size: 28px; color: var(--primary); }
-.skill-head h3 { font-family: var(--font-headline); font-size: 22px; font-weight: 400; margin: 0; overflow-wrap: anywhere; }
+.skill-head h3 { font-family: var(--font-headline); font-size: 20px; font-weight: 600; margin: 0; overflow-wrap: anywhere; }
 .skill-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .skill-desc { font-size: 14px; line-height: 20px; color: var(--on-surface-variant); margin: 0; }
 .skill-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }

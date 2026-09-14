@@ -9,8 +9,8 @@ import { useTheme } from "../../theme/ThemeProvider.jsx";
 import { cn, money, shortDate, statusLabel } from "../../lib/utils.js";
 
 const THEMES = [
-  { key: "dark", label: "Dark", icon: "dark_mode", hint: "Warm charcoal with golden highlights. Easy on the eyes at night." },
-  { key: "light", label: "Light", icon: "light_mode", hint: "Warm paper with amber accents. Easy to read by day." },
+  { key: "light", label: "Light", icon: "light_mode", hint: "Warm grey pages with white cards. The default." },
+  { key: "dark", label: "Dark", icon: "dark_mode", hint: "Warm charcoal, easier on the eyes at night." },
 ];
 
 // Where casting stands for the production as a whole.
@@ -55,8 +55,8 @@ export default function SettingsPage() {
           ))}
         </div>
         <p className="muted body-sm" style={{ marginTop: 12 }}>
-          The choice is stored in this browser and applies to every screen. With no saved choice, Lumen follows your
-          operating system.
+          Your choice is saved in this browser and applies to every screen. Lumen starts in light mode.
+
         </p>
       </Panel>
 
