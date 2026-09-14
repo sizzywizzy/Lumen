@@ -6,7 +6,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 // its own theme logic. index.html applies the same rule before first paint
 // so there is no flash on load.
 
-const STORAGE_KEY = "cinenode-theme";
+const STORAGE_KEY = "lumen-theme";
 const ThemeContext = createContext({ theme: "dark", setTheme: () => {}, toggleTheme: () => {} });
 
 function readStoredTheme() {

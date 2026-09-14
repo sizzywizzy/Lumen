@@ -1,4 +1,4 @@
-# Dockerfile for CineNode Backend deployment to Google Cloud Run
+# Dockerfile for Lumen Backend deployment to Google Cloud Run
 # Multi-stage build for optimization
 
 FROM python:3.11-slim as builder

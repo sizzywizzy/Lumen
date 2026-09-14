@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://cinenode/contracts/global_state.json",
+  "$id": "https://lumen/contracts/global_state.json",
   "title": "GlobalState",
   "description": "The one JSON object passed through the entire pipeline. See AGENT.md Section 3. Changing this file requires whole-team agreement.",
   "type": "object",

@@ -1,4 +1,4 @@
-"""FastAPI entrypoint for CineNode.
+"""FastAPI entrypoint for Lumen.
 
     cd backend
     uvicorn main:app --reload --port 8000
@@ -24,7 +24,7 @@ from domains.production.router import router as production_router
 from domains.skills.router import router as skills_router
 from services import auth_store, script_intake, supabase_client
 
-app = FastAPI(title="CineNode", version="0.1.0")
+app = FastAPI(title="Lumen", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,

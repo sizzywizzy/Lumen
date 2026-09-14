@@ -15,7 +15,7 @@ pypdf>=4.0                   # services/script_intake.py
 # (Replit, Cloud Run) - without it, accounts and simulations are lost on redeploy.
 # Activates only when SUPABASE_URL + SUPABASE_KEY are set; otherwise the app
 # falls back to local JSON under backend/.state/. Force either side with
-# CINENODE_STATE_BACKEND=local|supabase.
+# LUMEN_STATE_BACKEND=local|supabase.
 supabase>=2.4                # services/{supabase_client,auth_store,simulation_store}.py
 # Tavily needs no package — services/tavily_client.py calls its REST API with
 # urllib. Set TAVILY_API_KEY to enable web-grounded cultural research.

@@ -105,7 +105,7 @@ export default function CastingView() {
     const url = URL.createObjectURL(new Blob([toCsv(rows)], { type: "text/csv;charset=utf-8" }));
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${state?.project_id || "cinenode"}-casting-leaderboard.csv`;
+    a.download = `${state?.project_id || "lumen"}-casting-leaderboard.csv`;
     document.body.appendChild(a);
     a.click();
     a.remove();

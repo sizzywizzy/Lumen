@@ -49,7 +49,7 @@ export default function SettingsPage() {
           ))}
         </div>
         <p className="muted body-sm" style={{ marginTop: 12 }}>
-          The choice is stored in this browser and applies to every screen. With no saved choice, CineNode follows your
+          The choice is stored in this browser and applies to every screen. With no saved choice, Lumen follows your
           operating system.
         </p>
       </Panel>

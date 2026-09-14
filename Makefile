@@ -57,7 +57,7 @@ docs: install
 	@$(PIP) show pydoctor >/dev/null 2>&1 || $(PIP) install --upgrade pydoctor
 	$(PYTHON_BIN) -m pydoctor --make-html \
 		--html-output=./docs \
-		--project-name="CineNode" \
+		--project-name="Lumen" \
 		backend/core \
 		backend/domains \
 		backend/services \

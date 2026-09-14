@@ -4,7 +4,7 @@ import Sidebar, { BottomNav } from "./Sidebar.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
 import Icon from "./Icon.jsx";
 import LiveAgentTerminal from "./LiveAgentTerminal.jsx";
-import CineNodeLogo from "./CineNodeLogo.jsx";
+import LumenLogo from "./LumenLogo.jsx";
 import { useProject } from "./ProjectContext.jsx";
 import { useAuth } from "./AuthContext.jsx";
 import { money } from "../lib/utils.js";
@@ -42,9 +42,9 @@ export default function AppShell() {
             type="button"
             className="brand-mobile md-down"
             onClick={() => navigate("/")}
-            aria-label="CineNode home"
+            aria-label="Lumen home"
           >
-            <CineNodeLogo height={22} />
+            <LumenLogo height={22} />
           </button>
 
           {/* Labelled key/value pair — colon, spacing and weight make the value

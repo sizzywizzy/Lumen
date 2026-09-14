@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://cinenode/contracts/a2a_envelope.json",
+  "$id": "https://lumen/contracts/a2a_envelope.json",
   "title": "A2A Envelope",
   "description": "The single message shape every agent uses. See AGENT.md Section 2. Never invent another shape.",
   "type": "object",

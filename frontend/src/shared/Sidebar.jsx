@@ -37,7 +37,7 @@ export default function Sidebar() {
           </svg>
         </span>
         <div>
-          <h1>CineNode</h1>
+          <h1>Lumen</h1>
           <p className="mono-label">Production Dashboard</p>
         </div>
       </div>

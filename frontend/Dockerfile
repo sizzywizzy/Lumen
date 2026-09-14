@@ -1,4 +1,4 @@
-# Dockerfile for CineNode Frontend deployment to Google Cloud Run
+# Dockerfile for Lumen Frontend deployment to Google Cloud Run
 # Multi-stage build for static file optimization
 
 FROM node:18-alpine as builder

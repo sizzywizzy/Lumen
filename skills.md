@@ -1,4 +1,4 @@
-# CineNode skills
+# Lumen skills
 
 This is the catalogue of every skill the agents in [`AGENT.md`](AGENT.md) rely
 on, kept in step with the code. It has two parts:
@@ -155,7 +155,7 @@ Shared plumbing for all four:
 | Code | `backend/services/supabase_client.py` (`save_state`, `load_state`, `list_projects`) |
 | Purpose | One `GlobalState` per production; Supabase `global_state` or `backend/.state/PROJ_*.json`. |
 | Used by | Every router and every advisor run (load at start, save at end). |
-| Constraints | `CINENODE_STATE_BACKEND` = `auto`, `supabase` or `local`. Membership is checked by the routers before any load. |
+| Constraints | `LUMEN_STATE_BACKEND` = `auto`, `supabase` or `local`. Membership is checked by the routers before any load. |
 
 ### B6. Audience panel building
 

@@ -6,7 +6,7 @@ import { api, loadStoredToken, setSessionToken, setUnauthorizedHandler } from ".
 // components, so no screen can leak it into markup or a URL.
 
 const AuthContext = createContext(null);
-const ACTIVE_KEY = "cinenode-active-project";
+const ACTIVE_KEY = "lumen-active-project";
 
 function readActiveProject() {
   try {
