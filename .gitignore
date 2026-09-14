@@ -16,3 +16,6 @@ frontend/dist/
 .vscode/
 .idea/
 .DS_Store
+
+# Pytest
+.pytest_cache/
