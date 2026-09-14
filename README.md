@@ -301,13 +301,43 @@ There are no tiers or modes. The total budget from the intake cover page lands i
 
 ---
 
-## Team & Phase Ownership
+## Origins and Authorship
 
-| Phases | Owner |
+CineNode started as a three-person hackathon project by Raymond Thomas Roshy,
+Shriya Soni, and Swati Kumari; the original repo is
+[Shriya-Soni/CineNode](https://github.com/Shriya-Soni/CineNode). After the
+hackathon deadline, I (Swati) continued development solo in this repo.
+
+The hackathon plan split ownership by phase:
+
+| Phases | Planned owner |
 |---|---|
-| Casting | **Raymond** |
-| Schedule & Compliance | **Shriya** |
-| Audience & Marketing | **Swati** |
+| Casting | Raymond |
+| Schedule & Compliance | Shriya |
+| Audience & Marketing | Swati |
+
+What actually shipped, measured at the fork point with `git blame` over the
+tree (excluding mock data and lockfiles):
+
+| Author | Surviving lines | Share |
+|---|---|---|
+| Swati | 14,913 | 88% |
+| Raymond | 1,439 | 8% |
+| Shriya | 613 | 4% |
+
+Raymond wrote the initial GCP deployment config, the Gemini client, and the
+scout agent. Shriya wrote the actor knowledge-base service and parts of the
+production routing. The rest of the tree is mine: the six-phase agent pipeline,
+authentication, the agent skills system, the advisor UI, the launch and
+marketing phases, and the test suite and CI. Every commit after the fork is mine.
+
+To reproduce the numbers:
+
+```bash
+git ls-files | grep -v -E 'mock_data/|package-lock|\.(png|svg|ico|lock)$' \
+  | while read f; do git blame --line-porcelain -w HEAD -- "$f"; done \
+  | grep '^author-mail' | sort | uniq -c | sort -rn
+```
 
 ---
 
