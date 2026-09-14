@@ -11,6 +11,19 @@ import { useAuth } from "./AuthContext.jsx";
 
 const REVEAL_MS = 60; // terminal replay speed per message
 
+// Plain formats are read as text in the browser; anything else (.pdf, .fdx)
+// goes up as base64 and the backend extracts it.
+const PLAIN_TEXT = /\.(txt|fountain|md|markdown|text)$/i;
+
+function readAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("We couldn't open that file. Try saving it again and dropping it in."));
+    reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
+    reader.readAsDataURL(file);
+  });
+}
+
 const ProjectContext = createContext(null);
 
 export function ProjectProvider({ children }) {
@@ -138,6 +151,46 @@ export function ProjectProvider({ children }) {
     setRevealed(s.event_log.length);
   }, [projectId]);
 
+  // The whole drop-a-script flow: seed the production, upload the screenplay,
+  // run every phase, then load the results. `onStep` hears "reading" and then
+  // "planning" as each real step starts, so the progress screen never claims
+  // something finished before it has.
+  const startRun = useCallback(
+    async ({ file, budget: amount, start, wrap, locality: place, notes }, onStep = () => {}) => {
+      if (!projectId || !canEdit) throw new Error("Only producers and the owner can drop in a new script.");
+      setRunning(true);
+      setError("");
+      clearInterval(timerRef.current);
+      try {
+        onStep("reading");
+        await api.initPipeline(projectId, amount, place, notes, start, wrap);
+        try {
+          const payload = PLAIN_TEXT.test(file.name)
+            ? { filename: file.name, text: await file.text() }
+            : { filename: file.name, content_base64: await readAsBase64(file) };
+          await api.uploadScript(projectId, payload);
+        } catch (e) {
+          throw new Error(`We couldn't read that script. ${e.message || ""}`.trim());
+        }
+        setIntake({ budget: amount, start, wrap, notes, locality: place, fileName: file.name });
+        setBudget(amount);
+        setLocality(place);
+        setDirectorNotes(notes);
+
+        onStep("planning");
+        await api.runPipeline(projectId, amount, place, notes, start, wrap);
+        const s = await api.getState(projectId);
+        setState(s);
+        setEvents(s.event_log);
+        setRevealed(s.event_log.length);
+        return s;
+      } finally {
+        setRunning(false);
+      }
+    },
+    [projectId, canEdit]
+  );
+
   // Called by the intake screen once the project has been seeded.
   const startProject = useCallback((_nextProjectId, nextIntake) => {
     setIntake(nextIntake || null);
@@ -184,6 +237,7 @@ export function ProjectProvider({ children }) {
       setError,
       runPipeline,
       runCasting,
+      startRun,
       refreshState,
       applyCandidateUpdate,
       canEdit,
@@ -202,6 +256,7 @@ export function ProjectProvider({ children }) {
       error,
       runPipeline,
       runCasting,
+      startRun,
       refreshState,
       applyCandidateUpdate,
       canEdit,

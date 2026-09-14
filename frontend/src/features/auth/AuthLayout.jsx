@@ -1,5 +1,4 @@
-import LumenIcon from "../../shared/CameraArt.jsx";
-import { LumenWordmark } from "../../shared/LumenLogo.jsx";
+import BrandLogo from "../../shared/BrandLogo.jsx";
 import ThemeToggle from "../../shared/ThemeToggle.jsx";
 
 // Centred shell for the signed-out screens. Uses the same design tokens as the
@@ -12,11 +11,8 @@ export default function AuthLayout({ title, sub, children, footer }) {
       </div>
       <div className="auth-card">
         <div className="auth-brand">
-          <LumenIcon size={68} />
-          <div>
-            <LumenWordmark height={50} />
-            <p className="mono-label muted">Production dashboard</p>
-          </div>
+          <BrandLogo to="/" height={76} />
+          <p className="mono-label muted">Production dashboard</p>
         </div>
         <div>
           <h1 className="headline-md">{title}</h1>

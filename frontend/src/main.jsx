@@ -6,6 +6,7 @@ import { ThemeProvider } from "./theme/ThemeProvider.jsx";
 import { AuthProvider } from "./shared/AuthContext.jsx";
 import { ProjectProvider } from "./shared/ProjectContext.jsx";
 import "./index.css";
+import "./site.css";
 
 // AuthProvider sits above ProjectProvider: the active production comes from the
 // signed-in member's memberships, so pipeline state can only ever load for a

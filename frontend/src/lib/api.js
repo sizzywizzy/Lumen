@@ -95,6 +95,15 @@ async function request(path, { anonymous = false, ...options } = {}) {
 const post = (path, body, extra = {}) =>
   request(path, { method: "POST", body: JSON.stringify(body), ...extra });
 
+const pipelineBody = (project_id, budget_usd, locality, director_notes, start_date, end_date) => ({
+  project_id,
+  budget_usd: budget_usd ? Number(budget_usd) : undefined,
+  locality: locality || undefined,
+  director_notes: director_notes || undefined,
+  start_date: start_date || undefined,
+  end_date: end_date || undefined,
+});
+
 export const api = {
   health: () => request("/api/health"),
 
@@ -117,21 +126,12 @@ export const api = {
   joinProduction: (payload) => post("/api/auth/join", payload),
 
   // ---- pipeline + state ---------------------------------------------------
-  // Seed a project's state from the cover intake form (budget → casting/venue/reach caps, locality, director notes).
-  initPipeline: (project_id, budget_usd, locality, director_notes) =>
-    post("/api/pipeline/init", {
-      project_id,
-      budget_usd: budget_usd ? Number(budget_usd) : undefined,
-      locality: locality || undefined,
-      director_notes: director_notes || undefined,
-    }),
-  runPipeline: (project_id, budget_usd, locality, director_notes) =>
-    post("/api/pipeline/run", {
-      project_id,
-      budget_usd: budget_usd ? Number(budget_usd) : undefined,
-      locality: locality || undefined,
-      director_notes: director_notes || undefined,
-    }),
+  // Seed a project's state from the script drop form (budget → casting/venue/reach
+  // caps, locality, director notes, shooting dates as YYYY-MM-DD).
+  initPipeline: (project_id, budget_usd, locality, director_notes, start_date, end_date) =>
+    post("/api/pipeline/init", pipelineBody(project_id, budget_usd, locality, director_notes, start_date, end_date)),
+  runPipeline: (project_id, budget_usd, locality, director_notes, start_date, end_date) =>
+    post("/api/pipeline/run", pipelineBody(project_id, budget_usd, locality, director_notes, start_date, end_date)),
   getState: (projectId) => request(`/api/state/${projectId}`),
   getEvents: (projectId, since = 0) => request(`/api/events/${projectId}?since=${since}`),
 

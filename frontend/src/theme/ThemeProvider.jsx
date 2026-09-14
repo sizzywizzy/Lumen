@@ -5,54 +5,39 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 // through the CSS custom properties defined in index.css, so nothing needs
 // its own theme logic. index.html applies the same rule before first paint
 // so there is no flash on load.
+//
+// Lumen is light by default. Dark is an option the viewer turns on, and only
+// that explicit choice is stored.
 
-const STORAGE_KEY = "lumen-theme";
-const ThemeContext = createContext({ theme: "dark", setTheme: () => {}, toggleTheme: () => {} });
+const STORAGE_KEY = "lumen-theme-choice";
+const ThemeContext = createContext({ theme: "light", setTheme: () => {}, toggleTheme: () => {} });
 
 function readStoredTheme() {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved === "light" || saved === "dark") return saved;
+    return localStorage.getItem(STORAGE_KEY) === "dark" ? "dark" : "light";
   } catch {
-    /* storage blocked (private window, embedded frame) — fall through */
+    return "light"; // storage blocked (private window, embedded frame)
   }
-  // No saved preference: respect the operating system on first visit.
-  if (typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: light)").matches) {
-    return "light";
-  }
-  return "dark";
 }
 
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(readStoredTheme);
+  const [theme, setThemeState] = useState(readStoredTheme);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
+
+  const setTheme = useCallback((next) => {
+    setThemeState(next);
     try {
-      localStorage.setItem(STORAGE_KEY, theme);
+      localStorage.setItem(STORAGE_KEY, next);
     } catch {
       /* not persistable — the theme still applies for this session */
     }
-  }, [theme]);
-
-  // Follow the OS while the user has not made an explicit choice.
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-color-scheme: light)");
-    const onChange = (e) => {
-      let stored = null;
-      try {
-        stored = localStorage.getItem(STORAGE_KEY);
-      } catch {
-        /* ignore */
-      }
-      if (stored !== "light" && stored !== "dark") setTheme(e.matches ? "light" : "dark");
-    };
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
   }, []);
 
-  const toggleTheme = useCallback(() => setTheme((t) => (t === "dark" ? "light" : "dark")), []);
-  const value = useMemo(() => ({ theme, setTheme, toggleTheme }), [theme, toggleTheme]);
+  const toggleTheme = useCallback(() => setTheme(theme === "dark" ? "light" : "dark"), [theme, setTheme]);
+  const value = useMemo(() => ({ theme, setTheme, toggleTheme }), [theme, setTheme, toggleTheme]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

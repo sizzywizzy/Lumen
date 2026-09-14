@@ -13,7 +13,7 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  if (ready && user) return <Navigate to={location.state?.from || "/"} replace />;
+  if (ready && user) return <Navigate to={location.state?.from || "/overview"} replace />;
 
   async function submit(e) {
     e.preventDefault();
@@ -21,7 +21,7 @@ export default function LoginPage() {
     setError("");
     try {
       await login(email, password);
-      navigate(location.state?.from || "/", { replace: true });
+      navigate(location.state?.from || "/overview", { replace: true });
     } catch (err) {
       setError(String(err.message || err));
     } finally {
