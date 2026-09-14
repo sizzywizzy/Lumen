@@ -1,4 +1,5 @@
-# Dockerfile for Lumen Backend deployment to Google Cloud Run
+# Dockerfile for the Lumen backend (FastAPI). Render builds it from render.yaml;
+# the same image runs on any container host (Cloud Run, Railway, Fly.io).
 # Multi-stage build for optimization
 
 FROM python:3.11-slim as builder
@@ -33,12 +34,15 @@ COPY backend/ .
 # SKILL.md files live beside backend/ in the repo; keep that layout in the image
 COPY skills/ /skills/
 
-# Expose port for Cloud Run
+# Hosts inject the port to listen on as $PORT (Render sets 10000); 8000 is the
+# default everywhere else.
+ENV PORT=8000
 EXPOSE 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"
+    CMD python -c "import os, urllib.request; urllib.request.urlopen('http://localhost:%s/api/health' % os.environ.get('PORT', '8000'))"
 
-# Run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run the application. `exec` hands PID 1 to uvicorn so it receives the host's
+# SIGTERM and shuts down cleanly on redeploy.
+CMD ["sh", "-c", "exec uvicorn main:app --host 0.0.0.0 --port ${PORT}"]

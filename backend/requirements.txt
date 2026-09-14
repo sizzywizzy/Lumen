@@ -12,7 +12,7 @@ google-genai>=1.0            # services/gemini_client.py
 pypdf>=4.0                   # services/script_intake.py
 
 # Shared persistence. Required for any deployment whose filesystem is ephemeral
-# (Replit, Cloud Run) - without it, accounts and simulations are lost on redeploy.
+# (Render, Cloud Run) - without it, accounts and simulations are lost on redeploy.
 # Activates only when SUPABASE_URL + SUPABASE_KEY are set; otherwise the app
 # falls back to local JSON under backend/.state/. Force either side with
 # LUMEN_STATE_BACKEND=local|supabase.

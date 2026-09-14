@@ -1,4 +1,4 @@
-# Optional local stack: `docker compose up`. Replit/dev can just run
+# Optional local stack: `docker compose up`. Local dev can also just run
 # uvicorn + vite directly (see README Getting Started).
 services:
   backend:

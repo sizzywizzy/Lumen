@@ -1,15 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -28 168 168" role="img" aria-label="Lumen camera">
-  <!-- The Lumen camera mark (flat cine camera from the team's reference image). -->
-  <rect x="30" y="12" width="18" height="14" rx="3" fill="#3f3a43"/>
-  <rect x="118" y="15" width="24" height="11" rx="3" fill="#3f3a43"/>
-  <path d="M56 26 q3 -14 16 -14 h16 q13 0 16 14 z" fill="#4c4650"/>
-  <rect x="2" y="24" width="164" height="76" rx="14" fill="#5a5460"/>
-  <path d="M2 38 a14 14 0 0 1 14 -14 h24 v76 h-24 a14 14 0 0 1 -14 -14 z" fill="#49434e"/>
-  <circle cx="104" cy="62" r="32" fill="#b9aab5"/>
-  <circle cx="104" cy="62" r="25" fill="#49434e"/>
-  <circle cx="104" cy="62" r="20" fill="#eaf7fd"/>
-  <circle cx="108" cy="66" r="17.5" fill="#c8e8f6"/>
-  <circle cx="150" cy="42" r="3.5" fill="#3f3a43"/>
-  <circle cx="151" cy="80" r="3" fill="#3f3a43"/>
-  <circle cx="19" cy="84" r="3" fill="#3f3a43"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Lumen">
+  <!-- Lumen icon: the vintage cine camera's beam lighting an "L" (DM Serif Display, outlined). -->
+  <defs>
+    <clipPath id="tile"><rect width="240" height="240" rx="52" /></clipPath>
+  </defs>
+  <rect width="240" height="240" rx="52" fill="#2b2018" />
+  <path d="M84 79.2 L240 36 L240 232 L84 100.8 Z" fill="#fac33d" fill-opacity="0.22" clip-path="url(#tile)" />
+  <path d="M104.87 200V198.24L108.57 196.83Q112.26 195.42 113.23 193.4Q114.2 191.38 114.2 187.86V95.98Q114.2 92.46 113.14 90.35Q112.09 88.24 108.57 87.01L104.87 85.6V83.84H149.75V85.6L146.58 87.01Q143.24 88.24 142.01 90.44Q140.78 92.64 140.78 96.16V196.48H167.88Q174.39 196.48 177.47 193.31Q180.55 190.14 183.37 184.16L190.23 169.38H191.99L190.41 200Z" fill="#fac33d" />
+  <g transform="translate(84 90) scale(0.54)">
+    <g fill="#f6a121"><path fill-rule="evenodd" d="M-127 -48 a27 27 0 1 0 54 0 a27 27 0 1 0 -54 0 Z M-107 -48 a7 7 0 1 0 14 0 a7 7 0 1 0 -14 0 Z" /><path fill-rule="evenodd" d="M-72 -45 a22 22 0 1 0 44 0 a22 22 0 1 0 -44 0 Z M-56 -45 a6 6 0 1 0 12 0 a6 6 0 1 0 -12 0 Z" /><rect x="-128" y="-24" width="90" height="50" rx="8" /><rect x="-39" y="-9" width="10" height="18" /><polygon points="-30,-12 0,-20 0,20 -30,12" /></g>
+    <g fill="#fcde79"><rect x="-5" y="-20" width="5" height="40" /></g>
+  </g>
 </svg>

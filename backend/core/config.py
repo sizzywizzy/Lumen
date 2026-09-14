@@ -1,4 +1,4 @@
-"""Central configuration. Reads env vars (Replit Secrets / .env / GCP Secret Manager).
+"""Central configuration. Reads env vars (.env locally, the host's env settings when deployed).
 
 Every external key is optional: with no keys set, the whole pipeline runs on
 mock data so anyone can develop and demo without credentials.
@@ -36,9 +36,20 @@ TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY", "")
 #   auto     - Supabase when URL+KEY are set and the client is installed, else local JSON
 #   supabase - require Supabase; fail loudly rather than silently using local files
 #   local    - always local JSON, even with credentials present
-# Replit's filesystem does not survive a redeploy, so deployments must run on
-# "auto" (with Supabase configured) or "supabase". "local" is for offline dev.
+# Hosted filesystems (Render, Cloud Run) do not survive a redeploy, so
+# deployments must run on "auto" (with Supabase configured) or "supabase".
+# "local" is for offline dev.
 STATE_BACKEND = os.environ.get("LUMEN_STATE_BACKEND", "auto").strip().lower()
+
+# Browser origins allowed to call the API. "*" suits local dev; a public deploy
+# lists its frontend, e.g. LUMEN_CORS_ORIGINS=https://lumen.vercel.app. An empty
+# value counts as unset, so a blank host setting never locks every origin out.
+CORS_ORIGINS = [
+    origin.strip().rstrip("/")
+    for origin in (os.environ.get("LUMEN_CORS_ORIGINS") or "*").split(",")
+    if origin.strip()
+]
+
 WHISPER_API_KEY = os.environ.get("WHISPER_API_KEY", "")
 IMAGEN_API_KEY = os.environ.get("IMAGEN_API_KEY", "")
 
