@@ -2,6 +2,12 @@
   <img src="assets/logo.svg" alt="CineNode" width="360" />
 </p>
 
+<p align="center">
+  <a href="https://github.com/Shriya-Soni/CineNode/actions/workflows/ci.yml">
+    <img src="https://github.com/Shriya-Soni/CineNode/actions/workflows/ci.yml/badge.svg" alt="CI status" />
+  </a>
+</p>
+
 # 🎬 CineNode
 
 > One multi-agent system that takes a film from **script → screen → social launch**.
@@ -134,9 +140,11 @@ cinenode/
 ├── contracts/                   # SACRED: shared JSON schemas — change only with team agreement
 │   ├── a2a_envelope.json
 │   └── global_state.json
+├── .github/workflows/ci.yml     # tests + frontend build on every push
 ├── backend/
 │   ├── main.py                  # FastAPI entrypoint (mounts one router per domain)
 │   ├── run_demo.py              # CLI: full pipeline on mock data
+│   ├── tests/                   # pytest: envelope, fail-fast edges, personas, auth
 │   ├── migrations/              # PostgreSQL/pgvector schema (actor KB)
 │   ├── scripts/                 # one-off maintenance scripts
 │   ├── core/                    # THE BRAIN — shared by everyone
@@ -213,6 +221,20 @@ npm run dev
 # kicks off PROJ_NEON_NIGHTS through all six phases with mock data
 python backend/run_demo.py --project PROJ_NEON_NIGHTS --budget 250000
 ```
+
+### 5. Run the tests
+```bash
+cd backend
+pip install -r requirements-dev.txt
+pytest
+```
+
+Covers the pure logic — A2A envelope rules, orchestrator fail-fast edges,
+seeded persona generation, password hashing, and the auth 401/403/404 guards.
+No keys and no database: every test that touches the auth store gets its own
+tmp directory, so your `backend/.state/` is never read or written.
+GitHub Actions runs this plus the frontend build on every push
+(`.github/workflows/ci.yml`).
 
 ### Actor knowledge base (Phase I)
 

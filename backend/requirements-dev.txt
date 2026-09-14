@@ -1,0 +1,5 @@
+# Test-only dependencies. Kept out of requirements.txt so the deployed image
+# (Dockerfile / Cloud Run) does not ship the test runner.
+-r requirements.txt
+
+pytest>=8.0
