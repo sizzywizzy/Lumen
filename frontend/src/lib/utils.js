@@ -45,8 +45,39 @@ export function statusTone(status) {
   return STATUS_TONES[status] || "neutral";
 }
 
+// What each backend status literal means, in words a producer would use.
+const STATUS_WORDS = {
+  LOCKED: "Top pick",
+  CLEARED: "Cleared",
+  APPROVED: "Approved",
+  SCHEDULED: "Scheduled",
+  POSTED: "Posted",
+  COMPLETED: "Done",
+  SCREENING: "In review",
+  AWAITING_QC: "Awaiting checks",
+  PR_REVIEW: "In PR review",
+  PARTIAL: "Partly done",
+  FLAGGED_ACTION_REQUIRED: "Needs attention",
+  DRAFT: "Draft",
+  SOURCING: "Searching",
+  PLANNED: "Planned",
+  BLOCKED: "Blocked",
+  DISQUALIFIED: "Ruled out",
+};
+
+// Sentence case for anything without a mapping: "SOME_NEW_STATE" -> "Some new state".
+function sentence(value) {
+  const words = String(value || "").replace(/[_-]+/g, " ").trim().toLowerCase();
+  return words ? words[0].toUpperCase() + words.slice(1) : "";
+}
+
 export function statusLabel(status) {
-  return String(status || "").replace(/_/g, " ");
+  return STATUS_WORDS[status] || sentence(status);
+}
+
+// "producer" -> "Producer"
+export function roleLabel(role) {
+  return sentence(role);
 }
 
 export function money(value) {
@@ -75,6 +106,16 @@ export function initials(name) {
     .slice(0, 2)
     .map((w) => w[0].toUpperCase())
     .join("");
+}
+
+// "2026-09-01" or an ISO timestamp -> "Sep 1, 2026".
+export function shortDate(value) {
+  if (!value) return "";
+  const text = String(value);
+  // a bare date is a calendar day; read it at noon so no timezone shifts it
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(text) ? new Date(`${text}T12:00:00`) : new Date(text);
+  if (Number.isNaN(date.getTime())) return text;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 // "2026-09-04T10:42:07Z" -> "10:42:07" for terminal timestamps.

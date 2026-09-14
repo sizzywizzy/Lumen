@@ -79,7 +79,7 @@ export function StatusBadgeSelect({ status, options, onChange, disabled = false,
         <div className="status-menu" role="listbox">
           {pending ? (
             <div className="status-reason">
-              <p className="mono-label muted">Reason for {statusLabel(pending)}</p>
+              <p className="mono-label muted">Why is this "{statusLabel(pending)}"?</p>
               <input
                 className="input"
                 autoFocus

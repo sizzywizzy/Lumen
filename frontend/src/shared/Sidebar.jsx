@@ -1,9 +1,10 @@
 import { NavLink } from "react-router-dom";
 import Icon from "./Icon.jsx";
-import { CameraArt } from "./CameraArt.jsx";
+import LumenIcon from "./CameraArt.jsx";
+import { LumenWordmark } from "./LumenLogo.jsx";
 import { PRIMARY_NAV, SECONDARY_NAV } from "./navigation.js";
 import { useAuth } from "./AuthContext.jsx";
-import { cn, initials } from "../lib/utils.js";
+import { cn, initials, roleLabel } from "../lib/utils.js";
 
 function NavRow({ item, onNavigate }) {
   return (
@@ -31,14 +32,13 @@ export default function Sidebar() {
     <nav className="sidebar" aria-label="Primary">
       <div className="sidebar-brand">
         <span className="sidebar-mark" aria-hidden="true">
-          {/* the team's own camera mark, not a stock glyph */}
-          <svg viewBox="0 -28 168 168" width="26" height="26" style={{ display: "block" }}>
-            <CameraArt />
-          </svg>
+          <LumenIcon size={40} />
         </span>
         <div>
-          <h1>Lumen</h1>
-          <p className="mono-label">Production Dashboard</p>
+          <h1>
+            <LumenWordmark height={28} />
+          </h1>
+          <p className="mono-label">Production dashboard</p>
         </div>
       </div>
 
@@ -59,7 +59,7 @@ export default function Sidebar() {
           </span>
           <div className="who">
             <p>{user?.name || "Signed in"}</p>
-            <p className="mono-label">{role || "member"}</p>
+            <p className="mono-label">{roleLabel(role) || "Member"}</p>
           </div>
         </div>
       </div>
