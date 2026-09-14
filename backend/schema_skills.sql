@@ -1,4 +1,4 @@
--- CineNode advisor-run schema (Supabase / Postgres).
+-- Lumen advisor-run schema (Supabase / Postgres).
 --
 -- Only needed when SUPABASE_URL + SUPABASE_KEY are configured. With no
 -- credentials the same records are kept as JSON under backend/.state/skills/.

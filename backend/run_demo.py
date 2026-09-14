@@ -17,7 +17,7 @@ from services import supabase_client
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run the full CineNode pipeline.")
+    parser = argparse.ArgumentParser(description="Run the full Lumen pipeline.")
     parser.add_argument("--project", default="PROJ_NEON_NIGHTS")
     parser.add_argument("--budget", type=float, default=config.DEFAULT_BUDGET_USD,
                         help="total production budget in USD (drives casting caps, venues, reach)")
@@ -35,7 +35,7 @@ def main() -> None:
     )
     orchestrator = Orchestrator()
 
-    print(f"🎬 CineNode — {args.project} (budget ${args.budget:,.0f} | locality: {args.locality})\n")
+    print(f"🎬 Lumen — {args.project} (budget ${args.budget:,.0f} | locality: {args.locality})\n")
     for node in orchestrator.nodes:
         before = len(state.event_log)
         state = orchestrator.run(state, start=node.key, end=node.key)

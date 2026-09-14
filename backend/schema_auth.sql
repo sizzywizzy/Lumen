@@ -1,4 +1,4 @@
--- CineNode auth schema (Supabase / Postgres).
+-- Lumen auth schema (Supabase / Postgres).
 --
 -- Only needed when SUPABASE_URL + SUPABASE_KEY are configured. With no
 -- credentials the same tables are kept as JSON under backend/.state/auth/,

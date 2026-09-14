@@ -114,7 +114,7 @@ def _generate_fallback_candidates(
             "id": cid,
             "name": raw["name"],
             "role_id": raw["role_id"],
-            "media_url": f"https://reels.cinenode.internal/{locality.lower().replace(' ', '_').replace(',', '')}/{slug}_reel.mp4",
+            "media_url": f"https://reels.lumen.internal/{locality.lower().replace(' ', '_').replace(',', '')}/{slug}_reel.mp4",
             "metadata": {
                 "locality": locality,
                 "agency": raw["agency"],
@@ -242,7 +242,7 @@ def scout_candidates(state: GlobalState) -> list[Candidate]:
         meta["scouted_via"] = scouted_via_label
         meta["is_live_scouted"] = is_live
 
-        media_url = raw.get("media_url") or f"https://reels.cinenode.internal/{cid.lower()}_audition.mp4"
+        media_url = raw.get("media_url") or f"https://reels.lumen.internal/{cid.lower()}_audition.mp4"
 
         candidate = Candidate(
             id=cid,

@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -28 168 168" role="img" aria-label="CineNode camera">
-  <!-- The CineNode camera mark (flat cine camera from the team's reference image). -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -28 168 168" role="img" aria-label="Lumen camera">
+  <!-- The Lumen camera mark (flat cine camera from the team's reference image). -->
   <rect x="30" y="12" width="18" height="14" rx="3" fill="#3f3a43"/>
   <rect x="118" y="15" width="24" height="11" rx="3" fill="#3f3a43"/>
   <path d="M56 26 q3 -14 16 -14 h16 q13 0 16 14 z" fill="#4c4650"/>

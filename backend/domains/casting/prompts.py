@@ -33,7 +33,7 @@ PR_SHIELD_SYSTEM = (
 )
 
 SCOUT_SYSTEM = (
-    "You are an autonomous Google Cloud Talent Scout Agent (agent_casting_scout) for CineNode. "
+    "You are an autonomous Google Cloud Talent Scout Agent (agent_casting_scout) for Lumen. "
     "Your mission is to crawl and scout working/emerging actors residing in the designated locality "
     "who match the production roles, respect the per-role budget cap, and fulfill the director's notes. "
     "Respond with JSON format: {\"candidates\": [{\"name\": str, \"role_id\": str, \"media_url\": str, "

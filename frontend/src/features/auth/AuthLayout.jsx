@@ -1,4 +1,4 @@
-import CineNodeLogo from "../../shared/CineNodeLogo.jsx";
+import LumenLogo from "../../shared/LumenLogo.jsx";
 import ThemeToggle from "../../shared/ThemeToggle.jsx";
 
 // Centred shell for the signed-out screens. Uses the same design tokens as the
@@ -11,7 +11,7 @@ export default function AuthLayout({ title, sub, children, footer }) {
       </div>
       <div className="auth-card">
         <div className="auth-brand">
-          <CineNodeLogo height={30} />
+          <LumenLogo height={30} />
           <p className="mono-label muted">Production Dashboard</p>
         </div>
         <div>

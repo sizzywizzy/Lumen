@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.svg" alt="CineNode" width="360" />
+  <img src="assets/logo.svg" alt="Lumen" width="360" />
 </p>
 
 <p align="center">
@@ -8,12 +8,19 @@
   </a>
 </p>
 
-# 🎬 CineNode
+# 🎬 Lumen
 
-> One multi-agent system that takes a film from **script → screen → social launch**.
-> Built for **Agentic Cinema: The Blockbuster Hackathon** (Google Cloud · Replit Track).
+> **Lumen is an autonomous film studio in software.** Give it a screenplay and a
+> budget, and six cooperating AI agents cast it, schedule the shoot, clear rights
+> per territory, test-screen it with 200 synthetic viewers, and plan the launch,
+> negotiating with each other over one shared protocol while humans only sign
+> off at the top.
+>
+> Started as a three-person entry to **Agentic Cinema: The Blockbuster Hackathon**
+> (Google Cloud · Replit track), now carried solo: FastAPI · React · Gemini ·
+> 17k lines · tested, with CI on every push.
 
-CineNode is a network of specialized AI agents that run the entire film lifecycle as **six connected phases** — casting, scheduling, compliance, audience testing, and marketing — sharing **one orchestrator, one state object, and one agent-to-agent (A2A) messaging standard**. Scale follows the budget you enter at intake: casting caps, venue choices and territory reach all derive from it.
+Lumen is a network of specialized AI agents that run the entire film lifecycle as **six connected phases** — casting, scheduling, compliance, audience testing, and marketing — sharing **one orchestrator, one state object, and one agent-to-agent (A2A) messaging standard**. Scale follows the budget you enter at intake: casting caps, venue choices and territory reach all derive from it.
 
 It is a true **Multi-Agent System (MAS)**: agents ask each other questions, get answers, and change their own behavior — humans only sign off at the top.
 
@@ -131,7 +138,7 @@ Imagen 3 (`agent_visual` returns mock assets), FFmpeg + Whisper
 ## Repository Structure
 
 ```
-cinenode/
+lumen/
 ├── README.md
 ├── AGENT.md                     # agent registry, A2A + GlobalState contracts
 ├── assets/                      # logo + brand (the o of Node is the camera)
@@ -303,7 +310,7 @@ There are no tiers or modes. The total budget from the intake cover page lands i
 
 ## Origins and Authorship
 
-CineNode started as a three-person hackathon project by Raymond Thomas Roshy,
+Lumen started life as **CineNode**, a three-person hackathon project by Raymond Thomas Roshy,
 Shriya Soni, and Swati Kumari; the original repo is
 [Shriya-Soni/CineNode](https://github.com/Shriya-Soni/CineNode). After the
 hackathon deadline, I (Swati) continued development solo in this repo.

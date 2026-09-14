@@ -3,7 +3,7 @@
 // The session token is held here so every request carries it without each
 // caller having to remember. AuthContext owns the lifecycle; nothing else
 // reads or writes it directly.
-const TOKEN_KEY = "cinenode-session";
+const TOKEN_KEY = "lumen-session";
 let sessionToken = null;
 
 export function loadStoredToken() {

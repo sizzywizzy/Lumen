@@ -1,4 +1,4 @@
-# CineNode on Replit
+# Lumen on Replit
 
 Context for Replit Agent. **Read this before changing anything.** This is a
 working application, not a scaffold — do not rewrite it, do not re-scaffold the
@@ -52,7 +52,7 @@ Set these in Replit **Secrets** (never in the repo — `.env` is gitignored):
 | `GEMINI_API_KEY` | All agent reasoning. 14 calls per pipeline run, 9 per simulation | Yes for live AI |
 | `SUPABASE_URL` / `SUPABASE_KEY` | Shared persistence for state, accounts, simulations | **Yes for deployment** |
 | `TAVILY_API_KEY` | Optional web grounding for cultural research | No |
-| `CINENODE_STATE_BACKEND` | `auto` (default) / `supabase` / `local` | No |
+| `LUMEN_STATE_BACKEND` | `auto` (default) / `supabase` / `local` | No |
 
 Every key is read server-side in `backend/core/config.py`. None reaches the
 browser. **Do not add any `VITE_`-prefixed secret** — Vite inlines those into

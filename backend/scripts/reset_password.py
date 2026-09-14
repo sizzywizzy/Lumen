@@ -1,6 +1,6 @@
 """Reset an account's password from the command line.
 
-CineNode sends no email, so there is no self-service "forgot password" flow.
+Lumen sends no email, so there is no self-service "forgot password" flow.
 Whoever runs the backend resets a password here instead:
 
     cd backend
@@ -40,7 +40,7 @@ def reset_password(email: str, new_password: str) -> User:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Reset a CineNode account's password.")
+    parser = argparse.ArgumentParser(description="Reset a Lumen account's password.")
     parser.add_argument("email", help="email of the account to reset")
     args = parser.parse_args()
 

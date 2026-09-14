@@ -1,10 +1,10 @@
-# Google Cloud Deployment Guide for CineNode
+# Google Cloud Deployment Guide for Lumen
 
-This guide covers deploying CineNode to Google Cloud Platform using your $300 credit budget.
+This guide covers deploying Lumen to Google Cloud Platform using your $300 credit budget.
 
 ## Overview
 
-CineNode can be deployed to GCP with the following architecture:
+Lumen can be deployed to GCP with the following architecture:
 
 - **Cloud Run**: Serverless deployment for backend (FastAPI) and frontend (React)
 - **Supabase**: shared persistence for state, accounts and simulations
@@ -52,8 +52,8 @@ TAVILY_API_KEY=                  # optional: cultural-research grounding
 gcloud builds submit --config cloudbuild.yaml .
 
 # Or deploy manually
-./deploy-cloudrun.sh $PROJECT_ID us-central1 cinenode-backend
-./deploy-frontend.sh $PROJECT_ID us-central1 cinenode-frontend
+./deploy-cloudrun.sh $PROJECT_ID us-central1 lumen-backend
+./deploy-frontend.sh $PROJECT_ID us-central1 lumen-frontend
 ```
 
 ## Manual Deployment
@@ -62,14 +62,14 @@ gcloud builds submit --config cloudbuild.yaml .
 
 ```bash
 # Build and deploy backend
-./deploy-cloudrun.sh your-project-id us-central1 cinenode-backend
+./deploy-cloudrun.sh your-project-id us-central1 lumen-backend
 ```
 
 ### Frontend Deployment
 
 ```bash
 # Build and deploy frontend
-./deploy-frontend.sh your-project-id us-central1 cinenode-frontend
+./deploy-frontend.sh your-project-id us-central1 lumen-frontend
 ```
 
 ## Database Migration
@@ -80,7 +80,7 @@ The system supports two persistence backends:
    `supabase` package is installed. Apply `backend/schema_auth.sql` first.
 2. **Local JSON files** under `backend/.state/` — the development fallback.
 
-Override the choice with `CINENODE_STATE_BACKEND=local|supabase|auto` (default
+Override the choice with `LUMEN_STATE_BACKEND=local|supabase|auto` (default
 `auto`).
 
 > **Cloud Run and Replit have ephemeral filesystems.** Any deployment must run
@@ -126,8 +126,8 @@ gcloud builds submit --config cloudbuild.yaml \
 gcloud run services list
 
 # Get service URLs
-gcloud run services describe cinenode-backend --region=us-central1 --format='value(status.url)'
-gcloud run services describe cinenode-frontend --region=us-central1 --format='value(status.url)'
+gcloud run services describe lumen-backend --region=us-central1 --format='value(status.url)'
+gcloud run services describe lumen-frontend --region=us-central1 --format='value(status.url)'
 ```
 
 ### Health Checks
@@ -150,7 +150,7 @@ curl https://your-frontend-url.a.run.app
 
 ### Deployment Issues
 
-- Check Cloud Run logs: `gcloud run services logs cinenode-backend --region=us-central1`
+- Check Cloud Run logs: `gcloud run services logs lumen-backend --region=us-central1`
 - Verify resource limits are within your budget
 - Check database connectivity
 
@@ -160,7 +160,7 @@ curl https://your-frontend-url.a.run.app
 - Confirm `backend/schema_auth.sql` has been applied to the project
 - Check the startup log: the app prints a warning and falls back to local JSON
   if the `supabase` package is missing
-- Force a backend explicitly with `CINENODE_STATE_BACKEND=supabase` to fail
+- Force a backend explicitly with `LUMEN_STATE_BACKEND=supabase` to fail
   loudly instead of silently using ephemeral local files
 
 ## Development on Replit
@@ -204,10 +204,10 @@ If you need to rollback to a previous version:
 
 ```bash
 # List revisions
-gcloud run revisions list --service=cinenode-backend --region=us-central1
+gcloud run revisions list --service=lumen-backend --region=us-central1
 
 # Rollback to specific revision
-gcloud run services update-traffic cinenode-backend \
+gcloud run services update-traffic lumen-backend \
   --region=us-central1 \
   --to-revisions=[REVISION_NAME]=100
 ```
@@ -215,6 +215,6 @@ gcloud run services update-traffic cinenode-backend \
 ## Support
 
 For issues specific to:
-- **CineNode**: Check AGENT.md and existing documentation
+- **Lumen**: Check AGENT.md and existing documentation
 - **Google Cloud**: Use GCP Console and Cloud Support
 - **Deployment**: Review Cloud Build logs and Cloud Run logs

@@ -1,14 +1,14 @@
 #!/bin/bash
-# Deploy CineNode Backend to Google Cloud Run
+# Deploy Lumen Backend to Google Cloud Run
 # Usage: ./deploy-cloudrun.sh [PROJECT_ID] [REGION] [SERVICE_NAME]
 
 set -e
 
-PROJECT_ID=${1:-"cinenode-production"}
+PROJECT_ID=${1:-"lumen-production"}
 REGION=${2:-"us-central1"}
-SERVICE_NAME=${3:-"cinenode-backend"}
+SERVICE_NAME=${3:-"lumen-backend"}
 
-echo "Deploying CineNode Backend to Cloud Run..."
+echo "Deploying Lumen Backend to Cloud Run..."
 echo "Project: $PROJECT_ID"
 echo "Region: $REGION"
 echo "Service: $SERVICE_NAME"

@@ -24,8 +24,8 @@ MOCK_DATA_DIR = BACKEND_DIR / "mock_data"
 LOCAL_STATE_DIR = BACKEND_DIR / ".state"  # fallback persistence when Supabase is not configured
 
 # Agent skills: skills/<name>/SKILL.md at the repo root, next to backend/.
-# CINENODE_SKILLS_DIR overrides it for containers that copy the folder elsewhere.
-SKILLS_DIR = Path(os.environ.get("CINENODE_SKILLS_DIR") or (BACKEND_DIR.parent / "skills"))
+# LUMEN_SKILLS_DIR overrides it for containers that copy the folder elsewhere.
+SKILLS_DIR = Path(os.environ.get("LUMEN_SKILLS_DIR") or (BACKEND_DIR.parent / "skills"))
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
@@ -38,7 +38,7 @@ TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY", "")
 #   local    - always local JSON, even with credentials present
 # Replit's filesystem does not survive a redeploy, so deployments must run on
 # "auto" (with Supabase configured) or "supabase". "local" is for offline dev.
-STATE_BACKEND = os.environ.get("CINENODE_STATE_BACKEND", "auto").strip().lower()
+STATE_BACKEND = os.environ.get("LUMEN_STATE_BACKEND", "auto").strip().lower()
 WHISPER_API_KEY = os.environ.get("WHISPER_API_KEY", "")
 IMAGEN_API_KEY = os.environ.get("IMAGEN_API_KEY", "")
 
@@ -135,7 +135,7 @@ def has_supabase() -> bool:
     if not (SUPABASE_URL and SUPABASE_KEY):
         if STATE_BACKEND == "supabase":
             raise RuntimeError(
-                "CINENODE_STATE_BACKEND=supabase but SUPABASE_URL/SUPABASE_KEY are not set."
+                "LUMEN_STATE_BACKEND=supabase but SUPABASE_URL/SUPABASE_KEY are not set."
             )
         return False
     try:
@@ -143,13 +143,13 @@ def has_supabase() -> bool:
     except ImportError:
         if STATE_BACKEND == "supabase":
             raise RuntimeError(
-                "CINENODE_STATE_BACKEND=supabase but the 'supabase' package is not installed. "
+                "LUMEN_STATE_BACKEND=supabase but the 'supabase' package is not installed. "
                 "Run: pip install -r backend/requirements.txt"
             ) from None
         if not _supabase_warned:
             _supabase_warned = True
             print(
-                "[cinenode] SUPABASE_URL/KEY are set but the 'supabase' package is not "
+                "[lumen] SUPABASE_URL/KEY are set but the 'supabase' package is not "
                 "installed - falling back to local JSON state under backend/.state/. "
                 "Run: pip install supabase",
                 flush=True,

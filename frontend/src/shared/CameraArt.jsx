@@ -1,7 +1,7 @@
 // Flat cine-camera illustration (vector recreation of the team's reference image):
 // grey-purple body with darker grip, pentaprism hump, pale mauve lens ring,
 // light-blue glass with a crescent highlight. Drawn in a 168x104 space
-// (lens center at 104,62 — that circle doubles as the "o" of CineNode).
+// (lens center at 104,62).
 export function CameraArt() {
   return (
     <g>
@@ -24,7 +24,7 @@ export function CameraArt() {
 // Standalone square icon (cover page, avatars...).
 export default function CameraIcon({ size = 64 }) {
   return (
-    <svg viewBox="0 -28 168 168" width={size} height={size} role="img" aria-label="CineNode camera" style={{ display: "block" }}>
+    <svg viewBox="0 -28 168 168" width={size} height={size} role="img" aria-label="Lumen camera" style={{ display: "block" }}>
       <CameraArt />
     </svg>
   );
