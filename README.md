@@ -16,9 +16,9 @@
 > negotiating with each other over one shared protocol while humans only sign
 > off at the top.
 >
-> Started as a three-person entry to **Agentic Cinema: The Blockbuster Hackathon**
-> (Google Cloud · Replit track), now carried solo: FastAPI · React · Gemini ·
-> 17k lines · tested, with CI on every push.
+> Started as a three-person entry to **Agentic Cinema: The Blockbuster Hackathon**,
+> now carried solo: FastAPI · React · Gemini · 17k lines · tested, with CI on
+> every push.
 
 Lumen is a network of specialized AI agents that run the entire film lifecycle as **six connected phases** — casting, auditions, scheduling, compliance, audience testing, and marketing — sharing **one orchestrator, one state object, and one agent-to-agent (A2A) messaging standard**. Scale follows the budget you enter at intake: casting caps, venue choices and territory reach all derive from it.
 
@@ -30,8 +30,9 @@ It is a true **Multi-Agent System (MAS)**: agents ask each other questions, get 
 
 > **Captures pending.** Save the files at the paths below and uncomment the
 > embeds — no other edit needed. Delete this note once they're in.
-> Not yet deployed, so there is no hosted demo link; run it locally with the
-> [Getting Started](#getting-started) steps (works with an empty `.env`).
+> No hosted demo link yet: add one here once the [Deploy](#deploy) steps are
+> done. Until then, run it locally with [Getting Started](#getting-started)
+> (works with an empty `.env`).
 
 | Slot | Save as | Should show |
 |---|---|---|
@@ -121,11 +122,11 @@ falls back to a deterministic mock, so the whole thing runs with an empty `.env`
 | Web search | **Tavily** REST (no SDK — `urllib`); optional, skipped when unset | `backend/services/tavily_client.py` |
 | Actor knowledge base | **TMDb** ingest → **PostgreSQL + pgvector**, `sentence-transformers` embeddings (optional extra) | `backend/services/casting_kb/` |
 | Script intake | **pypdf** for the PDF branch (`.txt`/`.fountain`/`.fdx` need no package) | `backend/services/script_intake.py` |
-| Persistence + Auth | **Supabase** (Postgres) when `SUPABASE_URL`/`KEY` are set, else local JSON under `backend/.state/` | `backend/services/{supabase_client,auth_store,simulation_store}.py` |
+| Persistence + Auth | **Supabase** (Postgres) when `SUPABASE_URL`/`KEY` are set, else local JSON under `backend/.state/` | `backend/services/{supabase_client,auth_store,simulation_store,skill_store}.py`, `backend/schema_*.sql` |
 | Backend | **Python 3.10+ · FastAPI · Pydantic v2 · Uvicorn** | `backend/main.py` |
 | Frontend | **React 18 · React Router · Vite**, hand-rolled CSS design system (custom properties, `data-theme` light/dark) | `frontend/src/` |
-| Packaging | **Docker**, **Google Cloud Run** (`cloudbuild.yaml`, `deploy-cloudrun.sh`) | repo root |
-| Secrets | `.env` locally · Google Secret Manager on Cloud Run | `.env.example` |
+| Hosting | **Vercel** serves the React build · **Render** runs the API container · **Supabase** holds the data | `frontend/vercel.json`, `render.yaml`, `Dockerfile` |
+| Secrets | `.env` locally · Render environment variables when deployed; the frontend holds none | `.env.example`, `render.yaml` |
 
 **Not in the build yet.** These appear in the agent spec and are stubbed or
 config-only — no code path calls them, so don't count them as integrations:
@@ -151,6 +152,7 @@ lumen/
 ├── backend/
 │   ├── main.py                  # FastAPI entrypoint (mounts one router per domain)
 │   ├── run_demo.py              # CLI: full pipeline on mock data
+│   ├── schema_*.sql             # Supabase tables: auth, advisor runs, state + simulations
 │   ├── tests/                   # pytest: envelope, fail-fast edges, personas, auth
 │   ├── migrations/              # PostgreSQL/pgvector schema (actor KB)
 │   ├── scripts/                 # one-off maintenance scripts
@@ -173,12 +175,15 @@ lumen/
 │       ├── launch/              # Phases V & VI
 │       └── audience/ auth/ skills/   # cross-cutting routers
 ├── frontend/
+│   ├── vercel.json              # Vercel: every route falls back to index.html
 │   └── src/
 │       ├── shared/LiveAgentTerminal.jsx   # real-time A2A message scroller
 │       ├── features/            # intake, casting, production, launch, advisors,
 │       │                        #   audience, auth, logs, team, settings
 │       ├── theme/               # light/dark token provider
-│       └── lib/                 # api.js, utils.js
+│       └── lib/                 # api.js (VITE_API_URL), utils.js
+├── Dockerfile                   # API image; Render builds it from render.yaml
+├── render.yaml                  # Render Blueprint for the API
 ├── docker-compose.yml
 └── .env.example
 ```
@@ -202,12 +207,13 @@ Copy `.env.example` to `.env`. All of these are optional:
 GEMINI_API_KEY=...         # live agent reasoning; mock fallbacks work without it
 TAVILY_API_KEY=...         # web-grounded cultural/censorship research; skipped when unset
 SUPABASE_URL=...           # shared persistence; without it state goes to backend/.state/
-SUPABASE_KEY=...           #   set this for any deploy with an ephemeral filesystem
+SUPABASE_KEY=...           #   required once deployed (see Deploy)
 DATABASE_URL=...           # Phase I actor KB only (PostgreSQL + pgvector)
 TMDB_API_KEY=...           # Phase I actor KB only
 ```
 
-> Never commit `.env`. On Cloud Run these come from Google Secret Manager.
+> Never commit `.env`. Once deployed, the API reads the same variables from
+> Render's environment settings instead; see [Deploy](#deploy).
 
 ### 2. Backend
 ```bash
@@ -222,6 +228,8 @@ cd frontend
 npm install
 npm run dev
 ```
+
+In dev, Vite proxies `/api` to `localhost:8000`, so there is nothing to configure.
 
 ### 4. Run a full pipeline (demo)
 ```bash
@@ -274,6 +282,114 @@ press **Run** on a card, or call `POST /api/skills/<name>/run/<project_id>`.
 Runs work offline on a deterministic fallback and go live once `GEMINI_API_KEY`
 is set. The dashboard calls them **AI Advisors**. See `skills.md` for the full
 catalogue, `skills/README.md` for the file format, and `AGENT.md` Section 8.
+
+---
+
+## Deploy
+
+Three hosts, each with a free tier:
+
+| Piece | Host | Config in this repo |
+|---|---|---|
+| React frontend (static build) | **Vercel** | `frontend/vercel.json` |
+| FastAPI backend (Docker container) | **Render** | `render.yaml`, `Dockerfile` |
+| Accounts, pipeline state, simulations, advisor runs | **Supabase** (Postgres) | `backend/schema_*.sql` |
+
+```
+ browser ── loads the app ─────────► Vercel   (static React build)
+    │
+    └──── calls VITE_API_URL/api ──► Render   (FastAPI container) ──► Supabase (Postgres)
+                                        │
+                                        └──► Gemini · Tavily (when keys are set)
+```
+
+The browser calls the API directly. Only the API holds keys or talks to
+Supabase.
+
+### Why the API isn't on Vercel too
+
+Vercel can host FastAPI, but only as request-scoped functions, and this
+backend keeps working after the request ends:
+
+- An audience simulation or advisor run answers `202` straight away, then runs
+  on a background thread for minutes while the dashboard polls it. A Vercel
+  function can be frozen as soon as its response is sent, and runs for at most
+  300 seconds on the Hobby plan.
+- Runs in flight are tracked in the memory of the process that started them,
+  so the polls have to reach that same process.
+- Function filesystems are read-only, so the local-JSON fallback has nowhere to
+  write.
+
+Render runs the container as one long-lived process, which is what the code
+expects. The same `Dockerfile` works on other container hosts (Railway,
+Fly.io, Google Cloud Run) as long as they keep one instance running with CPU
+between requests.
+
+### 1. Supabase (database)
+
+1. Create a project on [supabase.com](https://supabase.com). Pick a region near
+   the Render one (`render.yaml` uses Oregon), because the API reads state from
+   Supabase on almost every request.
+2. In the **SQL Editor**, run `backend/schema_auth.sql`,
+   `backend/schema_skills.sql` and `backend/schema_state.sql`. All three are
+   safe to re-run.
+3. From the project's API settings, copy the **Project URL** and a **secret
+   key** (`sb_secret_…`, or the legacy `service_role` key). The publishable
+   (anon) key won't work: every table has row-level security switched on with no
+   policies, so only a secret key can read them. It lives on the API only,
+   never in the frontend.
+
+### 2. Render (API)
+
+1. In the [Render dashboard](https://dashboard.render.com), choose
+   **New → Blueprint** and connect this repository. Render reads `render.yaml`
+   and sets up a web service called `lumen-api`.
+2. Fill in the variables it asks for: `SUPABASE_URL` and `SUPABASE_KEY` from
+   step 1, plus `GEMINI_API_KEY` and `TAVILY_API_KEY` if you have them (leave
+   them blank to keep the offline fallbacks). Leave `LUMEN_CORS_ORIGINS` blank
+   for now.
+3. Once the deploy is live, open `https://<your-service>.onrender.com/api/health`.
+   It should return `{"status": "ok", ...}`. That only proves the container is
+   up; creating a production once the frontend is live proves the database
+   works.
+
+`render.yaml` sets `LUMEN_STATE_BACKEND=supabase`, so a missing Supabase setting
+fails loudly instead of quietly keeping accounts on a disk that is wiped on
+every restart. From then on, Render redeploys each push that touches
+`backend/`, `skills/` or the `Dockerfile`, once GitHub Actions passes.
+
+### 3. Vercel (frontend)
+
+1. [Import the repository into Vercel](https://vercel.com/new) and set
+   **Root Directory** to `frontend`. Vercel detects Vite; keep its build
+   settings.
+2. Add the environment variable `VITE_API_URL` with your Render URL, for
+   example `https://lumen-api.onrender.com`. Use the origin only, without `/api`.
+3. Deploy, open the site and create a production. If that works, the whole
+   chain (Vercel → Render → Supabase) is up.
+
+`VITE_API_URL` is compiled into the bundle, so redeploy the frontend after
+changing it. `frontend/vercel.json` sends every path to `index.html`, so a
+refresh on `/casting` or an invite link (`/join/…`) still loads the app.
+
+### 4. Restrict CORS to the frontend
+
+In Render, set `LUMEN_CORS_ORIGINS` to your Vercel URL, for example
+`https://lumen.vercel.app` (comma-separate several, such as a custom domain).
+Until then the API accepts browser calls from any origin. That doesn't expose
+accounts, because sessions are bearer tokens rather than cookies, but there is
+no reason to leave it open. Vercel preview deployments get their own URLs, so
+add those too if you use them.
+
+### Limits to know
+
+- **Free Render instances sleep** after 15 minutes without traffic, and the
+  first request after that takes about a minute. Paid instances stay awake.
+- **Run exactly one API instance.** Background runs live in that one process
+  (`numInstances: 1` in `render.yaml`).
+- **A redeploy stops runs in flight.** An interrupted advisor run is marked
+  failed; an interrupted audience simulation stays `running` in the history, so
+  start a new one.
 
 ---
 

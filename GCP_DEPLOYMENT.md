@@ -83,7 +83,7 @@ The system supports two persistence backends:
 Override the choice with `LUMEN_STATE_BACKEND=local|supabase|auto` (default
 `auto`).
 
-> **Cloud Run and Replit have ephemeral filesystems.** Any deployment must run
+> **Cloud Run has an ephemeral filesystem.** Any deployment must run
 > on Supabase; on local JSON, accounts and simulation history are lost on every
 > redeploy and are not shared between instances.
 
@@ -162,15 +162,6 @@ curl https://your-frontend-url.a.run.app
   if the `supabase` package is missing
 - Force a backend explicitly with `LUMEN_STATE_BACKEND=supabase` to fail
   loudly instead of silently using ephemeral local files
-
-## Development on Replit
-
-While production runs on GCP, you can continue development on Replit:
-
-1. **Keep existing `.env`** with your API keys
-2. **Use mock data** for development without GCP
-3. **Deploy to GCP** when ready for production
-4. **Use CI/CD** for automated deployments from your repository
 
 ## Scaling Considerations
 

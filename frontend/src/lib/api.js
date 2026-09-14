@@ -1,5 +1,11 @@
 // Thin fetch wrapper for the FastAPI backend (proxied via /api in dev).
 
+// Where the API lives. Empty keeps every call relative (/api/...), which is
+// what dev (Vite proxy) and any same-origin host need. A frontend hosted apart
+// from the API sets VITE_API_URL at build time, e.g.
+// VITE_API_URL=https://lumen-api.onrender.com
+const API_URL = (import.meta.env.VITE_API_URL || "").trim().replace(/\/+$/, "");
+
 // The session token is held here so every request carries it without each
 // caller having to remember. AuthContext owns the lifecycle; nothing else
 // reads or writes it directly.
@@ -40,7 +46,7 @@ export function setUnauthorizedHandler(fn) {
 // surfaced instead of the session being dropped.
 async function request(path, { anonymous = false, ...options } = {}) {
   const token = anonymous ? null : loadStoredToken();
-  const res = await fetch(path, {
+  const res = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",

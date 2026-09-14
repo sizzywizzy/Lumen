@@ -1,0 +1,45 @@
+# Render Blueprint for the Lumen API: the FastAPI backend, built from ./Dockerfile.
+# Render dashboard -> New -> Blueprint -> pick this repo. The React frontend is
+# deployed separately on Vercel (frontend/vercel.json); see README "Deploy".
+services:
+  - type: web
+    name: lumen-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    # Free instances sleep after 15 minutes without traffic, and the first
+    # request after that takes about a minute. Any paid plan stays up.
+    plan: free
+    # Put this near your Supabase project's region; every request reads state from it.
+    region: oregon
+    # Keep a single instance. Simulations and advisor runs execute on in-process
+    # background threads, and run tracking lives in that process's memory.
+    numInstances: 1
+    healthCheckPath: /api/health
+    # Deploy a commit only after its GitHub Actions checks pass.
+    autoDeployTrigger: checksPass
+    # Frontend-only and docs-only commits do not rebuild the API.
+    buildFilter:
+      paths:
+        - backend/**
+        - skills/**
+        - Dockerfile
+    envVars:
+      # Fail loudly rather than keep accounts on a disk that is wiped on every
+      # restart. Set to "local" only for a throwaway demo without Supabase.
+      - key: LUMEN_STATE_BACKEND
+        value: supabase
+      - key: SUPABASE_URL
+        sync: false
+      # The secret (service role) key; see backend/schema_*.sql.
+      - key: SUPABASE_KEY
+        sync: false
+      # Optional: blank runs every agent on its offline fallback.
+      - key: GEMINI_API_KEY
+        sync: false
+      # Optional: blank disables web-grounded cultural research.
+      - key: TAVILY_API_KEY
+        sync: false
+      # Your Vercel URL once the frontend is live, e.g. https://lumen.vercel.app.
+      # Blank allows any origin.
+      - key: LUMEN_CORS_ORIGINS
+        sync: false

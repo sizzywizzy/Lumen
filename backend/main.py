@@ -28,7 +28,7 @@ app = FastAPI(title="Lumen", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # hackathon setting; tighten before any public deploy
+    allow_origins=config.CORS_ORIGINS,  # "*" unless LUMEN_CORS_ORIGINS names the deployed frontend
     allow_methods=["*"],
     allow_headers=["*"],
 )
