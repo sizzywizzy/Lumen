@@ -20,7 +20,7 @@
 > (Google Cloud · Replit track), now carried solo: FastAPI · React · Gemini ·
 > 17k lines · tested, with CI on every push.
 
-Lumen is a network of specialized AI agents that run the entire film lifecycle as **six connected phases** — casting, scheduling, compliance, audience testing, and marketing — sharing **one orchestrator, one state object, and one agent-to-agent (A2A) messaging standard**. Scale follows the budget you enter at intake: casting caps, venue choices and territory reach all derive from it.
+Lumen is a network of specialized AI agents that run the entire film lifecycle as **six connected phases** — casting, auditions, scheduling, compliance, audience testing, and marketing — sharing **one orchestrator, one state object, and one agent-to-agent (A2A) messaging standard**. Scale follows the budget you enter at intake: casting caps, venue choices and territory reach all derive from it.
 
 It is a true **Multi-Agent System (MAS)**: agents ask each other questions, get answers, and change their own behavior — humans only sign off at the top.
 
@@ -141,10 +141,10 @@ Imagen 3 (`agent_visual` returns mock assets), FFmpeg + Whisper
 lumen/
 ├── README.md
 ├── AGENT.md                     # agent registry, A2A + GlobalState contracts
-├── assets/                      # logo + brand (the o of Node is the camera)
+├── assets/                      # logo + brand
 │   └── screenshots/             # README captures + pipeline GIF
 ├── skills/                      # SKILL.md procedures the advisor agents follow (skills/README.md)
-├── contracts/                   # SACRED: shared JSON schemas — change only with team agreement
+├── contracts/                   # shared JSON schemas every agent depends on — change with care
 │   ├── a2a_envelope.json
 │   └── global_state.json
 ├── .github/workflows/ci.yml     # tests + frontend build on every push
@@ -154,7 +154,7 @@ lumen/
 │   ├── tests/                   # pytest: envelope, fail-fast edges, personas, auth
 │   ├── migrations/              # PostgreSQL/pgvector schema (actor KB)
 │   ├── scripts/                 # one-off maintenance scripts
-│   ├── core/                    # THE BRAIN — shared by everyone
+│   ├── core/                    # THE BRAIN — shared by every domain
 │   │   ├── config.py            # env vars, model tiers, guardrail constants
 │   │   ├── orchestrator/
 │   │   │   ├── graph.py         # phase DAG + fail-fast edges
@@ -167,10 +167,10 @@ lumen/
 │   │                            #   auth_store, simulation_store, skill_store,
 │   │                            #   script_intake, mock_db, casting_kb/
 │   ├── mock_data/               # script, candidates, venues, censorship rules, personas
-│   └── domains/                 # THE SANDBOXES — one per team member
-│       ├── casting/             # ➔ Raymond (Phases I & II): router, agents/, prompts
-│       ├── production/          # ➔ Shriya (Phases III & IV)
-│       ├── launch/              # ➔ Swati (Phases V & VI)
+│   └── domains/                 # THE SANDBOXES — one per product area
+│       ├── casting/             # Phases I & II: router, agents/, prompts
+│       ├── production/          # Phases III & IV
+│       ├── launch/              # Phases V & VI
 │       └── audience/ auth/ skills/   # cross-cutting routers
 ├── frontend/
 │   └── src/
@@ -287,24 +287,15 @@ There are no tiers or modes. The total budget from the intake cover page lands i
 
 ---
 
-## 3-Minute Trailer Script (demo beats)
+## Demo Walkthrough
 
 1. **Drop the script** for `PROJ_NEON_NIGHTS` on the cover page with a $250k budget and a shooting window.
 2. **Phase I/II:** watch an over-budget applicant auto-rejected; a leaderboard builds itself.
-3. **Phase III:** Scheduler ↔ Location Agent negotiate a venue conflict live in the terminal; the Gantt reflows.
-4. **Phase IV:** the UAE cut hits a compliance block; the world map turns that territory red.
+3. **Phase III:** Scheduler ↔ Location Agent negotiate a venue conflict live in the terminal; the stripboard reflows.
+4. **Phase IV:** the UAE cut hits a compliance block; the UAE card in the compliance matrix flips to blocked.
 5. **Phase V:** 200 synthetic viewers stream verdicts; the Tomatometer ticks up; Aggregation flags Act 2 and the Recut Advisor predicts a +6 lift.
 6. **Phase VI:** a meme is drafted, rejected by PR Risk for a spoiler, redrafted clean, and scheduled — cut from Phase V's top scene.
 7. **Close:** the Live Agent Terminal scrolls the whole A2A conversation — *150 messages, no human in the loop until the sign-off queue.*
-
----
-
-## How It Maps to Judging Criteria
-
-- **Technological Implementation:** genuine A2A MAS with a shared protocol + fail-fast orchestration.
-- **Design:** one coherent product across six phases, with live dashboards.
-- **Potential Impact:** addresses the real, expensive bottlenecks of film production at any budget, from a bootstrapped short to a studio slate.
-- **Quality of Idea:** agents that negotiate and self-correct, not a chatbot with buttons.
 
 ---
 
@@ -350,4 +341,4 @@ git ls-files | grep -v -E 'mock_data/|package-lock|\.(png|svg|ico|lock)$' \
 
 ## License
 
-Open-source under the **MIT License** (see `LICENSE`). Required for hackathon submission.
+Open-source under the **MIT License** (see [`LICENSE`](./LICENSE)).
