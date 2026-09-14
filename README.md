@@ -3,8 +3,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Shriya-Soni/CineNode/actions/workflows/ci.yml">
-    <img src="https://github.com/Shriya-Soni/CineNode/actions/workflows/ci.yml/badge.svg" alt="CI status" />
+  <a href="https://github.com/sizzywizzy/Lumen/actions/workflows/ci.yml">
+    <img src="https://github.com/sizzywizzy/Lumen/actions/workflows/ci.yml/badge.svg" alt="CI status" />
   </a>
 </p>
 
