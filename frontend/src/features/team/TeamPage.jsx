@@ -5,21 +5,23 @@ import EmptyState from "../../shared/EmptyState.jsx";
 import Icon from "../../shared/Icon.jsx";
 import { api } from "../../lib/api.js";
 import { useAuth } from "../../shared/AuthContext.jsx";
-import { cn, initials } from "../../lib/utils.js";
+import { cn, initials, roleLabel, shortDate } from "../../lib/utils.js";
 
 const ROLE_TONE = { owner: "info", producer: "ok", crew: "neutral" };
 const ROLE_BLURB = {
   producer: "Can edit the schedule, budget and casting decisions, and invite others.",
-  crew: "Read-only access to the production dashboard.",
+  crew: "Can see everything on the production dashboard, but not change it.",
 };
+
+const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 function expiryLabel(iso) {
   const ms = Date.parse(iso) - Date.now();
   if (!Number.isFinite(ms)) return "";
-  if (ms <= 0) return "expired";
+  if (ms <= 0) return "Expired";
   const hours = Math.round(ms / 3600000);
-  if (hours < 24) return `expires in ${hours}h`;
-  return `expires in ${Math.round(hours / 24)}d`;
+  if (hours < 24) return `Expires in ${plural(Math.max(hours, 1), "hour")}`;
+  return `Expires in ${plural(Math.round(hours / 24), "day")}`;
 }
 
 // Step 2 of the team flow: mint secure invite links and manage who is on the
@@ -117,7 +119,7 @@ export default function TeamPage() {
     <>
       <PageHeader
         title="Production team"
-        sub={`Who can open ${team?.production?.name || activeProjectId}, and how they were invited.`}
+        sub={`Who can open ${team?.production?.name || "this production"}, and how they were invited.`}
         size="lg"
       />
 
@@ -130,7 +132,9 @@ export default function TeamPage() {
 
       <Panel className="panel--clip">
         <PanelHead title="Members" icon="groups">
-          <span className="mono-data muted">{team?.members?.length ?? 0} people</span>
+          <span className="mono-data muted">
+            {(team?.members?.length ?? 0) === 1 ? "1 person" : `${team?.members?.length ?? 0} people`}
+          </span>
         </PanelHead>
         <div className="table-scroll">
           <table className="data">
@@ -163,10 +167,10 @@ export default function TeamPage() {
                   <td>
                     <span className="status-pill" data-tone={ROLE_TONE[m.role]}>
                       <span className="dot" />
-                      {m.role}
+                      {roleLabel(m.role)}
                     </span>
                   </td>
-                  <td className="muted">{m.joined_at?.slice(0, 10)}</td>
+                  <td className="muted">{shortDate(m.joined_at)}</td>
                   {isOwner && (
                     <td className="num">
                       {m.role !== "owner" && (
@@ -199,8 +203,8 @@ export default function TeamPage() {
                   <strong className="body-sm">Invite link ready — copy it now</strong>
                 </div>
                 <p className="body-sm muted" style={{ marginBottom: 10 }}>
-                  This is the only time the link is shown. It is single-use by default and we store only a
-                  fingerprint of it, so it cannot be recovered later — revoke and reissue if it goes missing.
+                  This is the only time we can show this link, so copy it now. If it gets lost, revoke it below and
+                  create a new one.
                 </p>
                 <div className="invite-link">
                   <code>{issued.url}</code>
@@ -228,16 +232,16 @@ export default function TeamPage() {
                 </div>
               </label>
               <label className="field">
-                <span className="mono-label">Label (optional)</span>
+                <span className="mono-label">Who it's for (optional)</span>
                 <input
                   className="input"
-                  placeholder="1st AD"
+                  placeholder="e.g. First assistant director"
                   value={form.label}
                   onChange={(e) => setForm({ ...form, label: e.target.value })}
                 />
               </label>
               <label className="field">
-                <span className="mono-label">Expires in (hours)</span>
+                <span className="mono-label">Link works for (hours)</span>
                 <input
                   className="input"
                   type="number"
@@ -248,7 +252,7 @@ export default function TeamPage() {
                 />
               </label>
               <label className="field">
-                <span className="mono-label">Max uses</span>
+                <span className="mono-label">How many people can use it</span>
                 <input
                   className="input"
                   type="number"
@@ -260,7 +264,7 @@ export default function TeamPage() {
               </label>
               <button type="submit" className="btn btn--primary" disabled={busy}>
                 <Icon name={busy ? "progress_activity" : "link"} className={busy ? "spin" : undefined} />
-                {busy ? "Generating…" : "Generate invite"}
+                {busy ? "Creating…" : "Create invite link"}
               </button>
             </form>
             <p className="body-sm muted" style={{ marginTop: 12 }}>
@@ -274,28 +278,28 @@ export default function TeamPage() {
             </PanelHead>
             {invites.length === 0 ? (
               <EmptyState icon="mail" title="No invites yet">
-                Generate one above to add your director and crew.
+                Create one above to add your director and crew.
               </EmptyState>
             ) : (
               <div className="table-scroll">
                 <table className="data">
                   <thead>
                     <tr>
-                      <th>Label</th>
+                      <th>For</th>
                       <th>Role</th>
                       <th>Status</th>
-                      <th>Uses</th>
+                      <th>Used</th>
                       <th className="num">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {invites.map((i) => (
                       <tr key={i.id} className={cn(!i.active && "dimmed")}>
-                        <td>{i.label || <span className="muted">untitled</span>}</td>
+                        <td>{i.label || <span className="muted">Anyone with the link</span>}</td>
                         <td>
                           <span className="status-pill" data-tone={ROLE_TONE[i.role]}>
                             <span className="dot" />
-                            {i.role}
+                            {roleLabel(i.role)}
                           </span>
                         </td>
                         <td>
@@ -304,11 +308,11 @@ export default function TeamPage() {
                             data-tone={i.active ? "ok" : i.revoked ? "bad" : "neutral"}
                           >
                             <span className="dot" />
-                            {i.revoked ? "revoked" : i.expired ? "expired" : i.active ? expiryLabel(i.expires_at) : "used up"}
+                            {i.revoked ? "Revoked" : i.expired ? "Expired" : i.active ? expiryLabel(i.expires_at) : "Used up"}
                           </span>
                         </td>
                         <td className="muted">
-                          {i.uses} / {i.max_uses}
+                          {i.uses} of {i.max_uses}
                         </td>
                         <td className="num">
                           {i.active && (

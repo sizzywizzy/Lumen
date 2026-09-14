@@ -56,23 +56,28 @@ export default function DirectorControls({ onSaved }) {
           <input className="input" value={form.country} onChange={set("country")} />
         </label>
         <label className="field">
-          <span className="mono-label">Exclude states</span>
-          <input className="input" placeholder="NV, TX" value={form.excluded_states} onChange={set("excluded_states")} />
+          <span className="mono-label">States to leave out</span>
+          <input
+            className="input"
+            placeholder="Two-letter codes, like NV, TX"
+            value={form.excluded_states}
+            onChange={set("excluded_states")}
+          />
         </label>
         <label className="field">
           <span className="mono-label">First shoot day</span>
           <input className="input" type="date" value={form.start_date} onChange={set("start_date")} />
         </label>
         <label className="field">
-          <span className="mono-label">Min hours / day</span>
+          <span className="mono-label">Shortest shoot day (hours)</span>
           <input className="input" type="number" min="1" value={form.min_hours_per_day} onChange={set("min_hours_per_day")} />
         </label>
         <label className="field">
-          <span className="mono-label">Max hours / day</span>
+          <span className="mono-label">Longest shoot day (hours)</span>
           <input className="input" type="number" min="1" value={form.max_hours_per_day} onChange={set("max_hours_per_day")} />
         </label>
         <label className="field">
-          <span className="mono-label">Total budget</span>
+          <span className="mono-label">Total budget (USD)</span>
           <input className="input" type="number" min="0" value={form.total_budget} onChange={set("total_budget")} />
         </label>
       </div>
@@ -85,7 +90,7 @@ export default function DirectorControls({ onSaved }) {
       <div className="form-actions">
         <button type="submit" className="btn btn--primary" disabled={saving || !state}>
           <Icon name={saving ? "progress_activity" : "save"} className={saving ? "spin" : undefined} />
-          {saving ? "Reconfiguring…" : "Save and reconfigure"}
+          {saving ? "Saving…" : "Save changes"}
         </button>
       </div>
     </form>

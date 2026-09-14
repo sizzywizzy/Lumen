@@ -44,16 +44,31 @@ export function setUnauthorizedHandler(fn) {
 // no bearer token is attached, and a 401 from them means the credentials
 // were rejected, not that a session expired, so the server's own message is
 // surfaced instead of the session being dropped.
+// Plain-language fallback for a failed request that carries no message of its own.
+function fallbackMessage(status) {
+  if (status === 403) return "You don't have permission to do that on this production.";
+  if (status === 404) return "We couldn't find that. It may have been removed.";
+  if (status === 413) return "That file is too large to upload.";
+  if (status === 429) return "That's a lot of requests at once. Wait a moment and try again.";
+  if (status >= 500) return "Something went wrong on our side. Please try again in a moment.";
+  return "That didn't work. Please try again.";
+}
+
 async function request(path, { anonymous = false, ...options } = {}) {
   const token = anonymous ? null : loadStoredToken();
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options.headers || {}),
-    },
-  });
+  let res;
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(options.headers || {}),
+      },
+    });
+  } catch {
+    throw new Error("Can't reach Lumen right now. Check your connection and try again.");
+  }
 
   if (res.status === 401 && !anonymous) {
     onUnauthorized?.();
@@ -62,13 +77,13 @@ async function request(path, { anonymous = false, ...options } = {}) {
 
   if (!res.ok) {
     // FastAPI puts the human-readable message in `detail`.
-    let message = `${res.status} ${res.statusText}`;
+    let message = fallbackMessage(res.status);
     try {
       const body = await res.json();
       if (typeof body?.detail === "string") message = body.detail;
       else if (Array.isArray(body?.detail)) message = body.detail[0]?.msg || message;
     } catch {
-      /* non-JSON error body — keep the status line */
+      /* non-JSON error body — keep the plain-language fallback */
     }
     throw new Error(message);
   }

@@ -4,25 +4,31 @@ import Icon from "../../shared/Icon.jsx";
 import EmptyState from "../../shared/EmptyState.jsx";
 import DirectorControls from "../production/DirectorControls.jsx";
 import { useProject } from "../../shared/ProjectContext.jsx";
+import { useAuth } from "../../shared/AuthContext.jsx";
 import { useTheme } from "../../theme/ThemeProvider.jsx";
-import { cn, money } from "../../lib/utils.js";
+import { cn, money, shortDate, statusLabel } from "../../lib/utils.js";
 
 const THEMES = [
-  { key: "dark", label: "Cinematic Command", icon: "dark_mode", hint: "Wine and plum on charcoal — the on-set default." },
-  { key: "light", label: "Alexandria", icon: "light_mode", hint: "Editorial serif on paper — for reviews and print-outs." },
+  { key: "dark", label: "Dark", icon: "dark_mode", hint: "Warm charcoal with golden highlights. Easy on the eyes at night." },
+  { key: "light", label: "Light", icon: "light_mode", hint: "Warm paper with amber accents. Easy to read by day." },
 ];
+
+// Where casting stands for the production as a whole.
+const CASTING_WORDS = { SOURCING: "Looking for actors", SCREENING: "Reviewing actors", LOCKED: "Cast chosen" };
 
 // Settings route: the same director constraints the schedule agent reads, plus
 // the application-wide appearance choice and the live project summary.
 export default function SettingsPage() {
   const { state, projectId, intake } = useProject();
+  const { activeProduction } = useAuth();
   const { theme, setTheme } = useTheme();
+  const castingStatus = state?.casting_status;
 
   return (
     <>
       <PageHeader
         title="Settings"
-        sub="Director constraints, appearance and the current project snapshot."
+        sub="How Lumen looks, the rules for the shooting schedule, and a summary of this production."
         size="lg"
       />
 
@@ -57,13 +63,13 @@ export default function SettingsPage() {
       <Panel className="panel--pad">
         <h3 className="panel-title mono-label" style={{ marginBottom: 16 }}>
           <Icon name="tune" />
-          Director controls
+          Schedule rules
         </h3>
         {state ? (
           <DirectorControls />
         ) : (
-          <EmptyState icon="settings" title="No project state yet">
-            Seed a project from Script Intake, then the schedule constraints become editable here.
+          <EmptyState icon="settings" title="Nothing to set yet">
+            Drop a script first. Once it has been read, you can adjust the schedule rules here.
           </EmptyState>
         )}
       </Panel>
@@ -71,19 +77,19 @@ export default function SettingsPage() {
       <Panel className="panel--pad">
         <h3 className="panel-title mono-label" style={{ marginBottom: 16 }}>
           <Icon name="info" />
-          Project snapshot
+          This production
         </h3>
         <dl className="mono-data" style={{ display: "grid", gap: 10, margin: 0 }}>
           <div className="between">
-            <span className="muted">Project id</span>
-            <span>{projectId}</span>
+            <span className="muted">Production</span>
+            <span>{activeProduction?.name || state?.script_context?.title || projectId}</span>
           </div>
           <div className="between">
-            <span className="muted">Casting status</span>
-            <span>{state?.casting_status || "—"}</span>
+            <span className="muted">Casting</span>
+            <span>{castingStatus ? CASTING_WORDS[castingStatus] || statusLabel(castingStatus) : "—"}</span>
           </div>
           <div className="between">
-            <span className="muted">Budget cap</span>
+            <span className="muted">Budget</span>
             <span>{state?.budget_state?.cap ? money(state.budget_state.cap) : "—"}</span>
           </div>
           <div className="between">
@@ -91,7 +97,7 @@ export default function SettingsPage() {
             <span>{state?.schedule?.stripboard?.length ?? 0}</span>
           </div>
           <div className="between">
-            <span className="muted">A2A envelopes</span>
+            <span className="muted">Agent messages</span>
             <span>{state?.event_log?.length ?? 0}</span>
           </div>
           {intake?.fileName && (
@@ -102,9 +108,9 @@ export default function SettingsPage() {
           )}
           {intake?.start && (
             <div className="between">
-              <span className="muted">Production window</span>
+              <span className="muted">Shooting dates</span>
               <span>
-                {intake.start} → {intake.wrap}
+                {shortDate(intake.start)} to {shortDate(intake.wrap)}
               </span>
             </div>
           )}

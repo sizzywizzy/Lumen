@@ -4,7 +4,8 @@ import Sidebar, { BottomNav } from "./Sidebar.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
 import Icon from "./Icon.jsx";
 import LiveAgentTerminal from "./LiveAgentTerminal.jsx";
-import LumenLogo from "./LumenLogo.jsx";
+import LumenIcon from "./CameraArt.jsx";
+import { LumenWordmark } from "./LumenLogo.jsx";
 import { useProject } from "./ProjectContext.jsx";
 import { useAuth } from "./AuthContext.jsx";
 import { money } from "../lib/utils.js";
@@ -44,7 +45,8 @@ export default function AppShell() {
             onClick={() => navigate("/")}
             aria-label="Lumen home"
           >
-            <LumenLogo height={22} />
+            <LumenIcon size={32} />
+            <LumenWordmark height={24} />
           </button>
 
           {/* Labelled key/value pair — colon, spacing and weight make the value
