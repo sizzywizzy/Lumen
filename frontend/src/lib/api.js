@@ -81,7 +81,7 @@ async function request(path, { anonymous = false, ...options } = {}) {
     try {
       const body = await res.json();
       if (typeof body?.detail === "string") message = body.detail;
-      else if (Array.isArray(body?.detail)) message = body.detail[0]?.msg || message;
+      else if (Array.isArray(body?.detail)) message = String(body.detail[0]?.msg || message).replace(/^Value error,\s*/, "");
     } catch {
       /* non-JSON error body — keep the plain-language fallback */
     }

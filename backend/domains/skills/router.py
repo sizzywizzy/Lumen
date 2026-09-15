@@ -35,10 +35,6 @@ router = APIRouter(prefix="/api/skills", tags=["skills"])
 _ACTIVE: set[tuple[str, str]] = set()
 _ACTIVE_RUNS: set[str] = set()
 _LOCK = threading.Lock()
-# One lock per production around every read-modify-write of its GlobalState,
-# so two advisors (or an advisor and a producer's edit) cannot overwrite each
-# other's changes. The slow model step runs outside it.
-_PROJECT_LOCKS: dict[str, threading.Lock] = {}
 
 STATUSES = ("pending", "running", "complete", "failed")
 
@@ -88,11 +84,6 @@ def _public_skill(skill: Skill) -> dict[str, Any]:
     }
 
 
-def _project_lock(project_id: str) -> threading.Lock:
-    with _LOCK:
-        return _PROJECT_LOCKS.setdefault(project_id, threading.Lock())
-
-
 def _skeleton(skill: Skill, project_id: str, params: dict, started_by: str) -> dict[str, Any]:
     return {
         "run_id": new_id("RUN").upper(),
@@ -129,7 +120,10 @@ def _worker(record: dict, skill: Skill, params: dict) -> None:
                 item["started_at" if status == "running" else "finished_at"] = _now()
         skill_store.save(record)
 
-    lock = _project_lock(project_id)
+    # Shared with the audience simulator, so an advisor run and a screening on
+    # the same production serialise their saves. The slow model step runs
+    # outside it.
+    lock = supabase_client.project_lock(project_id)
     try:
         # 1. Under the project lock: read the state and, when the skill needs
         #    phase output that is not there yet, run those phase agents and
@@ -148,10 +142,7 @@ def _worker(record: dict, skill: Skill, params: dict) -> None:
         # 3. Under the lock again: merge this run's envelopes onto whatever the
         #    stored state is now (another advisor or a producer may have saved
         #    in the meantime) rather than overwriting it with our stale copy.
-        with lock:
-            latest = supabase_client.load_state(project_id) or state
-            latest.event_log.extend(state.event_log[baseline:])
-            supabase_client.save_state(latest)
+        supabase_client.append_events(project_id, state.event_log[baseline:], state)
         record.update({
             "status": "complete",
             "completed_at": _now(),

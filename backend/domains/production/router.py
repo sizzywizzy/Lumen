@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from core.auth.deps import require_member, require_producer
 from core.orchestrator.graph import Orchestrator
+from core.shoot_window import IsoDate, settings_problem
 from services import script_intake, supabase_client
 
 router = APIRouter(prefix="/api/production", tags=["production"])
@@ -14,7 +15,8 @@ router = APIRouter(prefix="/api/production", tags=["production"])
 class ProductionSettings(BaseModel):
     country: str = "USA"
     excluded_states: list[str] = Field(default_factory=list)
-    start_date: str = "2026-09-01"
+    start_date: IsoDate = None
+    end_date: IsoDate = None
     min_hours_per_day: float = 6
     max_hours_per_day: float = 10
     total_budget: float = 100000
@@ -69,8 +71,16 @@ def update_settings(project_id: str, settings: ProductionSettings, _member=Depen
     state = supabase_client.load_state(project_id)
     if state is None:
         raise HTTPException(404, f"No state for {project_id}")
+    # Merged, not replaced: saving these rules must keep the intake's shooting dates.
+    merged = {
+        **(state.schedule.shoot_settings or {}),
+        **settings.model_dump(mode="json", exclude={"country", "excluded_states", "total_budget"}, exclude_none=True),
+    }
+    problem = settings_problem(merged)
+    if problem:
+        raise HTTPException(422, problem)
     state.schedule.director_constraints = {"country": settings.country, "excluded_states": settings.excluded_states}
-    state.schedule.shoot_settings = settings.model_dump(exclude={"country", "excluded_states", "total_budget"})
+    state.schedule.shoot_settings = merged
     state.budget_state.total_budget = settings.total_budget
     _apply_budget(state)
     supabase_client.save_state(state)

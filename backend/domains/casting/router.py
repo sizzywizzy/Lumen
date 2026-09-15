@@ -3,8 +3,8 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from core.auth.deps import require_member, require_producer
-from core.auth.models import CandidateStatusRequest
+from core.auth.deps import current_user, require_member, require_producer
+from core.auth.models import CandidateStatusRequest, User
 from core.messaging.envelope import broadcast, log_event
 from core.orchestrator.graph import Orchestrator
 from services import supabase_client
@@ -80,8 +80,11 @@ def run_casting(
     }
 
 
+# The actor knowledge base is shared across productions, so these routes are
+# not scoped to a membership; they still need a signed-in account, or anyone
+# on the internet could spend the TMDb quota and write to the database.
 @router.post("/actors/ingest")
-def ingest_actors(request: ActorIngestRequest):
+def ingest_actors(request: ActorIngestRequest, _user: User = Depends(current_user)):
     """Fetch people and their known-for roles from TMDb into the actor KB."""
     try:
         from services.casting_kb.ingest import ingest_actor_ids
@@ -91,7 +94,7 @@ def ingest_actors(request: ActorIngestRequest):
 
 
 @router.post("/actors/embeddings")
-def generate_embeddings(request: EmbeddingRequest = EmbeddingRequest()):
+def generate_embeddings(request: EmbeddingRequest = EmbeddingRequest(), _user: User = Depends(current_user)):
     """Generate or refresh embeddings for actors in the KB."""
     try:
         from services.casting_kb.embeddings import generate_actor_embeddings
@@ -107,6 +110,7 @@ def search_actors(
     min_age: int | None = Query(default=None, ge=0, le=120),
     max_age: int | None = Query(default=None, ge=0, le=120),
     limit: int = Query(default=5, ge=1, le=100),
+    _user: User = Depends(current_user),
 ):
     """Return semantically similar actors satisfying hard constraints."""
     try:

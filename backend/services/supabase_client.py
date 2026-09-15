@@ -6,12 +6,24 @@ demo need zero credentials. Same interface either way.
 """
 import json
 import os
-from typing import Optional
+import threading
+from typing import Any, Optional
 
 from core import config
 from core.orchestrator.state import GlobalState
 
 _supabase = None
+
+# One lock per production around every read-modify-write of its state, shared
+# by every background worker in this process (advisor runs, audience
+# simulations) so none of them overwrites another's save with a stale copy.
+_PROJECT_LOCKS: dict[str, threading.Lock] = {}
+_PROJECT_LOCKS_GUARD = threading.Lock()
+
+
+def project_lock(project_id: str) -> threading.Lock:
+    with _PROJECT_LOCKS_GUARD:
+        return _PROJECT_LOCKS.setdefault(project_id, threading.Lock())
 
 
 def _get_supabase():
@@ -50,6 +62,23 @@ def load_state(project_id: str) -> Optional[GlobalState]:
     if path.exists():
         return GlobalState.model_validate(json.loads(path.read_text(encoding="utf-8")))
     return None
+
+
+def append_events(project_id: str, envelopes: list[dict[str, Any]], fallback: GlobalState) -> GlobalState:
+    """Merge a background run's A2A envelopes onto the stored state.
+
+    A long run works on a copy of the state loaded minutes earlier and only
+    appends to its event log. Saving that copy back would overwrite anything
+    saved in the meantime (a candidate decision, an expense, a script upload),
+    so under the project lock the current state is reloaded, the envelopes are
+    appended to it and that is saved. `fallback` is used only when nothing is
+    stored any more.
+    """
+    with project_lock(project_id):
+        latest = load_state(project_id) or fallback
+        latest.event_log.extend(envelopes)
+        save_state(latest)
+    return latest
 
 
 def list_projects() -> list[str]:

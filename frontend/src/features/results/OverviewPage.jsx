@@ -69,7 +69,7 @@ export default function OverviewPage() {
             <Stat value={stats.scenes} label="Scenes" />
             <Stat value={stats.shootDays} label="Shoot days" />
             <Stat value={`${stats.hours}h`} label="On set" />
-            <Stat value={money(stats.venueCost)} label="Locations" />
+            <Stat value={stats.venues} label={stats.venues === 1 ? "Location" : "Locations"} />
           </div>
           {stats.days.length ? (
             <>
@@ -99,7 +99,7 @@ export default function OverviewPage() {
               title={`${budget.venues} ${budget.venues === 1 ? "location" : "locations"}`}
               sub={`Across ${budget.shootDays} shoot ${budget.shootDays === 1 ? "day" : "days"}`}
               amount={`−${money(budget.venueCost)}`}
-              caption="Venues"
+              caption="Venue hire"
             />
             <MoneyRow
               icon="account_balance_wallet"

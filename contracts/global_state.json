@@ -7,6 +7,8 @@
   "required": ["project_id"],
   "properties": {
     "project_id": { "type": "string", "pattern": "^PROJ_[A-Z0-9_]+$" },
+    "locality": { "type": "string", "description": "where the production films; drives local casting" },
+    "director_notes": { "type": "string" },
     "script_context": {
       "type": "object",
       "description": "genre, tone, demographic targets, IP params"
@@ -43,7 +45,7 @@
             "type": "string",
             "enum": ["SOURCING", "SCREENING", "LOCKED", "DISQUALIFIED", "FLAGGED_ACTION_REQUIRED"]
           },
-          "disqualify_reason": { "type": "string" }
+          "disqualify_reason": { "type": "string", "description": "a plain-language sentence; metadata.disqualify_code holds pr_risk or over_budget" }
         }
       }
     },
@@ -57,6 +59,9 @@
             "type": "object",
             "properties": {
               "scene_id": { "type": "string" },
+              "heading": { "type": "string", "description": "screenplay slugline" },
+              "title": { "type": "string", "description": "short plain-English scene name" },
+              "summary": { "type": "string" },
               "date": { "type": "string" },
               "venue": { "type": "string" },
               "location_type": { "type": "string" },
@@ -69,9 +74,32 @@
             }
           }
         },
-        "conflicts": { "type": "array" },
+        "conflicts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "scene_id": { "type": "string" },
+              "title": { "type": "string" },
+              "wanted": { "type": "string" },
+              "moved_to": { "type": "string" },
+              "venue": { "type": "string" },
+              "reason": { "type": "string", "enum": ["venue_unavailable", "past_wrap"] },
+              "days_past_wrap": { "type": "integer" },
+              "resolution": { "type": "string", "description": "a plain-language sentence" }
+            }
+          }
+        },
         "director_constraints": { "type": "object" },
-        "shoot_settings": { "type": "object" },
+        "shoot_settings": {
+          "type": "object",
+          "properties": {
+            "start_date": { "type": "string", "format": "date" },
+            "end_date": { "type": "string", "format": "date" },
+            "min_hours_per_day": { "type": "number" },
+            "max_hours_per_day": { "type": "number" }
+          }
+        },
         "shoot_notes": { "type": "array" },
         "reshoots": { "type": "array" }
       }
@@ -103,7 +131,24 @@
         "tomatometer": { "type": "number" },
         "audience_score": { "type": "number" },
         "heatmap": { "type": "object" },
-        "weakest_scene_id": { "type": "string" }
+        "weakest_scene_id": { "type": "string" },
+        "weakest_scene_title": { "type": "string" },
+        "scene_titles": { "type": "object", "description": "scene_id -> title" },
+        "viewer_count": { "type": "integer" },
+        "verdict": { "type": "string", "enum": ["", "fresh", "rotten"] },
+        "reviews": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["source", "quote"],
+            "properties": {
+              "source": { "type": "string" },
+              "kind": { "type": "string", "enum": ["critic", "viewer"] },
+              "quote": { "type": "string" },
+              "score": { "type": "string" }
+            }
+          }
+        }
       }
     },
     "marketing_assets": {

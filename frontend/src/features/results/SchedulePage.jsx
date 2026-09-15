@@ -32,7 +32,7 @@ export default function SchedulePage() {
             <Stat value={stats.shootDays} label="Shoot days" />
             <Stat value={`${stats.hours}h`} label="On set" />
             <Stat value={stats.venues} label="Locations" />
-            <Stat value={money(stats.venueCost)} label="Location hire" />
+            <Stat value={money(stats.venueCost)} label="Cost to hire the venues" />
           </div>
           {stats.days.length > 0 && (
             <>

@@ -9,13 +9,14 @@ Mounts one router per team workspace plus shared pipeline/state/event endpoints
 from typing import Optional
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, model_validator
 
 from core import config
 from core.auth.deps import current_user, membership_for, require_member, require_producer
 from core.auth.models import User, role_at_least
 from core.orchestrator.graph import Orchestrator
 from core.orchestrator.state import BudgetState, GlobalState
+from core.shoot_window import IsoDate, settings_problem, window_problem
 from domains.audience.router import router as audience_router
 from domains.auth.router import router as auth_router
 from domains.casting.router import router as casting_router
@@ -42,25 +43,53 @@ app.include_router(skills_router)
 
 
 class InitRequest(BaseModel):
+    """Intake inputs. Anything left out keeps the production's saved value."""
     project_id: str = "PROJ_NEON_NIGHTS"
-    budget_usd: float = config.DEFAULT_BUDGET_USD  # total production budget from the intake form
-    locality: Optional[str] = "Los Angeles, CA"
-    director_notes: Optional[str] = ""
+    budget_usd: Optional[float] = Field(default=None, gt=0)  # total production budget from the intake form
+    locality: Optional[str] = None
+    director_notes: Optional[str] = None
+    start_date: IsoDate = None  # first shoot day, YYYY-MM-DD
+    end_date: IsoDate = None  # planned wrap, YYYY-MM-DD
+
+    @model_validator(mode="after")
+    def _check_window(self):
+        problem = window_problem(self.start_date, self.end_date)
+        if problem:
+            raise ValueError(problem)
+        return self
 
 
-def _new_state(req: InitRequest) -> GlobalState:
-    loc = req.locality or "Los Angeles, CA"
-    notes = req.director_notes or ""
-    return GlobalState(
+def _new_state(req: InitRequest, stored: Optional[GlobalState]) -> GlobalState:
+    """A fresh pipeline state that keeps the production's inputs. Each input comes
+    from the request, else from what was saved before, else the default; the
+    screenplay, schedule rules and expenses carry over from the saved state."""
+    loc = req.locality or (stored.locality if stored else "") or "Los Angeles, CA"
+    notes = req.director_notes if req.director_notes is not None else (stored.director_notes if stored else "")
+    cap = req.budget_usd or (stored.budget_state.cap if stored else 0) or config.DEFAULT_BUDGET_USD
+    state = GlobalState(
         project_id=req.project_id,
-        budget_state=BudgetState(cap=req.budget_usd),
+        budget_state=BudgetState(cap=cap),
         locality=loc,
         director_notes=notes,
-        script_context={
-            "locality": loc,
-            "director_notes": notes,
-        },
+        script_context={"locality": loc, "director_notes": notes},
     )
+    if stored is not None:
+        state.script_context.update(
+            {k: v for k, v in (stored.script_context or {}).items() if k in script_intake.INTAKE_KEYS}
+        )
+        state.schedule.shoot_settings = dict(stored.schedule.shoot_settings or {})
+        state.schedule.director_constraints = dict(stored.schedule.director_constraints or {})
+        for key in ("expenses", "total_budget", "spent", "remaining"):
+            setattr(state.budget_state, key, getattr(stored.budget_state, key))
+    # Stored as ISO strings: the Supabase path saves with model_dump(), which leaves dates unencoded.
+    if req.start_date:
+        state.schedule.shoot_settings["start_date"] = req.start_date.isoformat()
+    if req.end_date:
+        state.schedule.shoot_settings["end_date"] = req.end_date.isoformat()
+    problem = settings_problem(state.schedule.shoot_settings)
+    if problem:  # e.g. a new wrap date earlier than the saved first shoot day
+        raise HTTPException(422, problem)
+    return state
 
 
 @app.get("/api/health")
@@ -74,15 +103,14 @@ def init_pipeline(req: InitRequest, user: User = Depends(current_user)):
     membership = membership_for(user, req.project_id)
     if not role_at_least(membership.role, "producer"):
         raise HTTPException(403, "Your role on this production is read-only.")
-    state = _new_state(req)
-    stored = supabase_client.load_state(req.project_id)
-    if stored is not None:
-        state.script_context = {
-            **(state.script_context or {}),
-            **{k: v for k, v in (stored.script_context or {}).items() if k in script_intake.INTAKE_KEYS},
-        }
+    state = _new_state(req, supabase_client.load_state(req.project_id))
     supabase_client.save_state(state)
-    return {"project_id": state.project_id, "budget_usd": state.budget_state.cap, "locality": state.locality}
+    settings = state.schedule.shoot_settings
+    return {
+        "project_id": state.project_id, "budget_usd": state.budget_state.cap, "locality": state.locality,
+        "director_notes": state.director_notes,
+        "start_date": settings.get("start_date"), "end_date": settings.get("end_date"),
+    }
 
 
 @app.post("/api/pipeline/run")
@@ -91,19 +119,9 @@ def run_pipeline(req: InitRequest, user: User = Depends(current_user)):
     membership = membership_for(user, req.project_id)
     if not role_at_least(membership.role, "producer"):
         raise HTTPException(403, "Your role on this production is read-only.")
-    state = _new_state(req)
-    # A run resets the pipeline's output, not the material: keep the screenplay
-    # dropped at intake so every phase and advisor reads the real script.
-    stored = supabase_client.load_state(req.project_id)
-    if stored is not None:
-        intake_context = {k: v for k, v in (stored.script_context or {}).items() if k in script_intake.INTAKE_KEYS}
-        state.script_context = {**(state.script_context or {}), **intake_context}
-        if not req.director_notes and stored.director_notes:
-            state.director_notes = stored.director_notes
-            state.script_context["director_notes"] = stored.director_notes
-        if not req.locality and stored.locality:
-            state.locality = stored.locality
-            state.script_context["locality"] = stored.locality
+    # A run resets the pipeline's output, not the material: the screenplay and
+    # the intake inputs carry over, so a run after a page reload plans the same production.
+    state = _new_state(req, supabase_client.load_state(req.project_id))
     state = Orchestrator().run(state)
     supabase_client.save_state(state)
     return {

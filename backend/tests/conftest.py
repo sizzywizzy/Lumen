@@ -21,6 +21,13 @@ def state_dir(tmp_path, monkeypatch):
 
 
 @pytest.fixture
+def offline(monkeypatch):
+    """Force the mock fallbacks, even on a machine with Gemini credentials."""
+    monkeypatch.setattr(config, "has_gemini", lambda: False)
+    monkeypatch.setattr(config, "has_tavily", lambda: False)
+
+
+@pytest.fixture
 def make_user(state_dir):
     """Persist a user and return (user, plaintext_password)."""
     from services import auth_store
