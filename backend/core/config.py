@@ -50,9 +50,6 @@ CORS_ORIGINS = [
     if origin.strip()
 ]
 
-WHISPER_API_KEY = os.environ.get("WHISPER_API_KEY", "")
-IMAGEN_API_KEY = os.environ.get("IMAGEN_API_KEY", "")
-
 # Google Cloud SQL configuration (takes precedence over Supabase when configured)
 CLOUD_SQL_CONNECTION_NAME = os.environ.get("CLOUD_SQL_CONNECTION_NAME", "")
 DB_USER = os.environ.get("DB_USER", "")

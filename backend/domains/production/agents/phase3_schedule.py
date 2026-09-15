@@ -105,7 +105,14 @@ def _breakdown(state: GlobalState) -> list[dict]:
 
 
 def _location_offer(state: GlobalState, request: dict, start: date, days: int) -> dict:
-    """agent_location: answer a check_venue_availability request with the best venue/date."""
+    """agent_location: answer a check_venue_availability request with the best venue/date.
+
+    Cheapest venue first, but a day the cast can make beats a cheaper venue
+    that only has days they cannot: the request lists the days that are
+    already full and the days the scene's cast is unavailable. Only when no
+    venue has a cast-free day does the offer fall back to any open day, and
+    it says so, so the scheduler can put the booking in front of a person.
+    """
     payload = request["payload"]
     constraints = state.schedule.director_constraints
     venues = [v for v in mock_db.load("venues") if v["location_type"] == payload["location_type"]]
@@ -116,17 +123,22 @@ def _location_offer(state: GlobalState, request: dict, start: date, days: int) -
     venues = sorted(venues, key=lambda v: v["cost_per_day"])
     preferred_date = payload["preferred_date"]
     full = set(payload.get("full_dates", []))
-    for venue in venues:  # cheapest first; move on when a venue has no day with room
-        open_days = [d for d in _weekly(venue["available_dates"], start, days) if d not in full]
-        if not open_days:
-            continue
-        chosen = preferred_date if preferred_date in open_days else open_days[0]
-        offer = {"venue_name": venue["venue_name"], "date": chosen,
-                 "cost_per_day": venue["cost_per_day"],
-                 "preferred_date_available": chosen == preferred_date}
-        log_event(state, make_reply(request, "agent_location", "venue_offer", offer))
-        return offer
-    offer = {"venue_name": None, "date": None, "cost_per_day": 0, "preferred_date_available": False}
+    cast_unavailable = set(payload.get("cast_unavailable", []))
+    with_room = [(v, [d for d in _weekly(v["available_dates"], start, days) if d not in full]) for v in venues]
+    for cast_free_only in (True, False):
+        for venue, open_days in with_room:
+            days_ok = [d for d in open_days if d not in cast_unavailable] if cast_free_only else open_days
+            if not days_ok:
+                continue
+            chosen = preferred_date if preferred_date in days_ok else days_ok[0]
+            offer = {"venue_name": venue["venue_name"], "date": chosen,
+                     "cost_per_day": venue["cost_per_day"],
+                     "preferred_date_available": chosen == preferred_date,
+                     "cast_available": chosen not in cast_unavailable}
+            log_event(state, make_reply(request, "agent_location", "venue_offer", offer))
+            return offer
+    offer = {"venue_name": None, "date": None, "cost_per_day": 0,
+             "preferred_date_available": False, "cast_available": False}
     log_event(state, make_reply(request, "agent_location", "venue_offer", offer))
     return offer
 
@@ -150,19 +162,30 @@ def _scheduler(state: GlobalState, scenes: list[dict]) -> None:
     def has_room(day: str, hours: float) -> bool:
         return scenes_by_date.get(day, 0) < MAX_SCENES_PER_DAY and hours_by_date.get(day, 0) + hours <= max_hours
 
-    late_scenes = 0
+    def role_name(role_id: str) -> str:
+        role = (state.role_requirements or {}).get(role_id)
+        return (role.get("name") or role_id) if isinstance(role, dict) else role_id
+
+    all_days = set(shoot_dates)
+    late_scenes, cast_conflicts = 0, []
+    venue_days: set[tuple[str, str]] = set()
     for scene in scenes:
         hours = scene["estimated_time_hours"]
         title = scene.get("title") or scene["scene_id"]
-        wanted = next((day for day in shoot_dates if has_room(day, hours) and all(
-            day in actor_dates.get(role, set(shoot_dates)) for role in scene["characters_needed"])), shoot_dates[-1])
+        cast = scene["characters_needed"]
+        cast_free = {day for day in shoot_dates if all(day in actor_dates.get(role, all_days) for role in cast)}
+        # The day asked for: the first with room that the whole cast can make,
+        # else the first with room at all (the cast conflict is then reported).
+        wanted = next((day for day in shoot_dates if day in cast_free and has_room(day, hours)),
+                      next((day for day in shoot_dates if has_room(day, hours)), shoot_dates[-1]))
         full = [day for day in shoot_dates if not has_room(day, hours)]
+        cast_unavailable = [day for day in shoot_dates if day not in cast_free]
         preferred, offer = wanted, None
         for _ in range(config.MAX_NEGOTIATION_ITERATIONS):  # never unbounded
             request = log_event(state, make_envelope(
                 "agent_scheduler_shoot", "agent_location", "check_venue_availability",
                 {"scene_id": scene["scene_id"], "location_type": scene["location_type"],
-                 "preferred_date": preferred, "full_dates": full,
+                 "preferred_date": preferred, "full_dates": full, "cast_unavailable": cast_unavailable,
                  "window": {"start": start.isoformat(), "wrap": wrap.isoformat() if wrap else None},
                  "director_constraints": constraints},
             ))
@@ -174,18 +197,29 @@ def _scheduler(state: GlobalState, scenes: list[dict]) -> None:
         if offer and offer["venue_name"]:
             placed = offer["date"]
             days_late = max((date.fromisoformat(placed) - wrap).days, 0) if wrap else 0
-            if placed != wanted or days_late:
-                if placed != wanted:
-                    sentence = f'{offer["venue_name"]} isn\'t free on {_say(wanted)}, so "{title}" moves to {_say(placed)}.'
-                    if days_late:
-                        sentence += f" That is {days_late} {'day' if days_late == 1 else 'days'} after the planned wrap on {_say(wrap.isoformat())}."
-                else:
-                    sentence = (f"No day before the planned wrap ({_say(wrap.isoformat())}) had the cast and a venue free, "
-                                f'so "{title}" is set for {_say(placed)} ({days_late} {"day" if days_late == 1 else "days"} late).')
+            missing = [role_name(role) for role in cast if placed not in actor_dates.get(role, all_days)]
+            sentences = []
+            if placed != wanted:
+                sentence = f'{offer["venue_name"]} isn\'t free on {_say(wanted)}, so "{title}" moves to {_say(placed)}.'
+                if days_late:
+                    sentence += f" That is {days_late} {'day' if days_late == 1 else 'days'} after the planned wrap on {_say(wrap.isoformat())}."
+                sentences.append(sentence)
+            elif days_late:
+                sentences.append(f"No day before the planned wrap ({_say(wrap.isoformat())}) had the cast and a venue free, "
+                                 f'so "{title}" is set for {_say(placed)} ({days_late} {"day" if days_late == 1 else "days"} late).')
+            if missing:
+                # No venue had a day this cast can make, so the scene is booked
+                # anyway and the clash is put in front of a person.
+                who = " and ".join(missing) if len(missing) < 3 else ", ".join(missing[:-1]) + " and " + missing[-1]
+                sentences.append(f'{who} {"is" if len(missing) == 1 else "are"} not listed as available for "{title}" '
+                                 f"on {_say(placed)}; confirm the booking or move the scene.")
+                cast_conflicts.append(title)
+            if sentences:
                 state.schedule.conflicts.append({
                     "scene_id": scene["scene_id"], "title": title, "wanted": wanted, "moved_to": placed,
-                    "venue": offer["venue_name"], "reason": "past_wrap" if days_late else "venue_unavailable",
-                    "days_past_wrap": days_late, "resolution": sentence,
+                    "venue": offer["venue_name"],
+                    "reason": "cast_unavailable" if missing else ("past_wrap" if days_late else "venue_unavailable"),
+                    "days_past_wrap": days_late, "resolution": " ".join(sentences),
                 })
                 late_scenes += 1 if days_late else 0
             stripboard.append(StripboardEntry(
@@ -197,7 +231,9 @@ def _scheduler(state: GlobalState, scenes: list[dict]) -> None:
             ))
             hours_by_date[placed] = hours_by_date.get(placed, 0) + hours
             scenes_by_date[placed] = scenes_by_date.get(placed, 0) + 1
-            total_cost += offer["cost_per_day"]
+            if (offer["venue_name"], placed) not in venue_days:  # a venue day is paid once, however many scenes share it
+                venue_days.add((offer["venue_name"], placed))
+                total_cost += offer["cost_per_day"]
         else:
             state.escalate(f"venue:{scene['scene_id']}", f'No venue could be found for "{title}".')
 
@@ -207,6 +243,12 @@ def _scheduler(state: GlobalState, scenes: list[dict]) -> None:
         state.escalate("schedule:past_wrap",
                        f"{late_scenes} {'scene runs' if late_scenes == 1 else 'scenes run'} past the planned wrap on "
                        f"{_say(wrap.isoformat())}; the last shoot day is {_say(last)}.")
+    if cast_conflicts:
+        listed = ", ".join(f'"{t}"' for t in cast_conflicts)
+        state.escalate("schedule:cast",
+                       f"{len(cast_conflicts)} {'scene is' if len(cast_conflicts) == 1 else 'scenes are'} booked on a day "
+                       f"{'its' if len(cast_conflicts) == 1 else 'their'} cast is not listed as available: {listed}. "
+                       "Confirm the bookings or move the scenes.")
     shoot_days = max(len({e.date for e in stripboard}), 1)
     state.budget_state.daily_burn = round(total_cost / shoot_days, 2)
     # Venues may spend a fixed share of the total budget, spread over the shoot days.
@@ -217,7 +259,8 @@ def _scheduler(state: GlobalState, scenes: list[dict]) -> None:
         )
     log_event(state, broadcast("agent_scheduler_shoot", "schedule_updated", {
         "shoot_days": shoot_days, "daily_burn": state.budget_state.daily_burn,
-        "conflicts_resolved": len(state.schedule.conflicts),
+        "conflicts_resolved": len(state.schedule.conflicts), "cast_conflicts": len(cast_conflicts),
+        "venue_days": len(venue_days),
         "first_day": state.schedule.stripboard[0].date if stripboard else None,
         "last_day": state.schedule.stripboard[-1].date if stripboard else None,
         "wrap_date": wrap.isoformat() if wrap else None,

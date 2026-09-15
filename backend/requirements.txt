@@ -19,8 +19,6 @@ pypdf>=4.0                   # services/script_intake.py
 supabase>=2.4                # services/{supabase_client,auth_store,simulation_store}.py
 # Tavily needs no package — services/tavily_client.py calls its REST API with
 # urllib. Set TAVILY_API_KEY to enable web-grounded cultural research.
-# langgraph>=0.2             # swap core/orchestrator/graph.py runner for a StateGraph
-# openai-whisper             # or Whisper API for audition transcripts
 
 # Google Cloud SQL (uncomment when using Cloud SQL instead of Supabase)
 # google-cloud-sql>=3.0

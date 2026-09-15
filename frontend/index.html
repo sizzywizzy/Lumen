@@ -5,24 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- ?v= makes browsers drop the cached copy of the old camera icon -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
+    <meta name="theme-color" content="#0b0908" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- Text uses each device's own system font, so only the icon font is loaded.
-         display=block: icons are ligatures, so a swap would flash their names as text. -->
+    <!-- Type: DM Sans for interface and body text, DM Serif Display (the logo's
+         lettering) for the big headlines, JetBrains Mono for the agent log. -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300..800&family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <!-- The homepage's paperwork (see src/tactile.css): Courier Prime for script
+         pages, Special Elite for typewritten labels, Caveat for pencil notes. -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Caveat:wght@500..700&family=Courier+Prime:wght@400;700&family=Special+Elite&display=swap"
+      rel="stylesheet"
+    />
+    <!-- display=block: icons are ligatures, so a swap would flash their names as text. -->
     <link
       href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block"
       rel="stylesheet"
     />
     <title>Lumen</title>
     <script>
-      // Paint the theme before first render so there is no flash. Lumen is light
-      // unless the viewer has switched to dark (see theme/ThemeProvider.jsx).
+      // Paint the theme before first render so there is no flash. Lumen is dark
+      // unless the viewer has switched to light (see theme/ThemeProvider.jsx).
       (function () {
-        var theme = "light";
+        var theme = "dark";
         try {
-          if (localStorage.getItem("lumen-theme-choice") === "dark") theme = "dark";
+          if (localStorage.getItem("lumen-theme-choice") === "light") theme = "light";
         } catch (e) {
-          /* storage blocked: stay light */
+          /* storage blocked: stay dark */
         }
         document.documentElement.setAttribute("data-theme", theme);
       })();

@@ -3,6 +3,11 @@ import Icon from "../../shared/Icon.jsx";
 import { cn, money } from "../../lib/utils.js";
 import { calendarDays, dayLabel, dayOfMonth, hoursText, weekdayShort } from "../../lib/production.js";
 
+// Initials until the data carries a headshot (see actor() in lib/production.js).
+const Avatar = ({ person, className }) => (
+  <span className={className}>{person.photo ? <img src={person.photo} alt="" loading="lazy" /> : person.initials}</span>
+);
+
 // Building blocks shared by the results pages and the homepage example.
 
 export function Card({ title, action, children, className }) {
@@ -109,7 +114,7 @@ export function ActorTile({ role, person }) {
         {person.isPick && <span className="chip chip--ink">Top pick</span>}
       </div>
       <div className="tile-person">
-        <span className={cn("avatar-lg", person.isPick && "is-pick")}>{person.initials}</span>
+        <Avatar person={person} className={cn("avatar-lg", person.isPick && "is-pick")} />
         <div>
           <div className="tile-name">{person.name}</div>
           <div className="tile-sub">{person.ruledOut ? "Ruled out" : person.place}</div>
@@ -127,49 +132,11 @@ export function ActorTile({ role, person }) {
   );
 }
 
-export function ShootDays({ days }) {
-  return (
-    <div className="days">
-      {days.map((day, i) => (
-        <div className="day" key={day.date}>
-          <div>
-            <div className="kicker">Day {i + 1}</div>
-            <div className="day-date">{dayLabel(day.date)}</div>
-            <div className="kicker">{hoursText(day.hours)} on set</div>
-          </div>
-          {day.scenes.map((scene) => (
-            <div className="scene-card" key={scene.id}>
-              <div className="kicker">
-                {[scene.titled && scene.number && `Scene ${scene.number}`, scene.setting, hoursText(scene.hours)]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </div>
-              <div className="scene-title">{scene.name}</div>
-              {scene.venue && (
-                <div className="scene-line">
-                  <Icon name="location_on" />
-                  {scene.venue}
-                </div>
-              )}
-              {scene.cast.length > 0 && (
-                <div className="scene-line">
-                  <Icon name="person" />
-                  {scene.cast.join(", ")}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function PersonRow({ person, pick = false }) {
   if (person.ruledOut) {
     return (
       <div className="person person--out">
-        <span className="avatar-lg">{person.initials}</span>
+        <Avatar person={person} className="avatar-lg" />
         <div className="person-main">
           <div className="person-name">{person.name}</div>
           <div className="why">Ruled out. {person.reason}</div>
@@ -179,7 +146,7 @@ function PersonRow({ person, pick = false }) {
   }
   return (
     <div className={cn("person", pick && "person--pick")}>
-      <span className="avatar-lg">{person.initials}</span>
+      <Avatar person={person} className="avatar-lg" />
       <div className="person-main">
         <div className="person-name">{person.name}</div>
         <div className="person-sub">

@@ -2,11 +2,15 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import BrandLogo from "../../shared/BrandLogo.jsx";
 import Icon from "../../shared/Icon.jsx";
+import ThemeToggle from "../../shared/ThemeToggle.jsx";
 import { useAuth } from "../../shared/AuthContext.jsx";
-import { cn, money } from "../../lib/utils.js";
-import { castByRole, dateRange, scheduleStats, screening } from "../../lib/production.js";
+import { cn } from "../../lib/utils.js";
+import { castByRole, scheduleStats, screening } from "../../lib/production.js";
 import { SAMPLE_STATE } from "../../lib/sample.js";
-import { DayBars, Quotes, RoleBlock, ScoreSummary, ShootDays, Stat, ViewerBar } from "../results/parts.jsx";
+import { Quotes, RoleBlock, ScoreSummary } from "../results/parts.jsx";
+import ScheduleBoard from "../results/ScheduleBoard.jsx";
+import CraftSection from "./CraftSection.jsx";
+import HeroCollage from "./HeroCollage.jsx";
 
 const STEPS = [
   ["Drop your script", "PDF, Final Draft, Fountain or plain text. Add your budget, your shooting dates and the city you're filming in."],
@@ -35,13 +39,14 @@ export default function HomePage() {
       <header className="home-header">
         <BrandLogo to="/" height={50} />
         <nav className="home-nav">
-          <a href="#how" className="hide-small">How it works</a>
-          <a href="#example" className="hide-small">Example</a>
+          <a href="#how" className="home-link hide-small">How it works</a>
+          <a href="#example" className="home-link hide-small">Example</a>
+          <ThemeToggle />
           {user ? (
             <Link to="/overview" className="btn btn--primary">Open your dashboard</Link>
           ) : (
             <>
-              <Link to="/login">Sign in</Link>
+              <Link to="/login" className="home-link">Sign in</Link>
               <Link to="/register" className="btn btn--primary">Create a production</Link>
             </>
           )}
@@ -65,49 +70,18 @@ export default function HomePage() {
           <p className="hero-note">Works with PDF, Final Draft, Fountain and plain text.</p>
         </div>
 
-        <div className="hero-visual" aria-hidden="true">
-          <div className="hero-card hero-card--schedule">
-            <div className="card-head">
-              <strong>Shoot schedule</strong>
-              <span className="kicker">{dateRange(stats.first, stats.last)}</span>
-            </div>
-            <div className="stats" style={{ margin: "14px 0 20px", gap: "12px 28px" }}>
-              <Stat value={stats.shootDays} label="Shoot days" />
-              <Stat value={`${stats.hours}h`} label="On set" />
-            </div>
-            <DayBars days={stats.days} height={150} />
-          </div>
-          <div className="hero-card hero-card--pick">
-            <div className="tile-sub">Top pick for {lead.name}</div>
-            <div className="tile-person" style={{ marginTop: 14 }}>
-              <span className="avatar-lg is-pick">{lead.pick.initials}</span>
-              <div>
-                <div className="tile-name">{lead.pick.name}</div>
-                <div className="tile-sub">
-                  {money(lead.pick.fee)} · fit {lead.pick.fit} of 100
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="hero-card hero-card--score">
-            <div className="row row--tight" style={{ alignItems: "baseline" }}>
-              <span className="stat-value">{screen.tomatometer}%</span>
-              <span className="stat-label">Tomatometer</span>
-            </div>
-            <div style={{ margin: "14px 0 12px" }}>
-              <ViewerBar liked={screen.liked} viewers={screen.viewers} height={22} />
-            </div>
-            <div className="stat-label">
-              {screen.liked} of {screen.viewers} test viewers liked it
-            </div>
-          </div>
-        </div>
+        <HeroCollage stats={stats} lead={lead} screen={screen} />
       </section>
+
+      <CraftSection />
 
       <div className="band">
         <section className="section" id="how">
           <div className="section-head">
-            <h2>How it works</h2>
+            <div>
+              <p className="scene-slug">Int. Your production office - Present day</p>
+              <h2>How it works</h2>
+            </div>
             <p>Three steps from a finished draft to a plan your whole team can work from.</p>
           </div>
           <div className="steps">
@@ -147,7 +121,9 @@ export default function HomePage() {
           </div>
         </div>
         <div className="example-panel">
-          {tab === "schedule" && <ShootDays days={stats.days} />}
+          {/* keyed on the tab so the new view fades in when a tab is clicked */}
+          <div className="fade-in" key={tab}>
+          {tab === "schedule" && <ScheduleBoard state={SAMPLE_STATE} compact />}
           {tab === "cast" && (
             <div className="example-cast">
               {roles.map((role) => (
@@ -166,6 +142,7 @@ export default function HomePage() {
               </div>
             </div>
           )}
+          </div>
         </div>
       </section>
 

@@ -9,7 +9,6 @@ Lumen can be deployed to GCP with the following architecture:
 - **Cloud Run**: Serverless deployment for backend (FastAPI) and frontend (React)
 - **Supabase**: shared persistence for state, accounts and simulations
 - **Cloud Build**: Automated CI/CD pipeline
-- **Cloud Storage**: Media file storage (optional, future)
 
 ## Prerequisites
 

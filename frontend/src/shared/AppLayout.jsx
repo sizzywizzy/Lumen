@@ -1,6 +1,7 @@
-import { Link, NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import BrandLogo from "./BrandLogo.jsx";
 import AccountMenu from "./AccountMenu.jsx";
+import ThemeToggle from "./ThemeToggle.jsx";
 import Icon from "./Icon.jsx";
 import { useAuth } from "./AuthContext.jsx";
 import { cn } from "../lib/utils.js";
@@ -17,12 +18,13 @@ const TABS = [
 // tools, marketing, advisors, agent log) still have routes but no menu entry.
 export default function AppLayout() {
   const { canEdit } = useAuth();
+  const location = useLocation();
 
   return (
     <div className="site">
       <header className="site-header">
         <div className="site-header__bar">
-          <BrandLogo to="/overview" height={42} />
+          <BrandLogo to="/" height={42} />
           <span className="site-header__spacer" />
           <nav className="site-tabs" aria-label="Results">
             {TABS.map((tab) => (
@@ -38,13 +40,15 @@ export default function AppLayout() {
                 <span className="btn-label">New script</span>
               </Link>
             )}
+            <ThemeToggle />
             <AccountMenu />
           </div>
         </div>
       </header>
 
       <main className="site-main">
-        <div className="site-inner">
+        {/* keyed on the path so each page fades up into place after navigation */}
+        <div className="site-inner page-enter" key={location.pathname}>
           <Outlet />
         </div>
       </main>

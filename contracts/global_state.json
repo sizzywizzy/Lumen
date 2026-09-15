@@ -84,7 +84,7 @@
               "wanted": { "type": "string" },
               "moved_to": { "type": "string" },
               "venue": { "type": "string" },
-              "reason": { "type": "string", "enum": ["venue_unavailable", "past_wrap"] },
+              "reason": { "type": "string", "enum": ["venue_unavailable", "past_wrap", "cast_unavailable"] },
               "days_past_wrap": { "type": "integer" },
               "resolution": { "type": "string", "description": "a plain-language sentence" }
             }

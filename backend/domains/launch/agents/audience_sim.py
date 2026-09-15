@@ -147,7 +147,8 @@ def simulate_cohorts(
             continue
         payload, meta = result
         sources.append(meta.get("source", "unknown"))
-        by_id = {c.get("cohort_id"): c for c in payload.get("cohorts", []) if isinstance(c, dict)}
+        rows = payload.get("cohorts") if isinstance(payload, dict) else None
+        by_id = {c.get("cohort_id"): c for c in (rows if isinstance(rows, list) else []) if isinstance(c, dict)}
         for c in batch:
             verdicts[c["cohort_id"]] = by_id.get(c["cohort_id"], {**P.MOCK_COHORT_VERDICT, "_degraded": True})
 

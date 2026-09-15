@@ -57,13 +57,20 @@ def _get_client():
 
 
 def _candidates(tier: str) -> list[str]:
+    """Models to try, in order, for a tier: the tier's configured model first,
+    then the fallback chain, so a retired or overloaded model degrades the run
+    instead of ending it (AGENT.md: Flash by default, Pro for heavy reasoning)."""
     if config.GEMINI_API_KEY:
-        preferred = config.GEMINI_FLASH_MODEL
-        ordered = [preferred] + [m for m in config.GEMINI_FALLBACK_MODELS if m != preferred]
+        preferred = config.GEMINI_PRO_MODEL if tier == "pro" else config.GEMINI_FLASH_MODEL
+        chain = [preferred, config.GEMINI_FLASH_MODEL, *config.GEMINI_FALLBACK_MODELS]
     else:
-        # Vertex AI: enforce gemini-2.5-flash everywhere to conserve Google Cloud credits
-        vertex_flash = getattr(config, "VERTEX_FLASH_MODEL", "gemini-2.5-flash")
-        ordered = [vertex_flash]
+        # Vertex AI via ADC: the VERTEX_* settings default to Flash to conserve credits.
+        preferred = config.VERTEX_PRO_MODEL if tier == "pro" else config.VERTEX_FLASH_MODEL
+        chain = [preferred, config.VERTEX_FLASH_MODEL]
+    ordered: list[str] = []
+    for model in chain:
+        if model and model not in ordered:
+            ordered.append(model)
     return ordered
 
 
