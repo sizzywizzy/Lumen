@@ -7,7 +7,7 @@ This is the single source of truth. If you add or change an agent, update this f
 
 ## 1. Core Concepts
 
-**Orchestrator.** One `agent_director_orchestrator` runs a LangGraph DAG (registered through Google Cloud Agent Builder). It owns `GlobalState`, routes work between phases, applies fail-fast edges, and holds the queue of items needing a human. Agents never call each other directly across phases — they emit A2A messages that the orchestrator routes.
+**Orchestrator.** One `agent_director_orchestrator` runs an explicit, framework-free state machine (`backend/core/orchestrator/graph.py`). It owns `GlobalState`, routes work between phases, applies fail-fast edges, resets each phase's own output before that phase runs again, and holds the queue of items needing a human. Agents never call each other directly across phases — they emit A2A messages that the orchestrator routes.
 
 **GlobalState.** One JSON object, persisted in Supabase, passed through the entire pipeline (Section 3).
 
@@ -18,7 +18,7 @@ This is the single source of truth. If you add or change an agent, update this f
 - **Fail-fast:** non-compliant items (PR liability, over budget, hard censorship block) are purged before expensive steps.
 - **Model tiering:** Gemini 2.0 Flash by default; Gemini 2.0 Pro only for heavy reasoning (final synthesis, aggregation, recut).
 - **Structured output:** every agent returns validated JSON (Gemini JSON mode). Never parse prose.
-- **Cost:** compress before LLM (FFmpeg 720p, screening packets), batch where possible, cache reusable prompts.
+- **Cost:** keep model inputs small (clipped script reads, screening packets), batch where possible, cache reusable prompts.
 
 ---
 
@@ -100,7 +100,7 @@ Intents: handles `score_candidate`, emits `budget_scored`; may emit `disqualify`
 ### Phase II — Audition Analysis & Scorecard
 
 **`agent_media_proc`** — *Media Processing / "Cruncher."*
-Model: none (FFmpeg + Whisper). In: 4K tape. Out: 720p clip + transcript.
+Model: none. In: the tape reference. Out: the same reference, announced to the reviewer. Decoding and transcription are out of scope by design, so auditions are judged from the role brief and the tape link.
 Intents: emits `media_ready`.
 
 **`agent_audition_analytics`** — *Multimodal Analytics / "AI Co-Director."*
@@ -149,9 +149,9 @@ Intents: emits `leaderboard_ready`; pushes top-N to `human_escalations`.
 
 **`agent_campaign_strategist`** — Model: Gemini Flash. In: `audience_report`. Out: campaign plan (segment→platform→tone). Sends `request_audience_insights`; emits `campaign_plan_ready`.
 
-**`agent_reel_cutter`** — In: `weakest/strongest` scene scores. Out: reel from top-scored scene (still-sequence if no Veo). Emits `reel_ready`.
+**`agent_reel_cutter`** — In: `weakest/strongest` scene scores. Out: a still-sequence reel spec cut from the top-scored scene; no video generation by design. Emits `reel_ready`.
 
-**`agent_visual`** — Model: Imagen 3. Out: posters/memes/thumbnails. Sends `verify_brand_safety`; on rejection regenerates (≤2 tries).
+**`agent_visual`** — Model: Gemini Flash. Out: art-direction specs for posters/memes/thumbnails (caption, image prompt, alt text); no image generation by design. Sends `verify_brand_safety`; on rejection regenerates (≤2 tries).
 
 **`agent_copywriter`** — Model: Gemini Flash. Out: platform-native copy / press release. (Often merged into the visual call to save calls.)
 

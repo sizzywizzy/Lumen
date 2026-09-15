@@ -17,7 +17,7 @@
 > off at the top.
 >
 > Started as a three-person entry to **Agentic Cinema: The Blockbuster Hackathon**,
-> now carried solo: FastAPI · React · Gemini · 17k lines · tested, with CI on
+> now carried solo: FastAPI · React · Gemini · 19k lines · tested, with CI on
 > every push.
 
 Lumen is a network of specialized AI agents that run the entire film lifecycle as **six connected phases** — casting, auditions, scheduling, compliance, audience testing, and marketing — sharing **one orchestrator, one state object, and one agent-to-agent (A2A) messaging standard**. Scale follows the budget you enter at intake: casting caps, venue choices and territory reach all derive from it.
@@ -36,14 +36,14 @@ It is a true **Multi-Agent System (MAS)**: agents ask each other questions, get 
 
 | Slot | Save as | Should show |
 |---|---|---|
-| Screenshot 1 | `assets/screenshots/01-intake.png` | Cover page / intake — script dropped, budget + shooting window entered |
-| Screenshot 2 | `assets/screenshots/02-pipeline.png` | A phase dashboard mid-run — leaderboard, stripboard or the Tomatometer |
-| Screenshot 3 | `assets/screenshots/03-terminal.png` | Live Agent Terminal scrolling the A2A envelopes |
+| Screenshot 1 | `assets/screenshots/01-intake.png` | **New script** (`/new`) — screenplay dropped, budget and shooting dates filled in |
+| Screenshot 2 | `assets/screenshots/02-pipeline.png` | The results after a run — the **Overview** or the day-by-day **Schedule** |
+| Screenshot 3 | `assets/screenshots/03-terminal.png` | Live Agent Terminal (`/logs`) scrolling the A2A envelopes |
 | GIF | `assets/screenshots/pipeline.gif` | ~10s of `run_demo.py` streaming all six phases (see recipe below) |
 
 <!-- Uncomment once the files above exist:
-![Intake — script, budget and shooting window](assets/screenshots/01-intake.png)
-![A phase dashboard mid-run](assets/screenshots/02-pipeline.png)
+![New script — screenplay, budget and shooting dates](assets/screenshots/01-intake.png)
+![The results of a run](assets/screenshots/02-pipeline.png)
 ![Live Agent Terminal streaming A2A envelopes](assets/screenshots/03-terminal.png)
 ![The six-phase pipeline running end to end](assets/screenshots/pipeline.gif)
 -->
@@ -76,11 +76,11 @@ Turning a screenplay into a finished, marketed film is a two-week-per-step manua
 | Phase | Name | What it does |
 |---|---|---|
 | **I** | Pre-Casting Intelligence & Compliance | Turns script + brief into casting mandates; fail-fast filters applicants on PR/budget risk |
-| **II** | Audition Analysis & Scorecard | Grades performances into a composite leaderboard (tape decode/transcribe is stubbed) |
+| **II** | Audition Analysis & Scorecard | Grades performances into a composite leaderboard (no tape decoding: auditions are judged from the role brief and the tape reference) |
 | **III** | Script → Schedule | Breaks down scenes, matches venues, builds the stripboard + burn-rate budget |
 | **IV** | Compliance, Localization & Launch Prep | Clears rights, localizes/censors per territory, runs QC |
-| **V** | Audience Simulation & Predictive Reviews | 200 synthetic viewers screen the cut → Tomatometer + fix suggestions |
-| **VI** | Marketing, PR & Autonomous Social Launch | Plans reels/memes/posters + copy, PR-gates each one, schedules the rollout (assets are specs, not rendered pixels) |
+| **V** | Audience Simulation & Predictive Reviews | 200 synthetic viewers screen the cut → Tomatometer + fix suggestions (verdicts are hash-seeded; the Audience Analyst advisor is the Gemini-backed simulator) |
+| **VI** | Marketing, PR & Autonomous Social Launch | Plans reels/memes/posters + copy, PR-gates each one, schedules the rollout (assets are art-direction specs by design, not rendered media) |
 
 Full spec and agent contracts: see [`AGENT.md`](./AGENT.md). Shared schemas live in [`contracts/`](./contracts); advisor procedures in [`skills.md`](./skills.md).
 
@@ -100,13 +100,11 @@ Full spec and agent contracts: see [`AGENT.md`](./AGENT.md). Shared schemas live
                                        │
    PHASE I → PHASE II → PHASE III → PHASE IV → PHASE V → PHASE VI
    (each phase = a subgraph of agents; all speak the same A2A envelope)
-                                       │
-                        VI → I  PR-risk + telemetry loop back
 ```
 
-- **Orchestration:** a dependency-free state machine in `backend/core/orchestrator/graph.py` — every phase is a node with fail-fast edges. The node signature is deliberately LangGraph-shaped so the runner can be swapped for a real `StateGraph` later, but nothing today imports LangGraph.
+- **Orchestration:** an explicit state machine in `backend/core/orchestrator/graph.py`, written from scratch rather than on a framework: every phase is a node, a conditional edge after a phase can halt the run with a human escalation, each phase owns and resets its own output so a re-run replaces rather than stacks, and all of it is unit-tested without a model call.
 - **Every agent** communicates via the standard A2A envelope (`sender`, `recipient`, `intent`, `payload`).
-- **A "Live Agent Terminal"** in the UI streams these JSON messages in real time — the proof it's a real MAS.
+- **A "Live Agent Terminal"** in the UI (`/logs`) lists every one of these JSON messages, filterable by agent and payload — the proof it's a real MAS. Since the site redesign it has no menu entry (see [`TODO.md`](./TODO.md)).
 
 ---
 
@@ -118,7 +116,7 @@ falls back to a deterministic mock, so the whole thing runs with an empty `.env`
 | Layer | Choice | Where it lives |
 |---|---|---|
 | Orchestration | Plain-Python phase DAG with fail-fast edges | `backend/core/orchestrator/graph.py` |
-| Reasoning LLM | **Gemini** via `google-genai` — `gemini-3.6-flash`, with a fallback model chain | `backend/services/gemini_client.py` |
+| Reasoning LLM | **Gemini** via `google-genai` — `gemini-3.6-flash` by default, a separate Pro model for the heavy-reasoning steps, and a fallback chain | `backend/services/gemini_client.py` |
 | Web search | **Tavily** REST (no SDK — `urllib`); optional, skipped when unset | `backend/services/tavily_client.py` |
 | Actor knowledge base | **TMDb** ingest → **PostgreSQL + pgvector**, `sentence-transformers` embeddings (optional extra) | `backend/services/casting_kb/` |
 | Script intake | **pypdf** for the PDF branch (`.txt`/`.fountain`/`.fdx` need no package) | `backend/services/script_intake.py` |
@@ -128,11 +126,16 @@ falls back to a deterministic mock, so the whole thing runs with an empty `.env`
 | Hosting | **Vercel** serves the React build · **Render** runs the API container · **Supabase** holds the data | `frontend/vercel.json`, `render.yaml`, `Dockerfile` |
 | Secrets | `.env` locally · Render environment variables when deployed; the frontend holds none | `.env.example`, `render.yaml` |
 
-**Not in the build yet.** These appear in the agent spec and are stubbed or
-config-only — no code path calls them, so don't count them as integrations:
-LangGraph (commented out in `requirements.txt`), Google Cloud Agent Builder,
-Imagen 3 (`agent_visual` returns mock assets), FFmpeg + Whisper
-(`agent_media_proc` is a stub), and Lyria.
+**Deliberately out of scope.** Rendered media and third-party orchestration
+add cost without adding to the system's logic, so they are not planned: no
+image, video or music generation (`agent_visual` and `agent_reel_cutter`
+produce art-direction specs that go through the PR gate), no tape decoding
+or transcription (`agent_media_proc` passes the tape reference through), and
+no LangGraph or Google Cloud Agent Builder (the orchestrator is an explicit
+state machine, see Architecture). Still open is live viewers inside the
+pipeline's Phase V: `agent_viewer` verdicts are hash-seeded today, while the
+Audience Analyst advisor already runs the Gemini-backed simulator. Open bugs
+and the feature backlog are tracked in [`TODO.md`](./TODO.md).
 
 ---
 
@@ -141,9 +144,12 @@ Imagen 3 (`agent_visual` returns mock assets), FFmpeg + Whisper
 ```
 lumen/
 ├── README.md
+├── TODO.md                      # open bugs and the feature backlog
 ├── AGENT.md                     # agent registry, A2A + GlobalState contracts
+├── skills.md                    # advisor catalogue + agent-to-skill map
 ├── assets/                      # logo + brand
 │   └── screenshots/             # README captures + pipeline GIF
+├── design/                      # design-canvas prototype of the cover → Phase I flow
 ├── skills/                      # SKILL.md procedures the advisor agents follow (skills/README.md)
 ├── contracts/                   # shared JSON schemas every agent depends on — change with care
 │   ├── a2a_envelope.json
@@ -153,11 +159,14 @@ lumen/
 │   ├── main.py                  # FastAPI entrypoint (mounts one router per domain)
 │   ├── run_demo.py              # CLI: full pipeline on mock data
 │   ├── schema_*.sql             # Supabase tables: auth, advisor runs, state + simulations
-│   ├── tests/                   # pytest: envelope, fail-fast edges, personas, auth
+│   ├── tests/                   # pytest, offline: contracts, phases, stores, workers, auth
 │   ├── migrations/              # PostgreSQL/pgvector schema (actor KB)
 │   ├── scripts/                 # one-off maintenance scripts
 │   ├── core/                    # THE BRAIN — shared by every domain
 │   │   ├── config.py            # env vars, model tiers, guardrail constants
+│   │   ├── llm_output.py        # coerces model replies; a bad field falls back to the mock
+│   │   ├── scenes.py            # plain-language scene headings, titles and summaries
+│   │   ├── shoot_window.py      # shooting-window checks shared by intake and the scheduler
 │   │   ├── orchestrator/
 │   │   │   ├── graph.py         # phase DAG + fail-fast edges
 │   │   │   └── state.py         # GlobalState Pydantic models
@@ -176,15 +185,27 @@ lumen/
 │       └── audience/ auth/ skills/   # cross-cutting routers
 ├── frontend/
 │   ├── vercel.json              # Vercel: every route falls back to index.html
+│   ├── Dockerfile, nginx.conf   # static image for the older Cloud Run path
 │   └── src/
-│       ├── shared/LiveAgentTerminal.jsx   # real-time A2A message scroller
-│       ├── features/            # intake, casting, production, launch, advisors,
-│       │                        #   audience, auth, logs, team, settings
+│       ├── App.jsx              # routes: public site, results pages, older tools
+│       ├── features/
+│       │   ├── site/            # public homepage, drawn from the built-in sample production
+│       │   ├── intake/          # New script (/new): upload, budget, shooting dates → full run
+│       │   ├── results/         # Overview · Schedule · Cast · Audience (the menu)
+│       │   ├── auth/ team/ settings/
+│       │   └── casting/ production/ launch/ advisors/ logs/
+│       │                        #   older tools: routed by address, not in the menu
+│       ├── shared/              # site layout, LiveAgentTerminal + AgentLog, UI parts
 │       ├── theme/               # light/dark token provider
-│       └── lib/                 # api.js (VITE_API_URL), utils.js
+│       └── lib/                 # api.js (VITE_API_URL), production.js (results selectors),
+│                                #   sample.js, utils.js
 ├── Dockerfile                   # API image; Render builds it from render.yaml
+├── .dockerignore                # keeps .state/, .env and caches out of the image
 ├── render.yaml                  # Render Blueprint for the API
 ├── docker-compose.yml
+├── Makefile                     # install, build, dev servers, API docs
+├── GCP_DEPLOYMENT.md            # older Cloud Run path with cloudbuild.yaml and
+│                                #   deploy-*.sh; out of date (see TODO.md)
 └── .env.example
 ```
 
@@ -196,7 +217,7 @@ pipeline runs before any API key exists — `python backend/run_demo.py` just wo
 ## Getting Started
 
 ### Prerequisites
-- Python 3.10+, Node 18+
+- Python 3.10+, Node 20+ (React Router 7's minimum)
 - Nothing else. Every key below is optional — with an empty `.env` the full
   six-phase pipeline still runs on mock fallbacks.
 
@@ -210,6 +231,7 @@ SUPABASE_URL=...           # shared persistence; without it state goes to backen
 SUPABASE_KEY=...           #   required once deployed (see Deploy)
 DATABASE_URL=...           # Phase I actor KB only (PostgreSQL + pgvector)
 TMDB_API_KEY=...           # Phase I actor KB only
+GEMINI_PRO_MODEL=...       # optional: model for the heavy-reasoning steps; defaults to the flash model
 ```
 
 > Never commit `.env`. Once deployed, the API reads the same variables from
@@ -230,6 +252,8 @@ npm run dev
 ```
 
 In dev, Vite proxies `/api` to `localhost:8000`, so there is nothing to configure.
+Open `http://localhost:5173`, create a production, and follow the
+[Demo Walkthrough](#demo-walkthrough).
 
 ### 4. Run a full pipeline (demo)
 ```bash
@@ -244,10 +268,17 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-Covers the pure logic — A2A envelope rules, orchestrator fail-fast edges,
-seeded persona generation, password hashing, and the auth 401/403/404 guards.
-No keys and no database: every test that touches the auth store gets its own
-tmp directory, so your `backend/.state/` is never read or written.
+Runs offline against the mock fallbacks and covers the A2A envelope rules,
+the orchestrator's fail-fast edges and phase re-runs, seeded persona
+generation and distribution validation, the scheduler's cast and venue
+constraints, password hashing, the auth 401/403/404 guards and the sign-in the
+actor-KB routes require, the Supabase query filters, the background workers'
+state merge, model-tier selection, the plain-language results (scene titles,
+schedule changes, reviews), and how each phase copes with a malformed model
+reply.
+No keys and no database: every test that touches a store gets its own tmp
+directory, so your `backend/.state/` is never read or written, and Gemini is
+forced to its mock even on a machine that has a key.
 GitHub Actions runs this plus the frontend build on every push
 (`.github/workflows/ci.yml`).
 
@@ -259,14 +290,22 @@ against a PostgreSQL database with pgvector enabled, then install the backend
 requirements and set `DATABASE_URL`, `TMDB_API_KEY`, and optionally
 `EMBEDDING_MODEL`/`EMBEDDING_DIMENSIONS`.
 
-Populate and search it through the casting API:
+Populate and search it through the casting API. The knowledge base is shared
+across productions, so these routes are not scoped to one, but they do need a
+signed-in account: sign in first and send the session token as a bearer.
 
 ```bash
-curl -X POST http://localhost:8000/api/casting/actors/ingest \
+TOKEN=$(curl -s -X POST http://localhost:8000/api/auth/login \
   -H 'Content-Type: application/json' \
+  -d '{"email":"you@example.com","password":"your-password"}' \
+  | python -c 'import json, sys; print(json.load(sys.stdin)["token"])')
+curl -X POST http://localhost:8000/api/casting/actors/ingest \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
   -d '{"actor_ids":[6193,500]}'
-curl -X POST http://localhost:8000/api/casting/actors/embeddings
-curl 'http://localhost:8000/api/casting/actors/search?character_description= cunning detective in her forties&gender=1&min_age=35&max_age=49'
+curl -X POST http://localhost:8000/api/casting/actors/embeddings \
+  -H "Authorization: Bearer $TOKEN"
+curl -H "Authorization: Bearer $TOKEN" \
+  'http://localhost:8000/api/casting/actors/search?character_description=cunning%20detective%20in%20her%20forties&gender=1&min_age=35&max_age=49'
 ```
 
 TMDb does not normally provide physical measurements or appearance traits, so
@@ -277,11 +316,12 @@ infer sensitive attributes from photos or names.
 
 `skills/<name>/SKILL.md` files (casting, scheduling, audience-simulation,
 cultural-research) are procedures the advisor agents follow: the Markdown body
-is the agent's system instruction. Open **Agent Skills** in the dashboard and
-press **Run** on a card, or call `POST /api/skills/<name>/run/<project_id>`.
-Runs work offline on a deterministic fallback and go live once `GEMINI_API_KEY`
-is set. The dashboard calls them **AI Advisors**. See `skills.md` for the full
-catalogue, `skills/README.md` for the file format, and `AGENT.md` Section 8.
+is the agent's system instruction. Open **AI Advisors** at `/advisors` (it has
+no menu entry since the site redesign) and press **Run** on a card, or call
+`POST /api/skills/<name>/run/<project_id>`. Runs work offline on a
+deterministic fallback and go live once `GEMINI_API_KEY` is set. See
+`skills.md` for the full catalogue, `skills/README.md` for the file format,
+and `AGENT.md` Section 8.
 
 ---
 
@@ -323,7 +363,10 @@ backend keeps working after the request ends:
 Render runs the container as one long-lived process, which is what the code
 expects. The same `Dockerfile` works on other container hosts (Railway,
 Fly.io, Google Cloud Run) as long as they keep one instance running with CPU
-between requests.
+between requests. The Cloud Run files in the repo (`GCP_DEPLOYMENT.md`,
+`cloudbuild.yaml`, `deploy-*.sh`) predate this setup and do neither: they
+scale to ten instances and to zero, and the frontend image never learns the
+API's URL. Don't deploy with them as they stand (see [`TODO.md`](./TODO.md)).
 
 ### 1. Supabase (database)
 
@@ -370,7 +413,7 @@ every restart. From then on, Render redeploys each push that touches
 
 `VITE_API_URL` is compiled into the bundle, so redeploy the frontend after
 changing it. `frontend/vercel.json` sends every path to `index.html`, so a
-refresh on `/casting` or an invite link (`/join/…`) still loads the app.
+refresh on `/overview` or an invite link (`/join/…`) still loads the app.
 
 ### 4. Restrict CORS to the frontend
 
@@ -385,33 +428,41 @@ add those too if you use them.
 
 - **Free Render instances sleep** after 15 minutes without traffic, and the
   first request after that takes about a minute. Paid instances stay awake.
-- **Run exactly one API instance.** Background runs live in that one process
-  (`numInstances: 1` in `render.yaml`).
+- **Run exactly one API instance.** Background runs live in that one process,
+  and so does the per-production lock that keeps their saves from overwriting
+  each other (`numInstances: 1` in `render.yaml`).
 - **A redeploy stops runs in flight.** An interrupted advisor run is marked
   failed; an interrupted audience simulation stays `running` in the history, so
-  start a new one.
+  start a new one (an open item in [`TODO.md`](./TODO.md)).
 
 ---
 
 ## Budget-driven scale
 
-There are no tiers or modes. The total budget from the intake cover page lands in `GlobalState.budget_state.cap` and every downstream limit is derived from it (shares live in `backend/core/config.py`):
+There are no tiers or modes. The total budget from the New script page lands in `GlobalState.budget_state.cap` and every downstream limit is derived from it (shares live in `backend/core/config.py`):
 
 - **Casting** — a single role may cost at most 10% of the budget; pricier quotes are purged by the fail-fast wallet check.
-- **Locations** — venues are picked cheapest-first, and 15% of the budget spread over the shoot days is the daily burn allowance.
+- **Locations** — venues are picked cheapest-first among the days the whole cast can make, and a scene no day suits is still booked but sent to the sign-off queue; 15% of the budget spread over the shoot days is the daily burn allowance, and a venue day is paid once however many scenes share it.
 - **Reach** — every territory with a rule set is cleared; the same code scales from a bootstrapped short to a studio slate.
 
 ---
 
 ## Demo Walkthrough
 
-1. **Drop the script** for `PROJ_NEON_NIGHTS` on the cover page with a $250k budget and a shooting window.
-2. **Phase I/II:** watch an over-budget applicant auto-rejected; a leaderboard builds itself.
-3. **Phase III:** Scheduler ↔ Location Agent negotiate a venue conflict live in the terminal; the stripboard reflows.
-4. **Phase IV:** the UAE cut hits a compliance block; the UAE card in the compliance matrix flips to blocked.
-5. **Phase V:** 200 synthetic viewers stream verdicts; the Tomatometer ticks up; Aggregation flags Act 2 and the Recut Advisor predicts a +6 lift.
-6. **Phase VI:** a meme is drafted, rejected by PR Risk for a spoiler, redrafted clean, and scheduled — cut from Phase V's top scene.
-7. **Close:** the Live Agent Terminal scrolls the whole A2A conversation — *150 messages, no human in the loop until the sign-off queue.*
+Create a production, then follow the beats below. With no `GEMINI_API_KEY`
+the built-in Neon Nights script stands in for whatever screenplay you drop,
+so these are exactly what you'll see; with a key, Lumen reads your own script.
+
+1. **Drop the script** on **New script** (`/new`) with a $250k budget and a shooting window, and press **Plan my production**. All six phases run, then the Overview opens.
+2. **Phase I/II — Cast** (`/cast`): an over-budget applicant is ruled out with the reason spelled out; each role shows its top pick and runners-up.
+3. **Phase III — Schedule** (`/schedule`): **Changes Lumen made** lists the venue conflict the Scheduler and Location Agent negotiated, and the two scenes no day suits the whole cast. Those are booked anyway and sent to the sign-off queue, which no page shows yet.
+4. **Phase V — Audience** (`/audience`): 200 synthetic viewers produce the Tomatometer, scene-by-scene scores and reviews, and the Overview names the scene where viewers drifted.
+
+The rest of the demo lives on the older screens, which lost their menu entries in the site redesign, so open them by address:
+
+5. **Phase IV** (`/production`): the UAE cut hits a compliance block, and the UAE card in the compliance matrix shows blocked.
+6. **Phase VI** (`/marketing`): a meme is drafted, rejected by PR Risk for a spoiler, redrafted clean, and scheduled — cut from Phase V's top scene.
+7. **Close** (`/logs`): the Live Agent Terminal shows the whole A2A conversation, including the Recut Advisor's +6 lift prediction — *150 messages, no human in the loop until the sign-off queue.*
 
 ---
 

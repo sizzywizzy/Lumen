@@ -3,7 +3,8 @@ import { useAuth } from "../../shared/AuthContext.jsx";
 import { useProject } from "../../shared/ProjectContext.jsx";
 import { money } from "../../lib/utils.js";
 import { dateRange, hasResults, scheduleChanges, scheduleStats } from "../../lib/production.js";
-import { Card, DayBars, Legend, NoPlanYet, ShootDays, Stat } from "./parts.jsx";
+import { Card, DayBars, Legend, NoPlanYet, Stat } from "./parts.jsx";
+import ScheduleBoard from "./ScheduleBoard.jsx";
 
 export default function SchedulePage() {
   const { state } = useProject();
@@ -61,9 +62,9 @@ export default function SchedulePage() {
           )}
         </Card>
 
-        <Card className="col-12" title="Day by day">
+        <Card className="col-12" title="Day by day" action={<span className="card-note">Call at 7:00 AM · pick a day to see it alone</span>}>
           <div style={{ marginTop: 20 }}>
-            <ShootDays days={stats.days} />
+            <ScheduleBoard state={state} />
           </div>
         </Card>
       </div>

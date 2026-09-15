@@ -373,7 +373,8 @@ def _scheduling_facts(state: GlobalState) -> dict:
         d["hours"] += float(e.get("estimated_time_hours") or 0)
         if e["venue"] not in d["venues"]:
             d["venues"].append(e["venue"])
-        d["cost_usd"] += float(e.get("cost_per_day") or 0)
+            # A venue day is paid once, however many scenes shoot there.
+            d["cost_usd"] += float(e.get("cost_per_day") or 0)
     day_load = []
     for d in sorted(days.values(), key=lambda x: x["date"]):
         d["hours"] = round(d["hours"], 1)

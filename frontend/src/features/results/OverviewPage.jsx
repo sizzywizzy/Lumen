@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Icon from "../../shared/Icon.jsx";
+import { PosterCard } from "../../shared/Artwork.jsx";
 import { useAuth } from "../../shared/AuthContext.jsx";
 import { useProject } from "../../shared/ProjectContext.jsx";
 import { cn, money } from "../../lib/utils.js";
@@ -50,10 +51,18 @@ export default function OverviewPage() {
 
   return (
     <>
-      <div className="page-top">
-        <div>
-          <h1>{productionTitle(state, activeProduction?.name)}</h1>
-          <p>{subtitle.join(" · ")}</p>
+      <div className="page-top page-top--poster">
+        <div className="page-top__lead">
+          {/* the production's key art, painted from the title and genre until a real poster is set */}
+          <PosterCard
+            title={productionTitle(state, activeProduction?.name)}
+            genre={state.script_context?.genre}
+            image={state.script_context?.poster_url}
+          />
+          <div>
+            <h1>{productionTitle(state, activeProduction?.name)}</h1>
+            <p>{subtitle.join(" · ")}</p>
+          </div>
         </div>
         {canEdit && (
           <Link to="/team" className="btn btn--ghost">

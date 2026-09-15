@@ -7,7 +7,7 @@ replays identically; swap for real Gemini calls per batch later.
 """
 import hashlib
 
-from core import config
+from core import config, llm_output
 from core import scenes as scene_names
 from core.messaging.envelope import broadcast, log_event, make_envelope, make_reply
 from core.orchestrator.state import AudienceReview, GlobalState
@@ -107,10 +107,22 @@ def _aggregation(state: GlobalState, verdicts: list[dict]) -> None:
                 {"segment": ANOMALY_SEGMENT, "scene_id": weakest,
                  "segment_score": round(seg_score, 2), "population_score": heatmap[weakest]},
             ))
-            diagnosis = gemini_client.generate_json(
+            fallback = prompts.MOCK_RECUT_DIAGNOSIS
+            raw = llm_output.mapping(gemini_client.generate_json(
                 f"Segment {ANOMALY_SEGMENT} scores {seg_score:.1f} on {weakest} vs population {heatmap[weakest]}.",
-                tier="pro", system=prompts.RECUT_SYSTEM, mock=prompts.MOCK_RECUT_DIAGNOSIS,
-            )
+                tier="pro", system=prompts.RECUT_SYSTEM, mock=fallback,
+            ), fallback)
+            # Field by field, so a diagnosis missing a key or with a lift that
+            # is not a mapping still yields a readable recut request.
+            lift = llm_output.mapping(raw.get("predicted_lift"), fallback["predicted_lift"])
+            diagnosis = {
+                "root_cause": llm_output.text(raw.get("root_cause"), fallback["root_cause"], 80),
+                "action": llm_output.text(raw.get("action"), fallback["action"], 80),
+                "predicted_lift": {
+                    "segment_score": llm_output.text(lift.get("segment_score"), fallback["predicted_lift"]["segment_score"], 20),
+                    "tomatometer": llm_output.text(lift.get("tomatometer"), fallback["predicted_lift"]["tomatometer"], 20),
+                },
+            }
             log_event(state, make_reply(request, "agent_recut_advisor", "diagnosis_result", diagnosis))
             state.escalate(f"recut:{weakest}",
                            f"{diagnosis['root_cause']} -> {diagnosis['action']} (predicted tomatometer {diagnosis['predicted_lift']['tomatometer']})")

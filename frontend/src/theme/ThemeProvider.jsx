@@ -6,17 +6,18 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 // its own theme logic. index.html applies the same rule before first paint
 // so there is no flash on load.
 //
-// Lumen is light by default. Dark is an option the viewer turns on, and only
-// that explicit choice is stored.
+// Lumen is dark by default: a near-black stage lit from above by the logo's
+// warm beam. Light is an option the viewer turns on, and only that explicit
+// choice is stored.
 
 const STORAGE_KEY = "lumen-theme-choice";
-const ThemeContext = createContext({ theme: "light", setTheme: () => {}, toggleTheme: () => {} });
+const ThemeContext = createContext({ theme: "dark", setTheme: () => {}, toggleTheme: () => {} });
 
 function readStoredTheme() {
   try {
-    return localStorage.getItem(STORAGE_KEY) === "dark" ? "dark" : "light";
+    return localStorage.getItem(STORAGE_KEY) === "light" ? "light" : "dark";
   } catch {
-    return "light"; // storage blocked (private window, embedded frame)
+    return "dark"; // storage blocked (private window, embedded frame)
   }
 }
 

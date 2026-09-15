@@ -4,7 +4,7 @@ agent_campaign_strategist -> agent_reel_cutter -> agent_visual <-> agent_pr_risk
 (regenerate on rejection, max 2 tries) -> agent_copywriter <-> agent_pr_risk
 -> agent_publisher.
 """
-from core import config
+from core import config, llm_output
 from core.messaging.envelope import broadcast, log_event, make_envelope, make_reply
 from core.orchestrator.state import GlobalState, MarketingAsset
 from domains.launch import prompts
@@ -18,14 +18,18 @@ def _strategist(state: GlobalState) -> dict:
     ))
     log_event(state, make_reply(request, "agent_aggregation", "simulation_verdict_update",
                                 state.audience_report.model_dump()))
-    plan = gemini_client.generate_json(
+    fallback = {"segments": [
+        {"demographic": "18-24", "platform": "tiktok", "tone": "chaotic-ironic", "asset_types": ["meme", "reel"]},
+        {"demographic": "25-34", "platform": "instagram", "tone": "sleek-noir", "asset_types": ["poster", "reel"]},
+    ]}
+    plan = llm_output.mapping(gemini_client.generate_json(
         f"Audience report: {state.audience_report.model_dump()}. Budget: ${state.budget_state.cap:,.0f}.",
-        system=prompts.STRATEGIST_SYSTEM,
-        mock={"segments": [
-            {"demographic": "18-24", "platform": "tiktok", "tone": "chaotic-ironic", "asset_types": ["meme", "reel"]},
-            {"demographic": "25-34", "platform": "instagram", "tone": "sleek-noir", "asset_types": ["poster", "reel"]},
-        ]},
-    )
+        system=prompts.STRATEGIST_SYSTEM, mock=fallback,
+    ), fallback)
+    # A plan without usable segments is replaced by the offline plan, so the
+    # copywriter and publisher always have something to work from.
+    segments = [seg for seg in llm_output.listing(plan.get("segments")) if isinstance(seg, dict)]
+    plan = {**plan, "segments": segments or fallback["segments"]}
     log_event(state, broadcast("agent_campaign_strategist", "campaign_plan_ready", plan))
     return plan
 
@@ -48,7 +52,7 @@ def _reel_cutter(state: GlobalState) -> None:
 
 def _pr_risk_check(state: GlobalState, request: dict) -> dict:
     """agent_pr_risk: spoiler / cultural / tone / legal verdict on one asset draft."""
-    caption = request["payload"]["caption"].lower()
+    caption = llm_output.text(request["payload"].get("caption")).lower()
     reasons = [f"spoiler_high:'{term}'" for term in prompts.SPOILER_TERMS if term in caption]
     verdict = {"status": "BLOCKED" if reasons else "APPROVED", "reasons": reasons}
     log_event(state, make_reply(request, "agent_pr_risk", "brand_safety_result", verdict))
@@ -62,16 +66,23 @@ def _visual(state: GlobalState) -> None:
     state.marketing_assets.append(asset)
 
     for attempt, mock_draft in zip(range(config.MAX_ASSET_REGENERATIONS), prompts.MOCK_MEME_DRAFTS):
-        draft = gemini_client.generate_json(
+        draft = llm_output.mapping(gemini_client.generate_json(
             f"Meme for {state.script_context.get('title')} from scene {scene}, attempt {attempt + 1}. "
             f"Avoid: {asset.content.get('blocked_reasons', [])}",
             system=prompts.VISUAL_SYSTEM, mock=mock_draft,
-        )
-        asset.content = {**draft, "attempt": attempt + 1}
+        ), mock_draft)
+        # Each field is coerced, so a draft with no caption cannot crash the PR gate.
+        caption = llm_output.text(draft.get("caption"), mock_draft["caption"], 300)
+        asset.content = {
+            "caption": caption,
+            "image_prompt": llm_output.text(draft.get("image_prompt"), mock_draft["image_prompt"], 400),
+            "alt_text": llm_output.text(draft.get("alt_text"), mock_draft["alt_text"], 200),
+            "attempt": attempt + 1,
+        }
         asset.status = "PR_REVIEW"
         request = log_event(state, make_envelope(
             "agent_visual", "agent_pr_risk", "verify_brand_safety",
-            {"asset_id": asset.asset_id, "caption": draft["caption"]},
+            {"asset_id": asset.asset_id, "caption": caption},
         ))
         verdict = _pr_risk_check(state, request)
         if verdict["status"] == "APPROVED":
@@ -103,22 +114,33 @@ def _copywriter(state: GlobalState, plan: dict) -> None:
     release, in one Flash call. Every draft goes through agent_pr_risk like the
     memes do; a blocked draft is escalated rather than retried (bounded cost)."""
     segments = plan.get("segments", [])
-    copy = gemini_client.generate_json(
+    copy = llm_output.mapping(gemini_client.generate_json(
         f"Title: {state.script_context.get('title')}. Campaign segments: {segments}. "
         f"Audience report: {state.audience_report.model_dump()}.",
         system=prompts.COPYWRITER_SYSTEM, mock=prompts.MOCK_COPY,
-    )
-    drafts = [
-        ("copy", f"AST_COPY_{i + 1:04d}",
-         {"platform": post.get("platform", ""), "demographic": post.get("demographic", ""),
-          "caption": str(post.get("caption", "")), "hashtags": list(post.get("hashtags", []) or [])})
-        for i, post in enumerate(copy.get("posts", []) or [])
-    ]
-    release = copy.get("press_release") or {}
-    drafts.append(("press_release", "AST_PRESS_0001", {
-        "headline": str(release.get("headline", "")), "body": str(release.get("body", "")),
-        "caption": f"{release.get('headline', '')} {release.get('body', '')}".strip(),
-    }))
+    ), prompts.MOCK_COPY)
+    # Posts are coerced one by one: a post with no caption has nothing to
+    # vet or publish, so it is dropped rather than scheduled empty.
+    drafts = []
+    for post in llm_output.listing(copy.get("posts")):
+        if not isinstance(post, dict):
+            continue
+        caption = llm_output.text(post.get("caption"), "", 600)
+        if not caption:
+            continue
+        hashtags = [llm_output.text(tag, "", 60) for tag in llm_output.listing(post.get("hashtags"))]
+        drafts.append(("copy", f"AST_COPY_{len(drafts) + 1:04d}", {
+            "platform": llm_output.text(post.get("platform"), "", 40),
+            "demographic": llm_output.text(post.get("demographic"), "", 40),
+            "caption": caption, "hashtags": [tag for tag in hashtags if tag],
+        }))
+    release = llm_output.mapping(copy.get("press_release"))
+    headline = llm_output.text(release.get("headline"), "", 200)
+    body = llm_output.text(release.get("body"), "", 2000)
+    if headline or body:  # a release the model failed to write is skipped, not published blank
+        drafts.append(("press_release", "AST_PRESS_0001", {
+            "headline": headline, "body": body, "caption": f"{headline} {body}".strip(),
+        }))
 
     scene = _best_scene(state)
     for asset_type, asset_id, content in drafts:
@@ -145,7 +167,9 @@ def _copywriter(state: GlobalState, plan: dict) -> None:
 def _publisher(state: GlobalState, plan: dict) -> None:
     """Mock social APIs: put every APPROVED asset on the campaign calendar."""
     slots = ["2026-09-20T17:00:00Z", "2026-09-21T17:00:00Z", "2026-09-22T17:00:00Z"]
-    platforms = [seg["platform"] for seg in plan.get("segments", [])] or ["tiktok"]
+    platforms = [llm_output.text(seg.get("platform")) for seg in llm_output.listing(plan.get("segments"))
+                 if isinstance(seg, dict)]
+    platforms = [p for p in platforms if p] or ["tiktok"]
     for i, asset in enumerate(a for a in state.marketing_assets if a.status == "APPROVED"):
         asset.status = "SCHEDULED"
         asset.content["scheduled_for"] = slots[i % len(slots)]

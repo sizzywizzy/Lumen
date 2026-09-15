@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from core.audience import personas as panel_lib
 from core.auth.deps import require_member, require_producer
@@ -57,6 +57,15 @@ class SimulationRequest(BaseModel):
     seed: Optional[int] = Field(default=None, ge=0, le=2**31 - 1)
     markets: list[str] = Field(default_factory=lambda: ["US", "IN", "GB"])
     distribution: Optional[dict[str, dict[str, float]]] = None
+
+    @field_validator("distribution")
+    @classmethod
+    def known_distribution_values(cls, value):
+        # A bad override used to be accepted here and crash the run minutes
+        # later with a KeyError; now the form gets the reason straight back.
+        if not value:
+            return value
+        return panel_lib.validate_distribution(value)
 
 
 def _fallback_material(project_id: str) -> tuple[str, str]:

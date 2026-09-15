@@ -224,7 +224,7 @@ Shared plumbing for all four:
 | `agent_market_synergy` | B3 (hype from follower count) |
 | `agent_pr_shield` | B1 (Flash), B3 |
 | `agent_finance` | B3 (per-role cap from `budget_state.cap`) |
-| `agent_media_proc` | stub: emits `media_ready` with 720p and transcript pointers; FFmpeg and Whisper are not wired |
+| `agent_media_proc` | pass-through by design: emits `media_ready` with the tape reference; decoding and transcription are out of scope |
 | `agent_audition_analytics` | B1 (Pro) |
 | `agent_synthesis` | composite scoring, B3 |
 | `agent_breakdown` | B7, B3 |

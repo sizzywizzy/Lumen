@@ -7,7 +7,7 @@ expensive Phase II media work.
 import math
 import re
 
-from core import config
+from core import config, llm_output
 from core.messaging.envelope import broadcast, log_event, make_envelope, make_reply
 from core.orchestrator.state import Candidate, GlobalState
 from domains.casting import prompts
@@ -21,6 +21,36 @@ MAX_ROLES = 8
 # What the profiler must keep when it rewrites script_context: the screenplay
 # dropped at intake, and the scene breakdown Phase III derives from it.
 PRESERVED_CONTEXT_KEYS = script_intake.INTAKE_KEYS + ("scenes",)
+DEFAULT_WEIGHTS = {"W_A": 0.4, "W_H": 0.2, "W_PR": 0.2, "W_B": 0.2}  # AGENT.md Phase II
+
+
+def normalise_weights(raw) -> dict[str, float]:
+    """The four composite weights, summing to 1.0. If any is missing or not a
+    number the AGENT.md defaults apply; otherwise they are rescaled, so a model
+    answering in percentages keeps composites on the 0-100 scale."""
+    raw = llm_output.mapping(raw)
+    weights = {key: llm_output.number(raw.get(key), -1.0) for key in DEFAULT_WEIGHTS}
+    total = sum(weights.values())
+    if any(w < 0 for w in weights.values()) or total <= 0:
+        return dict(DEFAULT_WEIGHTS)
+    return {key: round(w / total, 4) for key, w in weights.items()}
+
+
+def _mandates(raw, roles: list[dict]) -> dict[str, dict]:
+    """role_requirements keyed by the script's role ids. A live mandate may come
+    back the wrong shape, drop a role, invent one or change the case of its
+    keys; the read of the script is the source of truth for who the roles are,
+    so gaps are filled from it."""
+    by_id = {str(key).strip().upper(): value for key, value in llm_output.mapping(raw).items()}
+    out = {}
+    for role in roles:
+        entry = dict(llm_output.mapping(by_id.get(role["role_id"])))
+        kind = llm_output.text(entry.get("type"), role["type"]).lower()
+        entry["type"] = kind if kind in ROLE_TYPES else role["type"]
+        entry["name"] = llm_output.text(entry.get("name"), role["name"], 120)
+        entry["description"] = llm_output.text(entry.get("description"), role["description"], 300)
+        out[role["role_id"]] = entry
+    return out
 
 
 def _valid_roles(roles) -> list[dict]:
@@ -87,26 +117,20 @@ def _profiler(state: GlobalState) -> None:
     state.script_context["director_notes"] = director_notes
 
     brief = {k: v for k, v in state.script_context.items() if k not in PRESERVED_CONTEXT_KEYS}
-    mandate = gemini_client.generate_json(
+    fallback = {
+        "role_requirements": {r["role_id"]: {"name": r["name"], "description": r["description"], "type": r["type"]} for r in script["roles"]},
+        "scoring_weights": dict(DEFAULT_WEIGHTS),
+    }
+    mandate = llm_output.mapping(gemini_client.generate_json(
         f"Script context: {brief}. Roles: {script['roles']}. "
         f"Locality: {locality}. Director Notes: {director_notes}. "
         f"Total budget: ${state.budget_state.cap:,.0f}.",
         tier="pro",
         system=prompts.PROFILER_SYSTEM,
-        mock={
-            "role_requirements": {r["role_id"]: {"name": r["name"], "description": r["description"], "type": r["type"]} for r in script["roles"]},
-            "scoring_weights": {"W_A": 0.4, "W_H": 0.2, "W_PR": 0.2, "W_B": 0.2},  # AGENT.md defaults
-        },
-    )
-    state.role_requirements = mandate["role_requirements"]
-    # A live mandate may omit a role or its name; the read of the script is the
-    # source of truth for who the roles are, so fill any gaps from it.
-    for role in script["roles"]:
-        entry = state.role_requirements.setdefault(role["role_id"], {})
-        if isinstance(entry, dict):
-            for key in ("name", "type", "description"):
-                entry.setdefault(key, role[key])
-    state.scoring_weights = mandate["scoring_weights"]
+        mock=fallback,
+    ), fallback)
+    state.role_requirements = _mandates(mandate.get("role_requirements"), script["roles"])
+    state.scoring_weights = normalise_weights(mandate.get("scoring_weights"))
     log_event(state, broadcast("agent_profiler", "mandate_ready", {
         "roles": list(state.role_requirements), "scoring_weights": state.scoring_weights,
         "source": script["source"],
@@ -141,11 +165,18 @@ def _score_candidate(state: GlobalState, candidate: Candidate) -> None:
     # agent_pr_shield — Drama Filter (hard red flag -> disqualify)
     press = str(candidate.metadata.get("recent_press", "")).lower()
     red_flag = any(term in press for term in PR_RED_FLAG_TERMS)
-    verdict = gemini_client.generate_json(
-        f"Candidate press: {press}", system=prompts.PR_SHIELD_SYSTEM,
-        mock={"pr_score": 20 if red_flag else 90, "red_flag": red_flag,
-              "reason": "ongoing legal trouble or a recent public incident" if red_flag else "clean record"},
-    )
+    fallback = {"pr_score": 20 if red_flag else 90, "red_flag": red_flag,
+                "reason": "ongoing legal trouble or a recent public incident" if red_flag else "clean record"}
+    raw = llm_output.mapping(gemini_client.generate_json(
+        f"Candidate press: {press}", system=prompts.PR_SHIELD_SYSTEM, mock=fallback,
+    ), fallback)
+    # A live verdict is coerced field by field: a score that is not a number
+    # or a red_flag spelt "false" must not crash the run or disqualify anyone.
+    verdict = {
+        "pr_score": llm_output.number(raw.get("pr_score"), fallback["pr_score"], 0, 100),
+        "red_flag": llm_output.boolean(raw.get("red_flag"), fallback["red_flag"]),
+        "reason": llm_output.text(raw.get("reason"), fallback["reason"], 200),
+    }
     candidate.scores["pr"] = float(verdict["pr_score"])
     log_event(state, make_reply(request, "agent_pr_shield", "pr_scored",
                                 {"candidate_id": candidate.id, "pr": candidate.scores["pr"], "red_flag": verdict["red_flag"]}))

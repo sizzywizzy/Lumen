@@ -4,8 +4,8 @@ const TONE_STROKE = {
   ok: "var(--status-success)",
   warn: "var(--status-warning)",
   bad: "var(--status-error)",
-  primary: "var(--primary-container)",
-  secondary: "var(--secondary-container)",
+  primary: "var(--highlight)",
+  secondary: "var(--inverse-primary)",
 };
 
 // Semicircular burn-rate gauge (Stitch "Burn Rate Meter"): 40r arc across a
@@ -39,7 +39,7 @@ export function ArcGauge({ value, tone = "warn", caption, label }) {
             strokeLinecap="round"
             strokeDasharray={ARC_LEN}
             strokeDashoffset={ARC_LEN * (1 - t)}
-            style={{ transition: "stroke-dashoffset .6s ease" }}
+            style={{ transition: "stroke-dashoffset .6s ease", color: stroke }}
           />
           <circle cx={knobX} cy={knobY} r="4" fill="var(--on-surface)" />
         </svg>
@@ -77,7 +77,7 @@ export function RadialGauge({ value, label, tone = "primary", suffix = "%", foot
             strokeWidth="3"
             strokeLinecap="round"
             strokeDasharray={`${pct}, 100`}
-            style={{ transition: "stroke-dasharray .6s ease" }}
+            style={{ transition: "stroke-dasharray .6s ease", color: stroke }}
           />
         </svg>
         <div className="readout">

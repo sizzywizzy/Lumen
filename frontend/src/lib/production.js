@@ -90,11 +90,59 @@ export function shootDays(state) {
         name: sceneName(e),
         titled: Boolean(e.title),
         setting: SETTING[String(e.int_ext || "").toUpperCase()] || "",
+        intExt: String(e.int_ext || "").toUpperCase(),
         hours: Number(e.estimated_time_hours) || 0,
         venue: e.venue || "",
+        locationType: e.location_type || "",
+        heading: e.heading || "",
+        summary: e.summary || "",
+        timeOfDay: timeOfDay(e.heading),
+        status: e.status || "PLANNED",
+        note: e.director_note || "",
+        costPerDay: Number(e.cost_per_day) || 0,
+        roleIds: e.characters_needed || [],
         cast: (e.characters_needed || []).map((roleId) => roleName(state, roleId)),
       })),
     }));
+}
+
+// "EXT. NEON DISTRICT STREET - NIGHT" -> "night". Sluglines end in the time of
+// day; anything unusual (CONTINUOUS, LATER) reads as unknown.
+export function timeOfDay(heading) {
+  const h = String(heading || "").toUpperCase();
+  if (/\b(DAWN|SUNRISE|EARLY MORNING)\b/.test(h)) return "dawn";
+  if (/\b(DUSK|SUNSET|EVENING|MAGIC HOUR|GOLDEN HOUR)\b/.test(h)) return "dusk";
+  if (/\bNIGHT\b/.test(h)) return "night";
+  if (/\b(DAY|MORNING|AFTERNOON|NOON)\b/.test(h)) return "day";
+  return "";
+}
+
+// 7 -> "7:00 AM", 13.5 -> "1:30 PM". Call times on the schedule are counted
+// from a 7:00 AM call, scene after scene.
+export function clockLabel(hour) {
+  const total = Math.round((Number(hour) || 0) * 60);
+  const h24 = Math.floor(total / 60) % 24;
+  const minutes = String(total % 60).padStart(2, "0");
+  const h12 = h24 % 12 || 12;
+  return `${h12}:${minutes} ${h24 < 12 ? "AM" : "PM"}`;
+}
+
+// Scenes the scheduler had to move, by scene id, so a day's list can say so
+// next to the scene instead of only in the summary of changes.
+export function sceneMoves(state) {
+  const moves = new Map();
+  for (const c of state?.schedule?.conflicts || []) {
+    if (c?.scene_id && c.moved_to) moves.set(c.scene_id, c);
+  }
+  return moves;
+}
+
+// Who plays each role: roleId -> { role, actor } (actor is null until a pick
+// is locked). The schedule shows the actor's face next to the character.
+export function castLookup(state) {
+  const lookup = {};
+  for (const role of castByRole(state)) lookup[role.roleId] = { role: role.name, actor: role.pick };
+  return lookup;
 }
 
 // Every day from the first shoot day to the last, rest days included, for the
@@ -156,6 +204,8 @@ function plainReason(reason) {
 export function actor(candidate) {
   const disqualified = candidate.status === "DISQUALIFIED";
   return {
+    // a headshot when the data carries one (metadata.headshot_url); initials otherwise
+    photo: candidate?.metadata?.headshot_url || candidate?.metadata?.photo_url || candidate?.headshot_url || null,
     id: candidate.id,
     name: candidate.name,
     initials: initials(candidate.name),

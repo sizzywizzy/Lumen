@@ -1,9 +1,11 @@
 """The Director Orchestrator — one DAG that owns GlobalState and routes the six phases.
 
-Kept LangGraph-shaped but dependency-free for now: every phase is a node
-`(GlobalState) -> GlobalState`, and fail-fast checks are conditional edges.
-Swapping this runner for a real LangGraph StateGraph (wrapped in Google Cloud
-Agent Builder) is a drop-in change because the node signature already matches.
+An explicit state machine, written without an orchestration framework on
+purpose: every phase is a node `(GlobalState) -> GlobalState`, a fail-fast
+check after a phase is a conditional edge that can halt the run with a human
+escalation, and each phase resets its own output before it runs so a re-run
+replaces rather than stacks. Nothing here imports LangGraph, and that is the
+design, not a placeholder.
 
 Agents never call each other across phases — they emit A2A envelopes and the
 orchestrator decides what runs next.

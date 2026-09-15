@@ -73,14 +73,49 @@ def _weighted(rng: random.Random, weights: dict[str, float]) -> str:
     return rng.choices(keys, weights=[max(0.0, float(weights[k])) for k in keys], k=1)[0]
 
 
+def _options(dimension: str) -> list[str]:
+    return list(MARKETS) if dimension == "market" else list(DEFAULT_DISTRIBUTION[dimension])
+
+
+def validate_distribution(overrides: Optional[dict]) -> dict[str, dict[str, float]]:
+    """Check caller overrides and return them with canonical keys.
+
+    Raises ValueError with a message a form can show. Unknown dimensions and
+    values are rejected rather than ignored: a persona carrying a value the
+    simulator has no rule for used to crash the run with a KeyError, and a
+    silently dropped override would look as if it had worked.
+    """
+    cleaned: dict[str, dict[str, float]] = {}
+    for dimension, weights in (overrides or {}).items():
+        if dimension not in DEFAULT_DISTRIBUTION:
+            raise ValueError(f"Unknown distribution dimension '{dimension}'. "
+                             f"Choose from: {', '.join(DEFAULT_DISTRIBUTION)}.")
+        if not isinstance(weights, dict) or not weights:
+            raise ValueError(f"'{dimension}' needs a mapping of value to weight.")
+        options = _options(dimension)
+        canonical = {option.lower(): option for option in options}
+        out: dict[str, float] = {}
+        for value, weight in weights.items():
+            key = canonical.get(str(value).strip().lower())
+            if key is None:
+                raise ValueError(f"Unknown {dimension} value '{value}'. Choose from: {', '.join(options)}.")
+            try:
+                share = float(weight)
+            except (TypeError, ValueError):
+                raise ValueError(f"The weight for {dimension} '{key}' must be a number.") from None
+            if share < 0 or share != share:
+                raise ValueError(f"The weight for {dimension} '{key}' must be zero or more.")
+            out[key] = out.get(key, 0.0) + share
+        if not any(share > 0 for share in out.values()):
+            raise ValueError(f"At least one {dimension} weight must be above zero.")
+        cleaned[dimension] = {key: share for key, share in out.items() if share > 0}
+    return cleaned
+
+
 def _merge_distribution(overrides: Optional[dict]) -> dict[str, dict[str, float]]:
-    """Shallow-merge caller overrides over the defaults, per dimension."""
+    """Validated caller overrides, shallow-merged over the defaults per dimension."""
     merged = {dim: dict(weights) for dim, weights in DEFAULT_DISTRIBUTION.items()}
-    for dim, weights in (overrides or {}).items():
-        if dim in merged and isinstance(weights, dict) and weights:
-            cleaned = {k: float(v) for k, v in weights.items() if float(v) > 0}
-            if cleaned:
-                merged[dim] = cleaned
+    merged.update(validate_distribution(overrides))
     return merged
 
 
