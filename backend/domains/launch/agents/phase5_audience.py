@@ -8,14 +8,21 @@ replays identically; swap for real Gemini calls per batch later.
 import hashlib
 
 from core import config
+from core import scenes as scene_names
 from core.messaging.envelope import broadcast, log_event, make_envelope, make_reply
-from core.orchestrator.state import GlobalState
+from core.orchestrator.state import AudienceReview, GlobalState
 from domains.launch import prompts
 from services import gemini_client, mock_db
 
 VIEWER_BATCH_SIZE = 10
 ANOMALY_SEGMENT = {"age_bracket": "18-24", "gender": "M"}
 ANOMALY_SCENE = "SCN_004"  # act-two exposition scene
+FRESH_THRESHOLD = 60.0  # a tomatometer at or above this reads as "fresh"
+CRITIC_REVIEWS = 3
+
+
+def verdict_for(tomatometer: float) -> str:
+    return "fresh" if tomatometer >= FRESH_THRESHOLD else "rotten"
 
 
 def _foundry(state: GlobalState) -> list[dict]:
@@ -37,8 +44,12 @@ def _seeded_score(persona_id: str, scene_id: str) -> float:
     return round(4.0 + (digest[0] / 255) * 5.5, 1)
 
 
+def _scenes(state: GlobalState) -> list[dict]:
+    return state.script_context.get("scenes") or mock_db.load("script")["scenes"]
+
+
 def _viewers(state: GlobalState, personas: list[dict]) -> list[dict]:
-    scenes = [s["scene_id"] for s in (state.script_context.get("scenes") or mock_db.load("script")["scenes"])]
+    scenes = [s["scene_id"] for s in _scenes(state)]
     verdicts = []
     for start in range(0, len(personas), VIEWER_BATCH_SIZE):
         batch = personas[start:start + VIEWER_BATCH_SIZE]
@@ -73,11 +84,16 @@ def _aggregation(state: GlobalState, verdicts: list[dict]) -> None:
     scenes = list(verdicts[0]["scene_scores"])
     heatmap = {sc: round(sum(v["scene_scores"][sc] for v in verdicts) / len(verdicts), 2) for sc in scenes}
     weakest = min(heatmap, key=heatmap.get)
+    titles = scene_names.titles(_scenes(state))
     report = state.audience_report
     report.tomatometer = round(100 * sum(1 for v in verdicts if v["overall_score"] >= 6.0) / len(verdicts), 1)
     report.audience_score = round(10 * sum(v["overall_score"] for v in verdicts) / len(verdicts), 1)
     report.heatmap = heatmap
     report.weakest_scene_id = weakest
+    report.viewer_count = len(verdicts)
+    report.verdict = verdict_for(report.tomatometer)
+    report.scene_titles = {sc: titles.get(sc, sc) for sc in heatmap}
+    report.weakest_scene_title = titles.get(weakest, "")
 
     # Anomaly detection: is one demographic segment cratering on one scene?
     segment = [v for v in verdicts
@@ -100,22 +116,73 @@ def _aggregation(state: GlobalState, verdicts: list[dict]) -> None:
                            f"{diagnosis['root_cause']} -> {diagnosis['action']} (predicted tomatometer {diagnosis['predicted_lift']['tomatometer']})")
 
     log_event(state, broadcast("agent_aggregation", "simulation_verdict_update", {
-        "tomatometer": report.tomatometer, "audience_score": report.audience_score,
-        "weakest_scene_id": weakest, "viewers": len(verdicts),
+        "tomatometer": report.tomatometer, "audience_score": report.audience_score, "verdict": report.verdict,
+        "weakest_scene_id": weakest, "weakest_scene_title": report.weakest_scene_title, "viewers": len(verdicts),
     }))
 
 
-def _critic(state: GlobalState) -> None:
-    reviews = gemini_client.generate_json(
-        f"Film: {state.script_context.get('title')}. Audience report: {state.audience_report.model_dump()}.",
-        system=prompts.CRITIC_SYSTEM, mock=prompts.MOCK_CRITIC_REVIEWS,
+def _cast(state: GlobalState) -> list[dict]:
+    """Characters with the actor currently picked for each, for the reviews."""
+    picks = {c.role_id: c.name for c in state.candidates if c.status == "LOCKED"}
+    return [
+        {"character": role["name"], "actor": picks.get(role_id, ""), "type": role.get("type", "")}
+        for role_id, role in (state.role_requirements or {}).items()
+        if isinstance(role, dict) and role.get("name")
+    ]
+
+
+def _viewer_label(verdict: dict) -> str:
+    age = str(verdict.get("demographic", {}).get("age_bracket") or "").replace("-", " to ")
+    return f"A viewer aged {age}" if age else "A test viewer"
+
+
+def _viewer_reviews(state: GlobalState, verdicts: list[dict], cast: list[dict]) -> list[AudienceReview]:
+    """Two comments built from the simulated verdicts: the happiest viewer and the least happy."""
+    if not verdicts:
+        return []
+    titles = state.audience_report.scene_titles
+    lead = next((c["character"] for c in cast if c["type"] == "lead"), cast[0]["character"] if cast else "The lead")
+    best = max(verdicts, key=lambda v: v["overall_score"])
+    worst = min(verdicts, key=lambda v: v["overall_score"])
+    favourite = max(best["scene_scores"], key=best["scene_scores"].get)
+    return [
+        AudienceReview(source=_viewer_label(best), kind="viewer", score=f"{best['overall_score']:.1f} out of 10",
+                       quote=f'{lead} carries the whole film, and "{titles.get(favourite, "the finale")}" is the scene I keep thinking about.'),
+        AudienceReview(source=_viewer_label(worst), kind="viewer", score=f"{worst['overall_score']:.1f} out of 10",
+                       quote=f'"{titles.get(worst["drop_off_scene"], "One scene")}" dragged for me, and I never really got back into it.'),
+    ]
+
+
+def _critic(state: GlobalState, verdicts: list[dict]) -> None:
+    report = state.audience_report
+    cast = _cast(state)
+    mock = prompts.mock_critic_reviews(cast, report.weakest_scene_title)
+    raw = gemini_client.generate_json(
+        f"FILM: {state.script_context.get('title')}\nLOGLINE: {state.script_context.get('logline')}\n"
+        f"CAST: {cast}\nTOMATOMETER: {report.tomatometer}\nWEAKEST SCENE: {report.weakest_scene_title}",
+        system=prompts.CRITIC_SYSTEM, mock=mock,
     )
-    log_event(state, broadcast("agent_critic", "reviews_ready", reviews))
+    critics = []
+    for item in ((raw.get("reviews") if isinstance(raw, dict) else None) or []):
+        if isinstance(item, dict) and str(item.get("quote") or "").strip():
+            critics.append(AudienceReview(
+                source=str(item.get("outlet") or item.get("source") or "A critic").strip()[:60],
+                quote=str(item["quote"]).strip()[:240], score=str(item.get("score") or "").strip()[:20],
+            ))
+        if len(critics) == CRITIC_REVIEWS:
+            break
+    if not critics:
+        critics = [AudienceReview(source=r["outlet"], quote=r["quote"], score=r["score"]) for r in mock["reviews"]]
+    # Assigned, not appended, so re-running the phase never duplicates reviews.
+    report.reviews = critics + _viewer_reviews(state, verdicts, cast)
+    log_event(state, broadcast("agent_critic", "reviews_ready", {"reviews": [r.model_dump() for r in report.reviews]}))
 
 
 def run_phase5_audience(state: GlobalState) -> GlobalState:
+    # The recut request belongs to this screening; an earlier run's is dropped.
+    state.clear_escalations("recut:")
     personas = _foundry(state)
     verdicts = _viewers(state, personas)
     _aggregation(state, verdicts)
-    _critic(state)
+    _critic(state, verdicts)
     return state

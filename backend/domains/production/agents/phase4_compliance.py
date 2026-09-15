@@ -93,6 +93,9 @@ def _telemetry(state: GlobalState) -> None:
 
 
 def run_phase4_compliance(state: GlobalState) -> GlobalState:
+    # Phase IV owns the per-territory verdicts and the compliance escalations.
+    state.compliance_state = {}
+    state.clear_escalations("compliance:")
     _localization(state)
     _qc(state)
     _telemetry(state)

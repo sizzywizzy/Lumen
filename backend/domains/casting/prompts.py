@@ -2,6 +2,7 @@
 
 Every prompt demands JSON (Gemini JSON mode) — never parse prose.
 """
+import hashlib
 
 PROFILER_SYSTEM = (
     "You are the Corporate Profiler for a film studio. From the script context and "
@@ -43,9 +44,23 @@ SCOUT_SYSTEM = (
 
 # --- Mock outputs (used when GEMINI_API_KEY is unset) ------------------------
 
+# Keyed by the offline scout's candidate names, which stay stable when ids or
+# pool order change. {character} is the role's character name.
 MOCK_AUDITION_REVIEWS = {
-    "CAND_001": {"audition_score": 82, "qualitative_review": "Controlled intensity; owns the silences.", "standout_moment": "the cab monologue"},
-    "CAND_004": {"audition_score": 78, "qualitative_review": "Magnetic menace, occasionally over-projects.", "standout_moment": "the rooftop toast"},
-    "CAND_005": {"audition_score": 91, "qualitative_review": "Raw, precise, screen-native despite stage roots.", "standout_moment": "the harbor confession"},
+    "Lucia Morales": (91, "Raw and precise; finds {character}'s weariness without losing the edge."),
+    "Evelyn Vance": (84, "Controlled intensity that owns the silences as {character}."),
+    "Caleb Sterling": (87, "A star turn as {character}, in complete command of the room."),
+    "Darius Thorne": (80, "Magnetic menace as {character}, though a touch over-projected at times."),
+    "Corinne Bailey": (76, "An easy, natural rhythm; {character} needs a little more steel."),
 }
-MOCK_AUDITION_DEFAULT = {"audition_score": 65, "qualitative_review": "Serviceable read.", "standout_moment": "n/a"}
+
+
+def mock_audition_review(name: str, character: str) -> dict:
+    """Offline audition review: the curated line for known names, a steady seeded one otherwise."""
+    who = character or "the role"
+    if name in MOCK_AUDITION_REVIEWS:
+        score, review = MOCK_AUDITION_REVIEWS[name]
+    else:
+        score = 60 + int(hashlib.md5(name.encode()).hexdigest(), 16) % 26
+        review = "A grounded, believable read of {character}."
+    return {"audition_score": score, "qualitative_review": review.format(character=who), "standout_moment": ""}

@@ -134,6 +134,8 @@ export function scheduleChanges(state) {
   return (state?.schedule?.conflicts || [])
     .filter((c) => c.wanted && c.moved_to && c.wanted !== c.moved_to)
     .map((c) => {
+      // Newer runs write the reason as a sentence; older ones named agents, so rebuild those.
+      if (c.resolution && !/agent_/.test(c.resolution)) return c.resolution;
       const entry = entries.find((e) => e.scene_id === c.scene_id);
       const name = c.title || sceneName(entry || { scene_id: c.scene_id });
       const venue = c.venue || entry?.venue;

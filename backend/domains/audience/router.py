@@ -134,7 +134,8 @@ def _skeleton(project_id: str, req: SimulationRequest, material: str, label: str
     }
 
 
-def _run_in_background(record: dict, material: str, seed: int, req: SimulationRequest) -> None:
+def _execute(record: dict, material: str, seed: int, req: SimulationRequest) -> None:
+    """The run itself. `_run_in_background` puts it on a thread; tests call it directly."""
     project_id = record["project_id"]
 
     def on_stage(name: str, status: str, detail: dict):
@@ -149,57 +150,67 @@ def _run_in_background(record: dict, material: str, seed: int, req: SimulationRe
                     stage["finished_at"] = _now()
         simulation_store.save({**record, "report": record.get("report")})
 
-    def worker():
-        state = supabase_client.load_state(project_id)
-        if state is None:
-            record["status"] = "failed"
-            record["error"] = f"No project state for {project_id}."
-            simulation_store.save(record)
-            return
-        try:
-            result = audience_sim.run_simulation(
-                state,
-                material,
-                panel_size=req.panel_size,
-                seed=seed,
-                markets=req.markets,
-                distribution=req.distribution,
-                on_stage=on_stage,
-            )
-            record.update({
-                "status": "complete",
-                "completed_at": _now(),
-                "analysis": result["analysis"],
-                "report": result["report"],
-                "sensitivity": result["sensitivity"],
-                "recommendations": result["recommendations"],
-                "provenance": result["provenance"],
-                "dimensions": result["dimensions"],
-                "distribution_fingerprint": result["distribution_fingerprint"],
-                "cohort_summary": [
-                    {k: c[k] for k in ("cohort_id", "size", "age_band_name", "market_bloc_name", "genre_affinity")}
-                    for c in result["cohorts"]
-                ],
-            })
-            # The agents log A2A envelopes onto GlobalState; persist them so the
-            # Live Agent Terminal shows this run alongside the pipeline's own.
-            supabase_client.save_state(state)
-            simulation_store.save_panel(project_id, record["simulation_id"], {
-                "personas": result["panel"],
-                "responses": result["responses"],
-                "cohorts": result["cohorts"],
-                "distribution": result["distribution"],
-            })
-        except Exception as exc:  # noqa: BLE001 — recorded on the run, never swallowed
-            record["status"] = "failed"
-            record["error"] = f"{type(exc).__name__}: {exc}"[:500]
-            record["traceback"] = traceback.format_exc()[-1500:]
-            for stage in record["stages"]:
-                if stage["status"] == "running":
-                    stage["status"] = "failed"
+    state = supabase_client.load_state(project_id)
+    if state is None:
+        record["status"] = "failed"
+        record["error"] = f"No project state for {project_id}."
         simulation_store.save(record)
+        return
+    # The agents only ever append A2A envelopes to this copy of the state;
+    # remember where this run's traffic starts so it can be merged at the end.
+    baseline = len(state.event_log)
+    try:
+        result = audience_sim.run_simulation(
+            state,
+            material,
+            panel_size=req.panel_size,
+            seed=seed,
+            markets=req.markets,
+            distribution=req.distribution,
+            on_stage=on_stage,
+        )
+        record.update({
+            "status": "complete",
+            "completed_at": _now(),
+            "analysis": result["analysis"],
+            "report": result["report"],
+            "sensitivity": result["sensitivity"],
+            "recommendations": result["recommendations"],
+            "provenance": result["provenance"],
+            "dimensions": result["dimensions"],
+            "distribution_fingerprint": result["distribution_fingerprint"],
+            "cohort_summary": [
+                {k: c[k] for k in ("cohort_id", "size", "age_band_name", "market_bloc_name", "genre_affinity")}
+                for c in result["cohorts"]
+            ],
+        })
+        # Persist this run's envelopes so the Live Agent Terminal shows it
+        # alongside the pipeline's own. They are merged, under the project
+        # lock, onto whatever is stored now: a producer may have saved a
+        # decision while the run was going, and saving this copy back would
+        # have overwritten it.
+        supabase_client.append_events(project_id, state.event_log[baseline:], state)
+        simulation_store.save_panel(project_id, record["simulation_id"], {
+            "personas": result["panel"],
+            "responses": result["responses"],
+            "cohorts": result["cohorts"],
+            "distribution": result["distribution"],
+        })
+    except Exception as exc:  # noqa: BLE001 — recorded on the run, never swallowed
+        record["status"] = "failed"
+        record["error"] = f"{type(exc).__name__}: {exc}"[:500]
+        record["traceback"] = traceback.format_exc()[-1500:]
+        for stage in record["stages"]:
+            if stage["status"] == "running":
+                stage["status"] = "failed"
+    simulation_store.save(record)
 
-    threading.Thread(target=worker, name=f"audience-sim-{record['simulation_id']}", daemon=True).start()
+
+def _run_in_background(record: dict, material: str, seed: int, req: SimulationRequest) -> None:
+    threading.Thread(
+        target=_execute, args=(record, material, seed, req),
+        name=f"audience-sim-{record['simulation_id']}", daemon=True,
+    ).start()
 
 
 @router.post("/simulations/{project_id}", status_code=202)

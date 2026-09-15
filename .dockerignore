@@ -1,0 +1,16 @@
+# Keep local state, secrets and build output out of the API image and its
+# build context. The Dockerfile copies backend/ and skills/; everything the
+# app writes at runtime lives under backend/.state/ and must never ship.
+.git
+.github
+.env
+.env.*
+!.env.example
+backend/.state/
+backend/.venv/
+backend/.pytest_cache/
+**/__pycache__/
+**/*.pyc
+frontend/node_modules/
+frontend/dist/
+docs/

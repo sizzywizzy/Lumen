@@ -9,6 +9,11 @@ from domains.casting import prompts
 from services import gemini_client
 
 
+def _character(state: GlobalState, role_id: str) -> str:
+    role = state.role_requirements.get(role_id)
+    return role.get("name", "") if isinstance(role, dict) else ""
+
+
 def _media_proc(state: GlobalState) -> None:
     """Cruncher: compress 4K -> 720p and transcribe BEFORE any LLM sees the tape.
     Real implementation lives in services/media (FFmpeg + Whisper); mocked for now."""
@@ -31,7 +36,7 @@ def _audition_analytics(state: GlobalState) -> None:
             f"Clip: {candidate.media_url}. Transcript attached.",
             tier="pro",
             system=prompts.AUDITION_SYSTEM,
-            mock=prompts.MOCK_AUDITION_REVIEWS.get(candidate.id, prompts.MOCK_AUDITION_DEFAULT),
+            mock=prompts.mock_audition_review(candidate.name, _character(state, candidate.role_id)),
         )
         candidate.scores["audition"] = float(review["audition_score"])
         candidate.metadata["qualitative_review"] = review["qualitative_review"]
@@ -53,7 +58,9 @@ def _synthesis(state: GlobalState) -> None:
             1,
         )
     leaderboard = sorted(state.active_candidates(), key=lambda c: c.scores["composite"], reverse=True)
-    # Lock the top candidate per role; escalate the pick for human sign-off.
+    # Lock the top candidate per role; escalate the pick for human sign-off,
+    # replacing the requests left by any earlier run of this phase.
+    state.clear_escalations("cast_signoff:")
     locked_roles: set[str] = set()
     for candidate in leaderboard:
         if candidate.role_id not in locked_roles:
@@ -61,7 +68,8 @@ def _synthesis(state: GlobalState) -> None:
             locked_roles.add(candidate.role_id)
             state.escalate(
                 queue_item=f"cast_signoff:{candidate.role_id}",
-                reason=f"Confirm {candidate.name} for {candidate.role_id} (composite {candidate.scores['composite']})",
+                reason=f"Confirm {candidate.name} as {_character(state, candidate.role_id) or candidate.role_id} "
+                       f"(overall score {candidate.scores['composite']})",
             )
     log_event(state, broadcast("agent_synthesis", "leaderboard_ready", {
         "leaderboard": [{"candidate_id": c.id, "name": c.name, "role_id": c.role_id,

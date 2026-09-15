@@ -74,6 +74,8 @@ class Orchestrator:
             raise ValueError(f"Invalid phase range {start}..{end}. Valid: {keys}")
 
         for node in self.nodes[keys.index(start): keys.index(end) + 1]:
+            # A re-run replaces an earlier halt on this phase rather than stacking it.
+            state.clear_escalations(f"{node.key}_halt")
             state = node.run(state)
             if node.fail_fast:
                 halt_reason = node.fail_fast(state)

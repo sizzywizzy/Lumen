@@ -144,16 +144,17 @@ def _score_candidate(state: GlobalState, candidate: Candidate) -> None:
     verdict = gemini_client.generate_json(
         f"Candidate press: {press}", system=prompts.PR_SHIELD_SYSTEM,
         mock={"pr_score": 20 if red_flag else 90, "red_flag": red_flag,
-              "reason": "active litigation / viral incident" if red_flag else "clean record"},
+              "reason": "ongoing legal trouble or a recent public incident" if red_flag else "clean record"},
     )
     candidate.scores["pr"] = float(verdict["pr_score"])
     log_event(state, make_reply(request, "agent_pr_shield", "pr_scored",
                                 {"candidate_id": candidate.id, "pr": candidate.scores["pr"], "red_flag": verdict["red_flag"]}))
     if verdict["red_flag"]:
         candidate.status = "DISQUALIFIED"
-        candidate.disqualify_reason = f"PR: {verdict['reason']}"
+        candidate.disqualify_reason = f"Recent press is a risk for the production: {str(verdict['reason']).rstrip('.')}."
+        candidate.metadata["disqualify_code"] = "pr_risk"
         log_event(state, broadcast("agent_pr_shield", "disqualify",
-                                   {"candidate_id": candidate.id, "reason": candidate.disqualify_reason}))
+                                   {"candidate_id": candidate.id, "reason": candidate.disqualify_reason, "code": "pr_risk"}))
         return
 
     # agent_finance — Wallet Check: a single role may take at most a fixed share of the total budget
@@ -167,14 +168,20 @@ def _score_candidate(state: GlobalState, candidate: Candidate) -> None:
     if over_budget:
         candidate.status = "DISQUALIFIED"
         candidate.disqualify_reason = (
-            f"Budget: quote ${quote:,.0f} exceeds per-role cap ${role_cap:,.0f} "
-            f"({config.CASTING_CAP_SHARE:.0%} of the ${state.budget_state.cap:,.0f} budget)"
+            f"Asking fee of ${quote:,.0f} is above the ${role_cap:,.0f} limit for this role "
+            f"({config.CASTING_CAP_SHARE:.0%} of the ${state.budget_state.cap:,.0f} budget)."
         )
+        candidate.metadata["disqualify_code"] = "over_budget"
         log_event(state, broadcast("agent_finance", "disqualify",
-                                   {"candidate_id": candidate.id, "reason": candidate.disqualify_reason}))
+                                   {"candidate_id": candidate.id, "reason": candidate.disqualify_reason, "code": "over_budget"}))
 
 
 def run_phase1_precasting(state: GlobalState) -> GlobalState:
+    # Phase I owns the candidate pool: a re-run sources it again instead of
+    # appending a second copy of every scouted candidate, and the sign-off
+    # requests for the old pool go with it.
+    state.candidates = []
+    state.clear_escalations("cast_signoff:")
     _profiler(state)
     _intake(state)
     for candidate in state.candidates:

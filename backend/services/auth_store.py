@@ -45,8 +45,11 @@ def _get_supabase():
 
 
 def _read(table: str) -> list[dict[str, Any]]:
+    """Every row of a local JSON table. Local-only on purpose: the JSON store
+    rewrites a whole file per change, but a Supabase lookup must filter in the
+    database (see `_select`) rather than download the table."""
     if config.has_supabase():
-        return _get_supabase().table(table).select("*").execute().data or []
+        raise RuntimeError(f"_read({table!r}) is for the local JSON store; use _select on Supabase.")
     path = _auth_dir() / f"{table}.json"
     if not path.exists():
         return []
@@ -83,11 +86,26 @@ def _delete(table: str, key: str, value: str) -> None:
         _write(table, [r for r in _read(table) if r.get(key) != value])
 
 
+def _select(table: str, **match) -> list[dict[str, Any]]:
+    """Rows whose columns equal `match`.
+
+    On Supabase the filter runs in the database. Fetching the whole table and
+    matching here used to download every session, user and membership on every
+    request, and PostgREST caps an unfiltered select at its max-rows setting
+    (1000 by default), so past that size a valid token silently stopped
+    resolving.
+    """
+    if config.has_supabase():
+        query = _get_supabase().table(table).select("*")
+        for column, value in match.items():
+            query = query.eq(column, value)
+        return query.execute().data or []
+    return [row for row in _read(table) if all(row.get(k) == v for k, v in match.items())]
+
+
 def _find(table: str, **match) -> Optional[dict[str, Any]]:
-    for row in _read(table):
-        if all(row.get(k) == v for k, v in match.items()):
-            return row
-    return None
+    rows = _select(table, **match)
+    return rows[0] if rows else None
 
 
 # --------------------------------------------------------------------- users --
@@ -175,11 +193,11 @@ def delete_membership(user_id: str, project_id: str) -> None:
 
 
 def memberships_for_user(user_id: str) -> list[Membership]:
-    return [Membership.model_validate(r) for r in _read("cn_memberships") if r.get("user_id") == user_id]
+    return [Membership.model_validate(r) for r in _select("cn_memberships", user_id=user_id)]
 
 
 def memberships_for_project(project_id: str) -> list[Membership]:
-    return [Membership.model_validate(r) for r in _read("cn_memberships") if r.get("project_id") == project_id]
+    return [Membership.model_validate(r) for r in _select("cn_memberships", project_id=project_id)]
 
 
 # ------------------------------------------------------------------- invites --
@@ -203,7 +221,7 @@ def get_invite_by_token(token: str) -> Optional[Invite]:
 
 
 def invites_for_project(project_id: str) -> list[Invite]:
-    return [Invite.model_validate(r) for r in _read("cn_invites") if r.get("project_id") == project_id]
+    return [Invite.model_validate(r) for r in _select("cn_invites", project_id=project_id)]
 
 
 # ------------------------------------------------------------------ sessions --

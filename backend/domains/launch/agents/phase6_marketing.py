@@ -157,6 +157,10 @@ def _publisher(state: GlobalState, plan: dict) -> None:
 
 
 def run_phase6_marketing(state: GlobalState) -> GlobalState:
+    # Phase VI owns the asset list: a re-run rebuilds the campaign instead of
+    # appending a second reel, meme, poster and copy set with the same ids.
+    state.marketing_assets = []
+    state.clear_escalations("asset:")
     plan = _strategist(state)
     _reel_cutter(state)
     _visual(state)

@@ -26,6 +26,9 @@ class Candidate(BaseModel):
 
 class StripboardEntry(BaseModel):
     scene_id: str
+    heading: str = ""  # screenplay slugline, e.g. "EXT. CITY STREET - NIGHT"
+    title: str = ""  # short plain-English name, e.g. "The rooftop toast"
+    summary: str = ""
     date: str
     venue: str
     location_type: str = ""
@@ -60,11 +63,23 @@ class BudgetState(BaseModel):
     remaining: float = 65300.0
 
 
+class AudienceReview(BaseModel):
+    source: str  # the outlet, or a description of the test viewer
+    kind: Literal["critic", "viewer"] = "critic"
+    quote: str
+    score: str = ""
+
+
 class AudienceReport(BaseModel):
     tomatometer: float = 0.0
     audience_score: float = 0.0
     heatmap: dict[str, float] = Field(default_factory=dict)  # scene_id -> mean score
     weakest_scene_id: str = ""
+    weakest_scene_title: str = ""
+    scene_titles: dict[str, str] = Field(default_factory=dict)  # scene_id -> title
+    viewer_count: int = 0
+    verdict: Literal["", "fresh", "rotten"] = ""
+    reviews: list[AudienceReview] = Field(default_factory=list)
 
 
 class MarketingAsset(BaseModel):
@@ -104,3 +119,10 @@ class GlobalState(BaseModel):
 
     def escalate(self, queue_item: str, reason: str) -> None:
         self.human_escalations.append(HumanEscalation(queue_item=queue_item, reason=reason))
+
+    def clear_escalations(self, *prefixes: str) -> None:
+        """Drop the queue items a phase owns before it runs again, so a re-run
+        replaces its escalations instead of stacking a second copy."""
+        self.human_escalations = [
+            e for e in self.human_escalations if not e.queue_item.startswith(prefixes)
+        ]

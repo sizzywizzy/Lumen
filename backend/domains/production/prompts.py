@@ -2,8 +2,12 @@
 
 BREAKDOWN_SYSTEM = (
     "You are a 1st AD breaking down a screenplay for scheduling. Return JSON: "
-    "{scenes: [{scene_id, int_ext, location_type, characters_needed, estimated_time_hours, tags}]}. "
-    "scene_id is SCN_001, SCN_002... in script order. int_ext is INT or EXT. location_type MUST be "
+    "{scenes: [{scene_id, heading, title, summary, int_ext, location_type, characters_needed, "
+    "estimated_time_hours, tags}]}. "
+    "scene_id is SCN_001, SCN_002... in script order. heading is the slugline as written "
+    "(e.g. EXT. CITY STREET - NIGHT). title is a 2-6 word plain-English name a producer would "
+    "recognise, never an id or a slugline. summary is one sentence under 25 words. "
+    "int_ext is INT or EXT. location_type MUST be "
     "one of the AVAILABLE VENUE TYPES given (pick the closest). characters_needed uses only the "
     "ROLE IDS given. estimated_time_hours is 1-8. tags are lowercase content flags such as night, "
     "crowd, dialogue, alcohol_reference, violence, music. Keep to MAX SCENES by merging minor "
