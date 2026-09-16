@@ -2,6 +2,7 @@ import { useAuth } from "../../shared/AuthContext.jsx";
 import { useProject } from "../../shared/ProjectContext.jsx";
 import { cn } from "../../lib/utils.js";
 import { hasResults, productionTitle, screening } from "../../lib/production.js";
+import { PencilNote, Ticket } from "../../shared/Artifacts.jsx";
 import { Card, NoPlanYet, Quotes, ScoreSummary } from "./parts.jsx";
 
 export default function AudiencePage() {
@@ -16,20 +17,25 @@ export default function AudiencePage() {
     <>
       <div className="page-top">
         <div>
+          <p className="page-slug">{title}</p>
           <h1>Test screening</h1>
           <p>{screen ? `${screen.viewers} simulated viewers watched ${title}.` : "The test screening hasn't run yet."}</p>
         </div>
+        {screen && <PencilNote className="page-hint">one house, every seat filled</PencilNote>}
       </div>
 
       {screen && (
         <div className="dash-grid">
-          <Card className="col-5" title="How it scored">
-            <div style={{ marginTop: 18 }}>
-              <ScoreSummary screen={screen} />
-            </div>
-          </Card>
+          <section className="card card--ticket col-5">
+            <Ticket stub={`Admit ${screen.viewers}`}>
+              <h2 className="card-title">How it scored</h2>
+              <div style={{ marginTop: 18 }}>
+                <ScoreSummary screen={screen} />
+              </div>
+            </Ticket>
+          </section>
 
-          <Card className="col-7" title="Scene by scene">
+          <Card className="col-7 card--slate" title="Scene by scene">
             <div className="scene-scores">
               {screen.scenes.map((scene) => (
                 <div className={cn("scene-score", scene.lowest && "is-lowest")} key={scene.id}>
@@ -47,7 +53,7 @@ export default function AudiencePage() {
           </Card>
 
           {screen.reviews.length > 0 && (
-            <Card className="col-12" title="What the test audience said">
+            <Card className="col-12 card--clippings" title="What the test audience said">
               <div style={{ marginTop: 18 }}>
                 <Quotes reviews={screen.reviews} />
               </div>

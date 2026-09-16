@@ -1,5 +1,5 @@
 import { cn } from "../../lib/utils.js";
-import { CoffeeRing, PencilNote } from "./artifacts.jsx";
+import { CoffeeRing, PencilNote } from "../../shared/Artifacts.jsx";
 
 // Paperwork from Neon Nights, the sample production, as it looks mid-shoot:
 // a working copy of a script page and a marked-up call sheet. Scene numbers,

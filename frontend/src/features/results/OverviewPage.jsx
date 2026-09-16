@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Icon from "../../shared/Icon.jsx";
-import { PosterCard } from "../../shared/Artwork.jsx";
 import { useAuth } from "../../shared/AuthContext.jsx";
 import { useProject } from "../../shared/ProjectContext.jsx";
 import { cn, money } from "../../lib/utils.js";
 import {
   budgetSummary, capitalize, castByRole, dateRange, hasResults, hoursText, productionTitle, scheduleStats, screening,
 } from "../../lib/production.js";
+import { PencilNote } from "../../shared/Artifacts.jsx";
 import { ActorTile, Card, CardLink, DayBars, Legend, NoPlanYet, Stat, ViewerBar } from "./parts.jsx";
+import ProductionPoster from "./ProductionPoster.jsx";
 
 function MoneyRow({ icon, title, sub, amount, caption, positive = false }) {
   return (
@@ -29,7 +30,7 @@ function MoneyRow({ icon, title, sub, amount, caption, positive = false }) {
 }
 
 export default function OverviewPage() {
-  const { state } = useProject();
+  const { state, projectId } = useProject();
   const { activeProduction, canEdit } = useAuth();
   const [roleFilter, setRoleFilter] = useState("all");
 
@@ -53,13 +54,15 @@ export default function OverviewPage() {
     <>
       <div className="page-top page-top--poster">
         <div className="page-top__lead">
-          {/* the production's key art, painted from the title and genre until a real poster is set */}
-          <PosterCard
+          {/* the poster Lumen paints for the script: the title card stands in while it paints */}
+          <ProductionPoster
+            projectId={projectId}
             title={productionTitle(state, activeProduction?.name)}
             genre={state.script_context?.genre}
-            image={state.script_context?.poster_url}
+            canEdit={canEdit}
           />
           <div>
+            <p className="page-slug">Production file</p>
             <h1>{productionTitle(state, activeProduction?.name)}</h1>
             <p>{subtitle.join(" · ")}</p>
           </div>
@@ -73,7 +76,7 @@ export default function OverviewPage() {
       </div>
 
       <div className="dash-grid">
-        <Card className="col-8" title="Shoot schedule" action={<CardLink to="/schedule">Full schedule</CardLink>}>
+        <Card className="col-8 card--slate" title="Shoot schedule" action={<CardLink to="/schedule">Full schedule</CardLink>}>
           <div className="stats" style={{ margin: "18px 0 26px" }}>
             <Stat value={stats.scenes} label="Scenes" />
             <Stat value={stats.shootDays} label="Shoot days" />
@@ -188,6 +191,7 @@ export default function OverviewPage() {
           )}
         </div>
       </div>
+      <PencilNote className="page-footnote">{stats.scenes ? "read it top to bottom, it all comes from the script" : ""}</PencilNote>
       <p className="kicker" style={{ padding: "0 4px" }}>
         {stats.scenes ? `${stats.scenes} scenes, ${hoursText(stats.hours)} on set.` : ""}
       </p>

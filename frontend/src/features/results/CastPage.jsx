@@ -1,8 +1,10 @@
 import { useAuth } from "../../shared/AuthContext.jsx";
 import { useProject } from "../../shared/ProjectContext.jsx";
+import { PencilNote } from "../../shared/Artifacts.jsx";
 import { money } from "../../lib/utils.js";
 import { budgetSummary, castByRole, hasResults } from "../../lib/production.js";
-import { Card, NoPlanYet, RoleBlock } from "./parts.jsx";
+import { NoPlanYet } from "./parts.jsx";
+import CastBoard from "./CastBoard.jsx";
 
 export default function CastPage() {
   const { state } = useProject();
@@ -14,7 +16,7 @@ export default function CastPage() {
 
   return (
     <>
-      <div className="page-top">
+      <div className="page-top page-top--cast">
         <div>
           <h1>Cast</h1>
           <p>
@@ -22,15 +24,10 @@ export default function CastPage() {
             {money(budget.cap)} budget
           </p>
         </div>
+        <PencilNote className="cast-hint">open a face to meet the actor</PencilNote>
       </div>
 
-      <div className="dash-grid">
-        {roles.map((role) => (
-          <Card key={role.roleId} className="col-6">
-            <RoleBlock role={role} showWhy />
-          </Card>
-        ))}
-      </div>
+      <CastBoard state={state} />
     </>
   );
 }

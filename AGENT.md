@@ -151,7 +151,7 @@ Intents: emits `leaderboard_ready`; pushes top-N to `human_escalations`.
 
 **`agent_reel_cutter`** — In: `weakest/strongest` scene scores. Out: a still-sequence reel spec cut from the top-scored scene; no video generation by design. Emits `reel_ready`.
 
-**`agent_visual`** — Model: Gemini Flash. Out: art-direction specs for posters/memes/thumbnails (caption, image prompt, alt text); no image generation by design. Sends `verify_brand_safety`; on rejection regenerates (≤2 tries).
+**`agent_visual`** — Model: Gemini Flash, plus a Gemini image model for the poster. Out: art-direction specs for memes/thumbnails (caption, image prompt, alt text), and the production's poster. After a pipeline run on a screenplay without one, or on request from the Overview, the poster takes a style drawn at random (never the previous poster's), a concept (tagline, scene, palette) that goes through `agent_pr_risk`, and portrait art painted with no lettering, or an SVG sketch without a key. Posters run in the background (`domains/launch/posters.py`) and live in `cn_posters`, outside GlobalState. Sends `verify_brand_safety`; on rejection regenerates (≤2 tries).
 
 **`agent_copywriter`** — Model: Gemini Flash. Out: platform-native copy / press release. (Often merged into the visual call to save calls.)
 

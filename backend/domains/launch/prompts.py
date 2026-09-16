@@ -36,6 +36,51 @@ COPYWRITER_SYSTEM = (
     "press_release: {headline, body}}."
 )
 
+POSTER_SYSTEM = (
+    "You art-direct the theatrical one-sheet for a film from its screenplay, in the style "
+    "you are given. Write a tagline of at most ten words that gives nothing away: no twists, "
+    "deaths, secret identities or the ending. Describe one striking scene purely as art, "
+    "leaving the top fifth and the bottom quarter calm so the title and tagline can be set "
+    "over them later. Never ask for lettering, logos or credits, never depict a real or "
+    "famous person, and never name an actor. alt_text is one plain sentence describing the "
+    "art for someone who cannot see it. Respond with JSON: {tagline, scene, alt_text, "
+    "palette: [three to five colours as #rrggbb]}."
+)
+
+# Every poster draws one of these at random, never the style of the poster it
+# replaces. `direction` goes to both model calls; `sketch` is the motif the
+# offline sketch draws when no image model paints. Movements and eras only,
+# never a living artist's name.
+POSTER_STYLES = (
+    {"key": "painted", "label": "Painted one-sheet", "sketch": "ridges",
+     "direction": "a lush hand-painted illustration in oils and gouache, dramatic rim light and a "
+                  "sweeping low-angle composition, like a classic 1980s adventure one-sheet"},
+    {"key": "minimal", "label": "Minimal symbol", "sketch": "disc",
+     "direction": "one bold symbolic object on a flat field of colour, Swiss modernist restraint, "
+                  "generous negative space and crisp graphic edges"},
+    {"key": "neon-noir", "label": "Neon noir", "sketch": "skyline",
+     "direction": "a cinematic night photograph: rain-slick streets, neon reflections, anamorphic "
+                  "lens flare, deep shadows and shallow depth of field"},
+    {"key": "cut-paper", "label": "Cut-paper silhouettes", "sketch": "ridges",
+     "direction": "mid-century cut-paper collage in two or three flat inks, jagged silhouettes and "
+                  "bold graphic shapes with a faint paper texture"},
+    {"key": "risograph", "label": "Risograph duotone", "sketch": "halftone",
+     "direction": "a two-ink risograph print with coarse halftone grain, slight misregistration and "
+                  "one punchy fluorescent ink over a deep base colour"},
+    {"key": "double-exposure", "label": "Double exposure", "sketch": "skyline",
+     "direction": "a photographic double exposure: the silhouette of the main character filled with "
+                  "the world of the film, on a clean ground"},
+    {"key": "surreal", "label": "Surrealist metaphor", "sketch": "disc",
+     "direction": "a surreal painted visual metaphor in the spirit of mid-century Polish film posters: "
+                  "one uncanny central image, muted colour and expressive brushwork"},
+    {"key": "art-deco", "label": "Art deco", "sketch": "rays",
+     "direction": "art deco geometry: a symmetrical sunburst, stepped forms, fine metallic linework "
+                  "and elegant symmetry"},
+    {"key": "woodblock", "label": "Woodblock print", "sketch": "ridges",
+     "direction": "a woodblock print in the ukiyo-e tradition: bold outlines, flat colour, patterned "
+                  "waves and clouds, and washi paper grain"},
+)
+
 # --- Mock outputs ------------------------------------------------------------
 
 MOCK_RECUT_DIAGNOSIS = {
@@ -91,3 +136,26 @@ MOCK_COPY = {
 }
 
 SPOILER_TERMS = ("turns out", "all along", "twist", "dies", "killer is")
+
+# The offline poster concept by genre: a tagline (spoiler-free, since it passes
+# the same PR gate) and a palette ordered sky, horizon, light, ink. The first
+# match wins, in the same order as the Overview's painted title card.
+POSTER_GENRES = (
+    (("noir", "thriller", "crime", "mystery", "heist"), "Every city keeps a secret.",
+     ["#0e1633", "#4a1f6e", "#ff4fa3", "#07060d"]),
+    (("horror", "slasher", "ghost", "haunt"), "Some doors should stay shut.",
+     ["#160707", "#5a0f12", "#ff5a3c", "#050202"]),
+    (("sci-fi", "science fiction", "space", "cyber", "future", "robot"), "Tomorrow is already watching.",
+     ["#07131f", "#0f4a5c", "#7ff2ff", "#02070b"]),
+    (("romance", "rom-com", "love"), "Some nights only happen once.",
+     ["#2a0f1e", "#7a2a4c", "#ffb3c7", "#0d0409"]),
+    (("comedy", "satire", "family", "animated"), "What could possibly go wrong?",
+     ["#2a1c05", "#8a5a12", "#ffe680", "#0c0802"]),
+    (("western", "frontier"), "The frontier forgives no one.",
+     ["#2a1a0c", "#7a4a1c", "#ffc76b", "#0c0703"]),
+    (("fantasy", "myth", "magic", "epic"), "Every legend starts with a choice.",
+     ["#101a2e", "#3a2c6e", "#c7a8ff", "#05070d"]),
+    (("action", "war", "adventure", "spy"), "No way back.",
+     ["#1a0f0a", "#6a2f14", "#ff9a3c", "#070403"]),
+)
+POSTER_DEFAULT = ("Everything changes after tonight.", ["#1c140c", "#5c4632", "#f6a121", "#0a0806"])

@@ -6,6 +6,9 @@ pydantic>=2.6
 # Required for live Gemini calls (audience simulation, agent reasoning).
 # Without it the pipeline still runs on each agent's mock fallback.
 google-genai>=1.0            # services/gemini_client.py
+# Shrinks a painted poster (a model PNG runs to ~1.5 MB) to a JPEG before it is
+# stored. Without it the poster is stored as the model sent it.
+Pillow>=10.0                 # domains/launch/agents/poster_artist.py
 
 # Screenplay text extraction for the intake dropzone (PDF branch).
 # .txt/.fountain/.fdx need no package; only PDFs use this.

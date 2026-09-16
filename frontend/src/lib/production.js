@@ -3,6 +3,7 @@
 // the test screening. Every page (and the homepage example) reads through here,
 // so ids like SCN_004 or ROLE_LEAD never reach the screen.
 import { initials, shortDate } from "./utils.js";
+import { castProfile } from "./castProfiles.js";
 
 const SETTING = { INT: "Interior", EXT: "Exterior", "INT/EXT": "Interior and exterior", "EXT/INT": "Exterior and interior" };
 const DAY_MS = 86400000;
@@ -203,9 +204,12 @@ function plainReason(reason) {
 
 export function actor(candidate) {
   const disqualified = candidate.status === "DISQUALIFIED";
+  // photos, credits and background for the Cast page (see castProfiles.js)
+  const profile = castProfile(candidate);
   return {
-    // a headshot when the data carries one (metadata.headshot_url); initials otherwise
-    photo: candidate?.metadata?.headshot_url || candidate?.metadata?.photo_url || candidate?.headshot_url || null,
+    // a headshot when there is one (metadata.headshot_url); initials otherwise
+    photo: profile.headshot?.thumb || null,
+    profile,
     id: candidate.id,
     name: candidate.name,
     initials: initials(candidate.name),
