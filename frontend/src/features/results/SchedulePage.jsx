@@ -2,13 +2,14 @@ import Icon from "../../shared/Icon.jsx";
 import { useAuth } from "../../shared/AuthContext.jsx";
 import { useProject } from "../../shared/ProjectContext.jsx";
 import { money } from "../../lib/utils.js";
-import { dateRange, hasResults, scheduleChanges, scheduleStats } from "../../lib/production.js";
+import { PencilNote } from "../../shared/Artifacts.jsx";
+import { dateRange, hasResults, productionTitle, scheduleChanges, scheduleStats } from "../../lib/production.js";
 import { Card, DayBars, Legend, NoPlanYet, Stat } from "./parts.jsx";
 import ScheduleBoard from "./ScheduleBoard.jsx";
 
 export default function SchedulePage() {
   const { state } = useProject();
-  const { canEdit } = useAuth();
+  const { canEdit, activeProduction } = useAuth();
   if (!hasResults(state)) return <NoPlanYet canEdit={canEdit} />;
 
   const stats = scheduleStats(state);
@@ -18,6 +19,7 @@ export default function SchedulePage() {
     <>
       <div className="page-top">
         <div>
+          <p className="page-slug">{productionTitle(state, activeProduction?.name)}</p>
           <h1>Shoot schedule</h1>
           <p>
             {stats.first
@@ -25,10 +27,11 @@ export default function SchedulePage() {
               : "No shoot days have been planned yet."}
           </p>
         </div>
+        <PencilNote className="page-hint">pick a day to see it alone</PencilNote>
       </div>
 
       <div className="dash-grid">
-        <Card className="col-8" title="Hours on set">
+        <Card className="col-8 card--slate" title="Hours on set">
           <div className="stats" style={{ margin: "18px 0 26px" }}>
             <Stat value={stats.shootDays} label="Shoot days" />
             <Stat value={`${stats.hours}h`} label="On set" />
@@ -62,7 +65,7 @@ export default function SchedulePage() {
           )}
         </Card>
 
-        <Card className="col-12" title="Day by day" action={<span className="card-note">Call at 7:00 AM · pick a day to see it alone</span>}>
+        <Card className="col-12" title="Day by day" action={<span className="card-note">Call at 7:00 AM</span>}>
           <div style={{ marginTop: 20 }}>
             <ScheduleBoard state={state} />
           </div>

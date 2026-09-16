@@ -190,8 +190,9 @@ tier, and guards on malformed model output.
 Cut on purpose: each costs money or prep time and adds nothing to the
 system's logic.
 
-- Rendered media in Phase VI (Imagen, Veo, Lyria). `agent_visual` and
-  `agent_reel_cutter` produce art-direction specs that go through the PR gate.
+- Video, music and rendered campaign assets in Phase VI (Veo, Lyria).
+  `agent_visual` and `agent_reel_cutter` produce art-direction specs that go
+  through the PR gate; the production's poster is the one image Lumen paints.
 - Tape decoding and transcription in Phase II (FFmpeg, Whisper).
   `agent_media_proc` passes the tape reference through.
 - A LangGraph or Google Cloud Agent Builder rewrite of the orchestrator. The

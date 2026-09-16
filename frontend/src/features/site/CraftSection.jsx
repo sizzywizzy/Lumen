@@ -1,4 +1,4 @@
-import { Photo } from "./artifacts.jsx";
+import { Photo } from "../../shared/Artifacts.jsx";
 import { DIRECTOR_STILL, GOLDEN_HOUR_CREW } from "./images.js";
 import { CallSheet } from "./paperwork.jsx";
 

@@ -49,6 +49,8 @@
   --on-accent: #1a1204;
   --accent-gradient: linear-gradient(180deg, #ffd45c 0%, #f8b32c 55%, #f39a1a 100%);
   --highlight: #fac33d;
+  /* the gold for small text, dark enough on the light theme to read */
+  --gold-ink: #fac33d;
   --highlight-soft: rgba(250, 195, 61, 0.12);
   --on-highlight-soft: #efdcb4;
   --hatch: rgba(255, 236, 210, 0.16);
@@ -83,8 +85,10 @@
     radial-gradient(620px 360px at 12% -120px, rgba(250, 195, 61, 0.16), transparent 62%),
     radial-gradient(700px 400px at 92% -140px, rgba(200, 50, 20, 0.28), transparent 60%);
   --grain-opacity: 0.16;
-  /* the darker strip behind "How it works" */
-  --band-bg: #110f0d;
+  /* the page sits in a soft vignette, like a projected frame */
+  --vignette: radial-gradient(140% 100% at 50% 30%, transparent 58%, rgba(0, 0, 0, 0.5) 100%);
+  /* the strip behind "How it works": a tint, so the page's grain runs through it */
+  --band-bg: rgba(255, 236, 210, 0.025);
   /* the schedule's two settings: exterior in the logo's gold, interior in a cool night blue */
   --scene-ext: #fac33d;
   --scene-int: #7fd0e8;
@@ -117,7 +121,17 @@
   --font-body: "DM Sans", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --font-label: "DM Sans", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --font-mono: "JetBrains Mono", "Cascadia Code", Consolas, Menlo, monospace;
+  /* the paperwork of a shoot: Courier Prime for labels and sluglines (a
+     screenplay's own face), Special Elite for typewritten captions, Caveat
+     for notes in the margin */
+  --font-screenplay: "Courier Prime", "Courier New", Courier, monospace;
+  --font-typewriter: "Special Elite", "Courier Prime", "Courier New", Courier, monospace;
+  --font-hand: "Caveat", "Segoe Print", "Bradley Hand", cursive;
   --headline-tracking: -0.02em;
+
+  /* film grain: sparse warm-white specks for the dark theme and sparse ink
+     specks for the light one, in one tile (see the backdrop below) */
+  --grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='g' x='0' y='0' width='100%25' height='100%25'><feTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' seed='3' stitchTiles='stitch' result='n'/><feColorMatrix in='n' result='light' values='0 0 0 0 1  0 0 0 0 0.95  0 0 0 0 0.86  2.8 0 0 0 -1.56'/><feColorMatrix in='n' result='ink' values='0 0 0 0 0.12  0 0 0 0 0.08  0 0 0 0 0.04  -2.8 0 0 0 1.24'/><feMerge><feMergeNode in='light'/><feMergeNode in='ink'/></feMerge></filter><rect width='100%25' height='100%25' filter='url(%23g)'/></svg>");
 
   /* shape — soft, rounded corners */
   --radius-sm: 6px;
@@ -178,6 +192,7 @@
   --on-accent: #1a1204;
   --accent-gradient: linear-gradient(180deg, #ffd45c 0%, #f7b02a 60%, #f0951a 100%);
   --highlight: #f2ab14;
+  --gold-ink: #875600;
   --highlight-soft: #fdeec4;
   --on-highlight-soft: #6b5a35;
   --hatch: #d8cfc1;
@@ -206,7 +221,8 @@
     radial-gradient(620px 360px at 12% -120px, rgba(250, 195, 61, 0.45), transparent 62%),
     radial-gradient(700px 400px at 92% -140px, rgba(230, 80, 30, 0.22), transparent 60%);
   --grain-opacity: 0.2;
-  --band-bg: #ece5d9;
+  --vignette: radial-gradient(140% 100% at 50% 30%, transparent 62%, rgba(150, 96, 30, 0.12) 100%);
+  --band-bg: rgba(120, 90, 40, 0.065);
   --scene-ext: #d98f00;
   --scene-int: #1f8fae;
   --halo: rgba(246, 161, 33, 0.8);
@@ -240,18 +256,17 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Film grain over everything, so flat colour reads as celluloid rather than
-   vector paper. The tile holds sparse warm-white specks and sparse ink specks
-   (an overlay of even noise all but vanished on the light theme): the white
-   ones show on dark surfaces, the ink ones on light, so one tile serves both
-   themes at their own --grain-opacity. */
-body::before {
-  content: "";
-  position: fixed; inset: 0; z-index: 9999; pointer-events: none;
-  opacity: var(--grain-opacity);
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='g' x='0' y='0' width='100%25' height='100%25'><feTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' seed='3' stitchTiles='stitch' result='n'/><feColorMatrix in='n' result='light' values='0 0 0 0 1  0 0 0 0 0.95  0 0 0 0 0.86  2.8 0 0 0 -1.56'/><feColorMatrix in='n' result='ink' values='0 0 0 0 0.12  0 0 0 0 0.08  0 0 0 0 0.04  -2.8 0 0 0 1.24'/><feMerge><feMergeNode in='light'/><feMergeNode in='ink'/></feMerge></filter><rect width='100%25' height='100%25' filter='url(%23g)'/></svg>");
-  background-size: 220px 220px;
+/* The backdrop every page stands on (the homepage, the signed-in site, the
+   sign-in screens): the warm beam from above, film grain and a soft vignette.
+   Grain and vignette are fixed layers painted behind the page's content, so
+   the background reads as celluloid while cards, buttons and text stay clean. */
+.home, .site, .auth-shell { position: relative; isolation: isolate; }
+.home::before, .site::before, .auth-shell::before,
+.home::after, .site::after, .auth-shell::after {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
 }
+.home::before, .site::before, .auth-shell::before { background: var(--grain) 0 0 / 220px 220px; opacity: var(--grain-opacity); }
+.home::after, .site::after, .auth-shell::after { background: var(--vignette); }
 
 ::selection { background: rgba(250, 195, 61, 0.35); }
 
@@ -317,6 +332,25 @@ a { color: inherit; text-decoration: none; }
   to { opacity: 1; transform: none; }
 }
 
+/* Scroll reveal on every page (lib/scrollReveal.js): a block that starts
+   below the fold waits out of sight, then rises into focus the first time it
+   scrolls into view, like a focus pull. Only the start is described, so each
+   block settles back onto its own resting styles. A block with a filter of
+   its own sets --reveal-blur to that filter followed by the blur. */
+[data-reveal="pending"] { opacity: 0; }
+[data-reveal="shown"] { animation: reveal .9s var(--ease-out) var(--reveal-delay, 0ms) backwards; }
+[data-reveal="shown"][data-reveal-large] { animation-name: reveal-large; }
+@keyframes reveal {
+  from { opacity: 0; translate: 0 32px; filter: var(--reveal-blur, blur(8px)); }
+}
+/* tall blocks rise without the blur, which is costly to paint that large */
+@keyframes reveal-large {
+  from { opacity: 0; translate: 0 32px; }
+}
+@media print {
+  [data-reveal] { opacity: 1 !important; animation: none !important; }
+}
+
 /* --------------------------------------------------------- typography --- */
 
 .headline-xl {
@@ -336,12 +370,17 @@ a { color: inherit; text-decoration: none; }
 .body-lg { font-size: 18px; line-height: 28px; }
 .body-md { font-size: 16px; line-height: 24px; }
 .body-sm { font-size: 14px; line-height: 20px; }
-/* Labels and captions: small, spaced capitals, the way a dashboard names its
-   readouts. mono-data is plain tabular figures. */
+/* Labels and captions: small capitals in the screenplay's Courier, the way a
+   call sheet names its fields. mono-data is plain tabular figures. */
 .mono-label {
-  font-family: var(--font-label);
-  font-size: 11px; line-height: 16px; font-weight: 600;
-  letter-spacing: 0.08em; text-transform: uppercase;
+  font-family: var(--font-screenplay);
+  font-size: 12px; line-height: 16px; font-weight: 700;
+  letter-spacing: 0.05em; text-transform: uppercase;
+}
+/* read by screen readers, not shown */
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
 .mono-data { font-family: var(--font-body); font-size: 14px; line-height: 20px; font-variant-numeric: tabular-nums; }
 .muted { color: var(--on-surface-variant); }
@@ -608,7 +647,11 @@ a { color: inherit; text-decoration: none; }
 .btn:active:not(:disabled)::after { opacity: 0.7; transform: translateY(3px) scaleX(0.9); transition-duration: .12s; }
 .btn .material-symbols-outlined { font-size: 18px; }
 
-.btn--ghost { border-color: var(--ghost-border); background: var(--ghost-bg); color: var(--on-surface); }
+/* translucent, so it blurs what is behind it and the page's grain never shows through */
+.btn--ghost {
+  border-color: var(--ghost-border); background: var(--ghost-bg); color: var(--on-surface);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+}
 .btn--ghost:hover:not(:disabled) {
   border-color: rgba(250, 195, 61, 0.6); color: var(--on-surface); background: var(--ghost-bg);
   box-shadow: 0 14px 30px -12px var(--halo);
@@ -1291,5 +1334,4 @@ table.data tbody tr.current-row { background: var(--primary-soft); }
     transform: none !important;
   }
   html { scroll-behavior: auto !important; }
-  body::before { display: none; }
 }

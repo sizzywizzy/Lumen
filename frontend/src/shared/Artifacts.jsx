@@ -1,28 +1,29 @@
 import { useId, useState } from "react";
-import { cn } from "../../lib/utils.js";
+import { cn } from "../lib/utils.js";
 
-// The small physical things the homepage lays over its cards: a photo that
-// falls back gracefully, a Polaroid, a paper clip, camera tape, a coffee ring
-// and a pencil note. Styles live in tactile.css. Everything except Photo is
-// decoration, so it is hidden from assistive technology.
+// The small physical things the site lays over its cards: a photo that falls
+// back gracefully, a Polaroid, a paper clip, camera tape, a rubber stamp, a
+// coffee ring and a pencil note. Styles live in tactile.css. Pieces that only
+// decorate are hidden from assistive technology; a stamp or a note that says
+// something can opt back in.
 
-// A photograph from images.js. If the CDN is unreachable the frame keeps its
-// paper-toned placeholder and the description stays available to screen
-// readers, instead of a broken-image icon. `decorative` drops the alt text for
-// repeats of a picture that is already described (the side frames of a film
-// strip, a photo inside a labelled collage).
-export function Photo({ photo, sizes, decorative = false, loading = "lazy", className }) {
+// A photograph ({ src, srcSet, width, height, alt }). If the image never loads
+// the frame keeps a toned placeholder and the description stays available to
+// screen readers, instead of a broken-image icon. `decorative` drops the alt
+// text for repeats of a picture that is already described elsewhere.
+export function Photo({ photo, sizes, decorative = false, loading = "lazy", className, style }) {
   const [failed, setFailed] = useState(false);
-  if (failed) {
-    return decorative ? (
-      <span className={cn("photo", "photo--missing", className)} aria-hidden="true" />
+  if (failed || !photo?.src) {
+    return decorative || !photo?.alt ? (
+      <span className={cn("photo", "photo--missing", className)} style={style} aria-hidden="true" />
     ) : (
-      <span className={cn("photo", "photo--missing", className)} role="img" aria-label={photo.alt} />
+      <span className={cn("photo", "photo--missing", className)} style={style} role="img" aria-label={photo.alt} />
     );
   }
   return (
     <img
       className={cn("photo", className)}
+      style={style}
       src={photo.src}
       srcSet={photo.srcSet}
       sizes={sizes}
@@ -86,14 +87,41 @@ export function Tape({ label, className }) {
   );
 }
 
+// An inked rubber stamp ("Top pick", "Ruled out"). tone: "gold" or "red".
+export function Stamp({ children, tone = "gold", decorative = true, className }) {
+  return (
+    <span className={cn("stamp", `stamp--${tone}`, className)} aria-hidden={decorative || undefined}>
+      {children}
+    </span>
+  );
+}
+
 export function CoffeeRing({ className }) {
   return <span className={cn("coffee-ring", className)} aria-hidden="true" />;
 }
 
-export function PencilNote({ children, className }) {
+// Handwriting in the margin. Decorative by default; pass decorative={false}
+// when the note carries something a reader should hear.
+export function PencilNote({ children, decorative = true, className }) {
   return (
-    <span className={cn("pencil-note", className)} aria-hidden="true">
+    <span className={cn("pencil-note", className)} aria-hidden={decorative || undefined}>
       {children}
     </span>
+  );
+}
+
+// A ticket stub: the main face, then a torn-off counterfoil down the side.
+// The notches at the perforation are a mask in tactile.css, so whatever holds
+// a ticket casts its shadow with a filter instead of a box-shadow.
+export function Ticket({ stub, children, className }) {
+  return (
+    <div className={cn("ticket", className)}>
+      <div className="ticket__main">{children}</div>
+      {stub && (
+        <div className="ticket__stub">
+          <span>{stub}</span>
+        </div>
+      )}
+    </div>
   );
 }

@@ -20,6 +20,7 @@ from core.shoot_window import IsoDate, settings_problem, window_problem
 from domains.audience.router import router as audience_router
 from domains.auth.router import router as auth_router
 from domains.casting.router import router as casting_router
+from domains.launch import posters
 from domains.launch.router import router as launch_router
 from domains.production.router import router as production_router
 from domains.skills.router import router as skills_router
@@ -124,6 +125,13 @@ def run_pipeline(req: InitRequest, user: User = Depends(current_user)):
     state = _new_state(req, supabase_client.load_state(req.project_id))
     state = Orchestrator().run(state)
     supabase_client.save_state(state)
+    # The screenplay's poster paints in the background once the plan is saved,
+    # so its concept reads the title and genre Phase I just wrote. Re-running
+    # the same screenplay keeps its poster; the Overview asks for new ones.
+    try:
+        posters.start_if_missing(state, user.id)
+    except Exception as exc:  # noqa: BLE001 — e.g. cn_posters not created yet; the plan itself is saved
+        print(f"[lumen] poster not started for {state.project_id}: {exc}", flush=True)
     return {
         "project_id": state.project_id,
         "casting_status": state.casting_status,

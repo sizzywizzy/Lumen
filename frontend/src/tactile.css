@@ -1,11 +1,12 @@
 /* ============================================================================
-   Tactile layer for the public homepage: the film artifacts laid over the
-   modern cards (a script page, camera tape, a slate edge, a casting Polaroid,
-   a screening ticket) and "The Craft Before the Code" (an archival print, a
-   marked-up call sheet, a strip of 35mm). Everything is drawn here and in a
-   few inline SVGs in features/site/; the only images are the photographs in
-   features/site/images.js. Colours come from index.css, plus the paper
-   palette below, which swaps with the theme like everything else.
+   Tactile layer: the film artifacts the site lays over its modern cards.
+   Shared pieces (paper, pencil, tape, stamps, Polaroids, sticky notes) used
+   across pages; the homepage hero's pile (a script page, a slate edge, a
+   screening ticket) and "The Craft Before the Code" (an archival print, a
+   marked-up call sheet, a strip of 35mm); and the sign-in card and empty
+   plan. Drawn here and in a few inline SVGs (shared/Artifacts.jsx); the only
+   images are photographs. Colours and fonts come from index.css, plus the
+   paper palette below, which swaps with the theme like everything else.
    ========================================================================= */
 
 /* ------------------------------------------------------------ palette --- */
@@ -29,25 +30,23 @@
   --tape-ink: #231c15;
   --slate-a: #171412;
   --slate-b: #b9ae99;
+  /* a clapperboard's diagonal stripes */
+  --slate-stripes: repeating-linear-gradient(-56deg, var(--slate-a) 0 10px, var(--slate-b) 10px 20px);
   --film-base: #0f0b08;
   --film-edge: rgba(236, 170, 72, 0.7);
   --photo-corner: #15110e;
   --card-drop: rgba(0, 0, 0, 0.55);
-  --craft-bg: #0c0a08;
+  --punch: rgba(255, 236, 210, 0.22);
+  --stamp-gold: #e9ae2f;
+  --stamp-red: #e0654c;
+  /* the craft section is a tint over the page, so the grain runs through it */
+  --craft-tint: rgba(0, 0, 0, 0.12);
   --craft-light: radial-gradient(1100px 560px at 50% 0%, rgba(246, 161, 33, 0.1), transparent 70%);
   --craft-burn: rgba(0, 0, 0, 0.6);
-  /* the whole homepage sits in a soft vignette, like a projected frame */
-  --home-vignette: radial-gradient(140% 100% at 50% 30%, transparent 58%, rgba(0, 0, 0, 0.5) 100%);
 
-  --font-typewriter: "Special Elite", "Courier Prime", "Courier New", Courier, monospace;
-  --font-screenplay: "Courier Prime", "Courier New", Courier, monospace;
-  --font-hand: "Caveat", "Segoe Print", "Bradley Hand", cursive;
-
-  /* the tooth of the paper, and the soft foxing an old page picks up; both
-     tinted sepia and layered over any paper colour */
-  --paper-tooth: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='f'><feTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' seed='11' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.34  0 0 0 0 0.23  0 0 0 0 0.11  0.7 0 0 0 -0.32'/></filter><rect width='100%25' height='100%25' filter='url(%23f)'/></svg>");
-  --paper-foxing: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='520' height='520'><filter id='m'><feTurbulence type='fractalNoise' baseFrequency='0.012' numOctaves='3' seed='5' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.45  0 0 0 0 0.3  0 0 0 0 0.12  0.6 0 0 0 -0.3'/></filter><rect width='100%25' height='100%25' filter='url(%23m)'/></svg>");
-  --paper-texture: var(--paper-tooth), var(--paper-foxing);
+  /* the soft foxing an old page picks up, tinted sepia and laid over any
+     paper colour. No grain: that stays in the page's backdrop. */
+  --paper-texture: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='520' height='520'><filter id='m'><feTurbulence type='fractalNoise' baseFrequency='0.012' numOctaves='3' seed='5' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.45  0 0 0 0 0.3  0 0 0 0 0.12  0.45 0 0 0 -0.22'/></filter><rect width='100%25' height='100%25' filter='url(%23m)'/></svg>");
 }
 
 :root[data-theme="light"] {
@@ -66,23 +65,20 @@
   --slate-b: #e6dccb;
   --photo-corner: #2b231d;
   --card-drop: rgba(110, 70, 20, 0.28);
-  --craft-bg: #ebe0cc;
-  --craft-light: radial-gradient(1100px 560px at 50% 0%, rgba(255, 251, 242, 0.8), transparent 70%);
+  --punch: rgba(60, 40, 20, 0.32);
+  --stamp-gold: #b77d0c;
+  --stamp-red: #b3371f;
+  --craft-tint: rgba(150, 100, 20, 0.1);
+  --craft-light: radial-gradient(1100px 560px at 50% 0%, rgba(255, 251, 242, 0.7), transparent 70%);
   --craft-burn: rgba(140, 92, 30, 0.16);
-  --home-vignette: radial-gradient(140% 100% at 50% 30%, transparent 62%, rgba(150, 96, 30, 0.12) 100%);
 }
 
 /* ------------------------------------------------------- atmosphere --- */
 
-/* The vignette sits behind the page's content, so it darkens the edges of
-   the stage without dimming any text or button. overflow-x: clip keeps the
-   tilted paper from widening the page on phones without breaking the
-   sticky menu (clip, unlike hidden, makes no scroll container). */
-.home { position: relative; isolation: isolate; overflow-x: clip; }
-.home::before {
-  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
-  background: var(--home-vignette);
-}
+/* (grain and vignette are the page backdrop, in index.css) overflow-x: clip
+   keeps the tilted paper from widening the page on phones without breaking
+   the sticky menu: clip, unlike hidden, makes no scroll container. */
+.home { overflow-x: clip; }
 
 /* ------------------------------------------------------- paper & ink --- */
 
@@ -178,7 +174,7 @@
 .slate-edge { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; }
 .slate-edge::before {
   content: ""; position: absolute; left: 0; right: 0; top: 0; height: 8px;
-  background: repeating-linear-gradient(-56deg, var(--slate-a) 0 10px, var(--slate-b) 10px 20px);
+  background: var(--slate-stripes);
   box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25);
   opacity: 0.85;
 }
@@ -188,14 +184,16 @@
   width: 92px; height: 28px;
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.28));
 }
-.tape__strip {
-  position: absolute; inset: 0;
+/* the strip itself, shared with the tape drawn straight onto the sign-in
+   card and the empty plan: a woven weave with a sheen, torn at both ends */
+.tape__strip, .auth-card::before, .card.empty-plan::before, .page-top__lead::before {
   background:
     repeating-linear-gradient(90deg, rgba(60, 40, 20, 0.06) 0 1px, transparent 1px 3px),
     linear-gradient(180deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0) 60%),
     var(--tape);
   clip-path: polygon(3% 0, 97% 0, 99.5% 16%, 96.5% 32%, 100% 50%, 97% 66%, 99.5% 84%, 97.5% 100%, 2.5% 100%, 0 82%, 3% 66%, 0.5% 48%, 3.5% 32%, 0 14%);
 }
+.tape__strip { position: absolute; inset: 0; }
 .tape__label {
   position: relative; font-family: var(--font-hand); font-size: 19px; font-weight: 700; line-height: 1;
   color: var(--tape-ink); letter-spacing: 0.02em; rotate: -2deg;
@@ -239,7 +237,7 @@
    a mask, which would cut a box-shadow too, so the shadow is a filter on
    the card around it. */
 .hero-card--score {
-  z-index: 2; right: 2%; bottom: 0; width: 330px; animation-delay: .5s;
+  z-index: 2; right: 2%; bottom: 0; width: 344px; animation-delay: .5s;
   padding: 0; background: none; border: 0; box-shadow: none;
   filter: drop-shadow(0 24px 26px rgba(0, 0, 0, 0.5));
 }
@@ -264,7 +262,7 @@
   letter-spacing: 0.14em; text-transform: uppercase; color: var(--on-surface-variant);
 }
 .ticket__score { align-items: baseline; margin-bottom: 12px; }
-.ticket__foot { margin-top: 12px; }
+.ticket__foot { margin-top: 12px; letter-spacing: 0.01em; white-space: nowrap; }
 .ticket__stub { display: grid; place-items: center; border-left: 2px dashed var(--ghost-border); }
 .ticket__stub span {
   writing-mode: vertical-rl; rotate: 180deg; white-space: nowrap;
@@ -287,20 +285,20 @@
 
 /* ---------------------------------------------- the craft before code --- */
 
-/* A scrapbook between the hero and How it works: it dissolves in from the
-   page above and is cut away from below. */
+/* A scrapbook between the hero and How it works: a tint over the page that
+   dissolves in from above (so the grain behind runs through it), a lamp's
+   warmth at the top, and edges burnt darker, then a cut to the next section. */
 .craft {
   position: relative; isolation: isolate;
-  background: linear-gradient(180deg, var(--background), transparent 180px), var(--craft-light), var(--craft-bg);
+  background: linear-gradient(180deg, transparent, var(--craft-tint) 220px);
 }
 .craft::before, .craft::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; }
-.craft::before {
-  background: var(--paper-tooth);
-  opacity: 0.6;
+.craft::before { background: var(--craft-light); }
+.craft::after {
+  background: radial-gradient(120% 90% at 50% 45%, transparent 55%, var(--craft-burn) 100%);
   -webkit-mask-image: linear-gradient(180deg, transparent, #000 240px);
   mask-image: linear-gradient(180deg, transparent, #000 240px);
 }
-.craft::after { background: radial-gradient(120% 90% at 50% 45%, transparent 55%, var(--craft-burn) 100%); }
 
 .craft-inner { max-width: 1312px; margin: 0 auto; padding: 112px 32px 56px; }
 .craft-head { max-width: 760px; margin: 0 auto 60px; text-align: center; }
@@ -325,10 +323,13 @@
 /* each reel is a torn-out page, pinned a little crooked */
 .craft-card {
   --tilt: -0.9deg;
+  --paper-drop: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3)) drop-shadow(0 26px 24px var(--card-drop));
+  /* the scroll reveal's blur rides on top of the paper's own shadow */
+  --reveal-blur: var(--paper-drop) blur(8px);
   position: relative; isolation: isolate; display: flex; flex-direction: column;
   padding: 16px 16px 28px; color: var(--paper-ink);
   rotate: var(--tilt);
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3)) drop-shadow(0 26px 24px var(--card-drop));
+  filter: var(--paper-drop);
   transition: rotate .6s var(--ease-out), translate .6s var(--ease-out);
 }
 .craft-card--chaos { --tilt: 0.8deg; margin-top: 26px; }
@@ -479,19 +480,6 @@
   color: var(--on-surface-variant);
 }
 
-/* The reels settle onto the page as they scroll into view, where scroll
-   timelines are supported. Movement only, never opacity, so a reel that has
-   not scrolled in (a print, a full-page capture) is still there to read. */
-@supports (animation-timeline: view()) {
-  @media (prefers-reduced-motion: no-preference) {
-    .craft-card { animation: craft-settle linear both; animation-timeline: view(); animation-range: entry 0% cover 30%; }
-  }
-}
-@keyframes craft-settle {
-  from { transform: translateY(48px) rotate(1.5deg); }
-  to { transform: none; }
-}
-
 @media (max-width: 1040px) {
   .craft-inner { padding: 88px 32px 48px; }
   .craft-head { margin-bottom: 48px; }
@@ -509,8 +497,198 @@
   .craft-cut { margin-top: 52px; }
 }
 
+/* ---------------------------------------------------- stamps & notes --- */
+
+/* an inked rubber stamp, a little crooked and not quite evenly inked */
+.stamp {
+  display: inline-block; padding: 4px 9px 3px; border: 2px solid currentColor; border-radius: 4px;
+  font-family: var(--font-typewriter); font-size: 12px; line-height: 15px; letter-spacing: 0.16em; text-transform: uppercase;
+  white-space: nowrap; rotate: -8deg;
+  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='60'><filter id='w'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='8' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -2.6 0 0 0 2.25'/></filter><rect width='100%25' height='100%25' filter='url(%23w)'/></svg>");
+  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='60'><filter id='w'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='8' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -2.6 0 0 0 2.25'/></filter><rect width='100%25' height='100%25' filter='url(%23w)'/></svg>");
+}
+.stamp--gold { color: var(--stamp-gold); }
+.stamp--red { color: var(--stamp-red); }
+
+/* a note stuck on with tape, written in marker */
+.sticky-note {
+  position: relative; display: block; width: fit-content; max-width: 270px; margin: 30px 6px 0 auto;
+  padding: 20px 22px 16px; rotate: 2.5deg;
+  background: var(--paper-texture), linear-gradient(170deg, #fbf3d6, #efe0ad);
+  color: #2b241c; box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2), 0 18px 28px -14px rgba(0, 0, 0, 0.55);
+  font-family: var(--font-hand); font-size: 26px; line-height: 1.15; font-weight: 600;
+}
+.sticky-note__tape { top: -13px; left: 50%; width: 80px; height: 24px; translate: -50% 0; rotate: -4deg; }
+
+/* ----------------------------------------------------------- sign-in --- */
+
+/* the sign-in card: a slate's stripes along its top edge and a strip of
+   camera tape holding it to the page */
+.auth-card {
+  position: relative;
+  background: var(--slate-stripes) top / 100% 8px no-repeat, var(--card-sheen), var(--surface-raised);
+}
+.auth-card::before {
+  content: ""; position: absolute; top: -14px; left: 50%; width: 116px; height: 28px; translate: -50% 0; rotate: -3deg;
+}
+.auth-brand .mono-label { font-family: var(--font-typewriter); font-weight: 400; letter-spacing: 0.2em; }
+
+/* ------------------------------------------------------- empty plan --- */
+
+/* "Your plan will show up here": a blank sheet taped to the page, until a
+   production has results. Its colour tokens turn to ink, so buttons and text
+   inside read on paper in either theme. */
+.card.empty-plan {
+  --on-surface: var(--paper-ink);
+  --on-surface-variant: var(--paper-ink-soft);
+  --outline-variant: var(--paper-rule);
+  --ghost-bg: rgba(255, 255, 255, 0.45);
+  --ghost-border: rgba(60, 40, 20, 0.28);
+  position: relative; color: var(--paper-ink); border: 0; border-radius: 3px;
+  background: var(--paper-texture), linear-gradient(175deg, var(--paper-hi), var(--paper) 60%, var(--paper-lo));
+  box-shadow: var(--paper-shadow), inset 0 0 60px rgba(120, 80, 30, 0.16);
+}
+.card.empty-plan::before { content: ""; position: absolute; top: -13px; left: 36px; width: 104px; height: 26px; rotate: -4deg; }
+
+/* ------------------------------------------- how it works, on paper --- */
+
+/* The three steps are sheets on the desk - the first clipped, the second
+   stamped, the third annotated - so the page keeps its texture after the cut
+   to the present day. Only the surface changes; the type is the page's own. */
+.step {
+  position: relative; padding-bottom: 46px; border: 0; border-radius: 3px;
+  color: var(--paper-ink); rotate: var(--tilt, 0deg);
+  background: var(--paper-texture), linear-gradient(174deg, var(--paper-hi), var(--paper) 70%, var(--paper-lo));
+  box-shadow: var(--paper-shadow), inset 0 0 60px rgba(120, 80, 30, 0.14);
+  transition: transform .25s var(--ease-out), rotate .5s var(--ease-out);
+}
+.step:nth-child(1) { --tilt: -0.6deg; }
+.step:nth-child(2) { --tilt: 0.5deg; margin-top: 14px; }
+.step:nth-child(3) { --tilt: -0.3deg; }
+.step:hover { rotate: 0deg; }
+.step h3 { color: var(--paper-ink); }
+.step p { color: var(--paper-ink-soft); }
+.step-clip { position: absolute; z-index: 2; top: -20px; right: 30px; width: 16px; height: 48px; rotate: 7deg; filter: drop-shadow(0 2px 1.5px rgba(0, 0, 0, 0.4)); }
+.step-stamp { position: absolute; top: 26px; right: 24px; }
+.step-note { right: 24px; bottom: 14px; font-size: 21px; rotate: -4deg; }
+
+/* ------------------------------------------- the sample on the desk --- */
+
+/* The example lives in the production's own folder: a manila edge behind the
+   panel, taped at two corners, the file's name on the tab. */
+.binder {
+  position: relative; padding: 22px 22px 46px; border-radius: 4px;
+  background: var(--paper-texture), linear-gradient(172deg, color-mix(in srgb, var(--paper) 90%, #c08b3a), var(--paper-lo));
+  box-shadow: var(--paper-shadow);
+}
+.binder-tab {
+  position: absolute; top: -29px; left: 28px; padding: 7px 20px 9px; border-radius: 6px 6px 0 0;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--paper-hi) 92%, #c08b3a), var(--paper));
+  font-family: var(--font-typewriter); font-size: 12px; line-height: 16px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--paper-ink-soft); box-shadow: 0 -3px 8px -4px rgba(0, 0, 0, 0.5);
+}
+.binder-tape { width: 104px; height: 26px; }
+.binder-tape--left { left: -20px; bottom: 44px; rotate: 45deg; }
+.binder-tape--right { right: -20px; top: 32px; rotate: 45deg; }
+.binder-note { right: 26px; bottom: 12px; font-size: 21px; rotate: -2deg; color: var(--paper-ink-soft); }
+.binder .example-panel { border-radius: 18px; }
+.example-caption {
+  margin: 20px 4px 0; font-family: var(--font-typewriter); font-size: 13px; line-height: 20px;
+  letter-spacing: 0.04em; color: var(--on-surface-variant);
+}
+
+/* ------------------------------------------------------- the epigraph --- */
+
+/* A title card between the sample and the closing call to action. */
+.section--epigraph { padding-top: 8px; padding-bottom: 72px; }
+.epigraph {
+  position: relative; max-width: 720px; margin: 0 auto; padding: 48px 52px 40px; text-align: center;
+  border-radius: 3px; rotate: -0.6deg; color: var(--paper-ink);
+  background: var(--paper-texture), linear-gradient(172deg, var(--paper-hi), var(--paper) 70%, var(--paper-lo));
+  box-shadow: var(--paper-shadow), inset 0 0 70px rgba(120, 80, 30, 0.14);
+}
+.epigraph__tape { top: -14px; left: 50%; width: 124px; height: 26px; translate: -50% 0; rotate: -2deg; }
+.epigraph blockquote {
+  margin: 0; font-family: var(--font-display); font-size: 33px; line-height: 1.2; letter-spacing: -0.01em; text-wrap: balance;
+}
+.epigraph blockquote::before { content: "\201C"; }
+.epigraph blockquote::after { content: "\201D"; }
+.epigraph figcaption {
+  margin-top: 20px; font-family: var(--font-typewriter); font-size: 13px; line-height: 19px; letter-spacing: 0.08em;
+  color: var(--paper-ink-soft);
+}
+
+/* --------------------------------------------- the dashboard's pages --- */
+
+/* Every tab opens the way the Cast wall does: the production typed above the
+   title, and a note in the margin in pencil. */
+.page-top .page-slug {
+  margin: 0 0 6px; font-family: var(--font-typewriter); font-size: 13px; line-height: 18px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--gold-ink);
+}
+.page-top .page-hint {
+  position: relative; align-self: flex-end; margin: 0 6px 4px auto;
+  font-size: 24px; line-height: 1.1; color: var(--on-surface-variant); rotate: -2deg;
+}
+.page-top .page-hint::after { content: "\2198"; margin-left: 8px; font-family: var(--font-body); font-size: 17px; }
+.page-footnote {
+  position: relative; display: block; margin: 2px 6px 0; font-size: 21px; line-height: 1.2;
+  color: var(--on-surface-variant); rotate: -0.6deg;
+}
+
+/* the production's poster, taped to the page */
+.page-top--poster .poster { rotate: -1.6deg; }
+.page-top__lead { position: relative; }
+.page-top__lead::before { content: ""; position: absolute; z-index: 2; left: 32px; top: -11px; width: 76px; height: 22px; rotate: -5deg; }
+
+/* a card with a slate's stripes along its top edge */
+.card--slate { background: var(--slate-stripes) top / 100% 7px no-repeat, var(--card-sheen), var(--surface-raised); }
+
+/* the screening card is a ticket: its notches are a mask, which would cut a
+   box-shadow, so the shadow comes from a filter on the card */
+.card--ticket { padding: 0; background: none; border: 0; box-shadow: none; filter: drop-shadow(0 20px 26px rgba(0, 0, 0, 0.45)); }
+:root[data-theme="light"] .card--ticket { filter: drop-shadow(0 16px 22px rgba(120, 70, 10, 0.22)); }
+.card--ticket .ticket { height: 100%; border-radius: var(--radius-xl); }
+.card--ticket .ticket__main { padding: 26px 28px; }
+
+/* what the test audience said, pinned up as clippings */
+.quote {
+  position: relative; border: 0; border-radius: 2px; color: var(--paper-ink); rotate: var(--tilt, -0.8deg);
+  background: var(--paper-texture), linear-gradient(172deg, var(--paper-hi), var(--paper) 74%, var(--paper-lo));
+  box-shadow: var(--paper-shadow);
+}
+.quote:nth-child(even) { --tilt: 0.9deg; }
+.quote:nth-child(3n) { --tilt: -0.3deg; }
+.quote p { color: var(--paper-ink); }
+.quote small {
+  font-family: var(--font-typewriter); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--paper-ink-soft);
+}
+
+/* every shoot day is a call sheet: punched down the left edge, with the day
+   stamped in its corner */
+.agenda-day { position: relative; padding-left: 34px; }
+.agenda-day::before {
+  content: ""; position: absolute; left: 11px; top: 26px; bottom: 26px; width: 12px; pointer-events: none;
+  background: radial-gradient(circle 5px at 6px 12px, var(--punch) 0 4.6px, transparent 5px) 0 0 / 12px 66px repeat-y;
+}
+.agenda-day__head .kicker {
+  display: inline-block; padding: 3px 9px 2px; border: 1.5px solid currentColor; border-radius: 3px;
+  font-family: var(--font-typewriter); letter-spacing: 0.14em; color: var(--gold-ink); rotate: -1.5deg;
+}
+
+@media (max-width: 640px) {
+  .agenda-day { padding-left: 22px; }
+  .agenda-day::before { left: 6px; }
+  .binder-tape, .binder-note, .step-clip { display: none; }
+  .epigraph { padding: 38px 26px 32px; }
+  .epigraph blockquote { font-size: 26px; }
+  .page-top .page-hint { display: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hero-script { animation: none !important; }
-  .craft-card { transition: none; }
+  .craft-card, .step { transition: none; }
   .craft-card:hover { rotate: var(--tilt); translate: none; }
+  .step:hover { rotate: var(--tilt); }
 }

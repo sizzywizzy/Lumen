@@ -87,6 +87,17 @@ GEMINI_TIMEOUT_MS = int(os.environ.get("GEMINI_TIMEOUT_MS", "60000"))
 SCRIPT_ANALYSIS_MAX_CHARS = int(os.environ.get("SCRIPT_ANALYSIS_MAX_CHARS", "120000"))
 GEMINI_MAX_CONCURRENCY = int(os.environ.get("GEMINI_MAX_CONCURRENCY", "3"))
 
+# The production's poster (agent_visual key art). Unlike the text models above,
+# these ids come from Google's image-generation docs (September 2026) rather
+# than a live key, so both stay env-overridable. Any model in the chain must
+# accept a portrait 2:3 aspect ratio.
+GEMINI_IMAGE_MODEL = os.environ.get("GEMINI_IMAGE_MODEL", "gemini-3.1-flash-image")
+GEMINI_IMAGE_FALLBACK_MODELS = [
+    m.strip()
+    for m in os.environ.get("GEMINI_IMAGE_FALLBACK_MODELS", "gemini-2.5-flash-image").split(",")
+    if m.strip()
+]
+
 # Guardrails
 MAX_NEGOTIATION_ITERATIONS = 2  # never unbounded (AGENT.md Section 1)
 MAX_ASSET_REGENERATIONS = 2     # agent_visual retry cap
@@ -102,6 +113,7 @@ GOOGLE_CLOUD_PROJECT = os.environ.get("GOOGLE_CLOUD_PROJECT", "impactful-veld-50
 GOOGLE_CLOUD_LOCATION = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
 VERTEX_FLASH_MODEL = os.environ.get("VERTEX_FLASH_MODEL", "gemini-2.5-flash")
 VERTEX_PRO_MODEL = os.environ.get("VERTEX_PRO_MODEL", "gemini-2.5-flash")  # strictly use Flash to save credits
+VERTEX_IMAGE_MODEL = os.environ.get("VERTEX_IMAGE_MODEL", "gemini-2.5-flash-image")
 GOOGLE_APPLICATION_CREDENTIALS = os.environ.get(
     "GOOGLE_APPLICATION_CREDENTIALS",
     str(Path.home() / ".config" / "gcloud" / "application_default_credentials.json"),

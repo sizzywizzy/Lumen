@@ -9,13 +9,15 @@ import { castByRole, scheduleStats, screening } from "../../lib/production.js";
 import { SAMPLE_STATE } from "../../lib/sample.js";
 import { Quotes, RoleBlock, ScoreSummary } from "../results/parts.jsx";
 import ScheduleBoard from "../results/ScheduleBoard.jsx";
+import { PaperClip, PencilNote, Stamp, Tape } from "../../shared/Artifacts.jsx";
 import CraftSection from "./CraftSection.jsx";
 import HeroCollage from "./HeroCollage.jsx";
 
+// Each step is a sheet on the production desk, with a note in its margin.
 const STEPS = [
-  ["Drop your script", "PDF, Final Draft, Fountain or plain text. Add your budget, your shooting dates and the city you're filming in."],
-  ["Lumen does the legwork", "It breaks the script into scenes, books days and venues, looks for actors who fit each role, and runs a test screening."],
-  ["You make the calls", "Confirm the top picks, adjust the schedule, and invite your crew to see the same plan."],
+  ["Drop your script", "PDF, Final Draft, Fountain or plain text. Add your budget, your shooting dates and the city you're filming in.", "one file, that's it"],
+  ["Lumen does the legwork", "It breaks the script into scenes, books days and venues, looks for actors who fit each role, and runs a test screening.", "about a minute"],
+  ["You make the calls", "Confirm the top picks, adjust the schedule, and invite your crew to see the same plan.", "nothing locks without you"],
 ];
 const TABS = [
   ["schedule", "Schedule"],
@@ -85,11 +87,18 @@ export default function HomePage() {
             <p>Three steps from a finished draft to a plan your whole team can work from.</p>
           </div>
           <div className="steps">
-            {STEPS.map(([title, text], i) => (
+            {STEPS.map(([title, text, note], i) => (
               <div className="step" key={title}>
-                <span className="step-number">{i + 1}</span>
+                {i === 0 && <PaperClip className="step-clip" />}
+                {i === 2 && (
+                  <Stamp tone="red" className="step-stamp">
+                    Approved
+                  </Stamp>
+                )}
+                <span className="step-number">{String(i + 1).padStart(2, "0")}</span>
                 <h3>{title}</h3>
                 <p>{text}</p>
+                {note && <PencilNote className="step-note">{note}</PencilNote>}
               </div>
             ))}
           </div>
@@ -120,7 +129,12 @@ export default function HomePage() {
             ))}
           </div>
         </div>
-        <div className="example-panel">
+        <div className="binder">
+          <span className="binder-tab">Neon Nights · sample file</span>
+          <Tape className="binder-tape binder-tape--left" />
+          <Tape className="binder-tape binder-tape--right" />
+          <PencilNote className="binder-note">pick a day</PencilNote>
+          <div className="example-panel">
           {/* keyed on the tab so the new view fades in when a tab is clicked */}
           <div className="fade-in" key={tab}>
           {tab === "schedule" && <ScheduleBoard state={SAMPLE_STATE} compact />}
@@ -143,7 +157,19 @@ export default function HomePage() {
             </div>
           )}
           </div>
+          </div>
         </div>
+        <p className="example-caption">
+          One screenplay went in. Every shoot day, venue, actor and score above came back out of it.
+        </p>
+      </section>
+
+      <section className="section section--epigraph">
+        <figure className="epigraph">
+          <Tape className="epigraph__tape" />
+          <blockquote>Nobody ever remembers the spreadsheet. They remember the film.</blockquote>
+          <figcaption>Lumen keeps the paperwork, so your crew can go make the other thing.</figcaption>
+        </figure>
       </section>
 
       <section className="section" style={{ paddingTop: 0 }}>

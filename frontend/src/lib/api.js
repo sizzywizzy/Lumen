@@ -54,7 +54,9 @@ function fallbackMessage(status) {
   return "That didn't work. Please try again.";
 }
 
-async function request(path, { anonymous = false, ...options } = {}) {
+// `blob` returns the body as a Blob, for images that need the session token
+// (an <img src> cannot send it).
+async function request(path, { anonymous = false, blob = false, ...options } = {}) {
   const token = anonymous ? null : loadStoredToken();
   let res;
   try {
@@ -89,7 +91,7 @@ async function request(path, { anonymous = false, ...options } = {}) {
   }
 
   if (res.status === 204) return null;
-  return res.json();
+  return blob ? res.blob() : res.json();
 }
 
 const post = (path, body, extra = {}) =>
@@ -161,6 +163,15 @@ export const api = {
   // (and anything else) analyses the real screenplay rather than a logline.
   uploadScript: (projectId, payload) => post(`/api/production/script/${projectId}`, payload),
   getScript: (projectId) => request(`/api/production/script/${projectId}`),
+
+  // ---- poster ---------------------------------------------------------------
+  // A pipeline run on a new screenplay paints its poster on a background
+  // thread; poll getPoster while it says "painting". The image is fetched once
+  // per poster id, which is also what keeps a cached copy from going stale.
+  getPoster: (projectId) => request(`/api/launch/poster/${projectId}`),
+  newPoster: (projectId) => post(`/api/launch/poster/${projectId}`, {}),
+  getPosterImage: (projectId, posterId) =>
+    request(`/api/launch/poster/${projectId}/image?v=${encodeURIComponent(posterId)}`, { blob: true }),
 
   // ---- agent skills (skills/<name>/SKILL.md) --------------------------------
   // A run executes on a background thread; poll the run list until it settles.

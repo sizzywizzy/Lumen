@@ -50,7 +50,7 @@ def _reel_cutter(state: GlobalState) -> None:
     }))
 
 
-def _pr_risk_check(state: GlobalState, request: dict) -> dict:
+def pr_risk_check(state: GlobalState, request: dict) -> dict:
     """agent_pr_risk: spoiler / cultural / tone / legal verdict on one asset draft."""
     caption = llm_output.text(request["payload"].get("caption")).lower()
     reasons = [f"spoiler_high:'{term}'" for term in prompts.SPOILER_TERMS if term in caption]
@@ -84,7 +84,7 @@ def _visual(state: GlobalState) -> None:
             "agent_visual", "agent_pr_risk", "verify_brand_safety",
             {"asset_id": asset.asset_id, "caption": caption},
         ))
-        verdict = _pr_risk_check(state, request)
+        verdict = pr_risk_check(state, request)
         if verdict["status"] == "APPROVED":
             asset.status = "APPROVED"
             break
@@ -151,7 +151,7 @@ def _copywriter(state: GlobalState, plan: dict) -> None:
             "agent_copywriter", "agent_pr_risk", "verify_brand_safety",
             {"asset_id": asset.asset_id, "caption": content["caption"]},
         ))
-        verdict = _pr_risk_check(state, request)
+        verdict = pr_risk_check(state, request)
         update = {"asset_id": asset.asset_id, "type": asset_type}
         if verdict["status"] == "APPROVED":
             asset.status = "APPROVED"

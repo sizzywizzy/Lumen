@@ -1,8 +1,8 @@
 import { money } from "../../lib/utils.js";
 import { dateRange } from "../../lib/production.js";
 import { DayBars, Stat, ViewerBar } from "../results/parts.jsx";
-import { PaperClip, Polaroid, Tape } from "./artifacts.jsx";
-import { SAMPLE_HEADSHOT } from "./images.js";
+import { PaperClip, Polaroid, Tape, Ticket } from "../../shared/Artifacts.jsx";
+import { portraitFor } from "../../lib/castProfiles.js";
 import { ScriptPage } from "./paperwork.jsx";
 
 // The homepage hero's picture of a plan, laid out like a production desk: the
@@ -36,11 +36,7 @@ export default function HeroCollage({ stats, lead, screen }) {
       </div>
 
       <div className="hero-card hero-card--pick">
-        <Polaroid
-          className="hero-polaroid"
-          photo={pick.photo ? { ...SAMPLE_HEADSHOT, src: pick.photo, srcSet: undefined } : SAMPLE_HEADSHOT}
-          caption={pick.name.split(" ")[0]}
-        >
+        <Polaroid className="hero-polaroid" photo={portraitFor(pick)} caption={pick.name.split(" ")[0]}>
           <PaperClip />
         </Polaroid>
         <div className="tile-sub">Top pick for {lead.name}</div>
@@ -51,22 +47,17 @@ export default function HeroCollage({ stats, lead, screen }) {
       </div>
 
       <div className="hero-card hero-card--score">
-        <div className="ticket">
-          <div className="ticket__main">
-            <div className="ticket__kicker">Test screening</div>
-            <div className="row row--tight ticket__score">
-              <span className="stat-value">{screen.tomatometer}%</span>
-              <span className="stat-label">Tomatometer</span>
-            </div>
-            <ViewerBar liked={screen.liked} viewers={screen.viewers} height={22} />
-            <div className="stat-label ticket__foot">
-              {screen.liked} of {screen.viewers} test viewers liked it
-            </div>
+        <Ticket stub={`Admit ${screen.viewers}`}>
+          <div className="ticket__kicker">Test screening</div>
+          <div className="row row--tight ticket__score">
+            <span className="stat-value">{screen.tomatometer}%</span>
+            <span className="stat-label">Tomatometer</span>
           </div>
-          <div className="ticket__stub">
-            <span>Admit {screen.viewers}</span>
+          <ViewerBar liked={screen.liked} viewers={screen.viewers} height={22} />
+          <div className="stat-label ticket__foot">
+            {screen.liked} of {screen.viewers} test viewers liked it
           </div>
-        </div>
+        </Ticket>
       </div>
     </div>
   );

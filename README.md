@@ -80,7 +80,7 @@ Turning a screenplay into a finished, marketed film is a two-week-per-step manua
 | **III** | Script → Schedule | Breaks down scenes, matches venues, builds the stripboard + burn-rate budget |
 | **IV** | Compliance, Localization & Launch Prep | Clears rights, localizes/censors per territory, runs QC |
 | **V** | Audience Simulation & Predictive Reviews | 200 synthetic viewers screen the cut → Tomatometer + fix suggestions (verdicts are hash-seeded; the Audience Analyst advisor is the Gemini-backed simulator) |
-| **VI** | Marketing, PR & Autonomous Social Launch | Plans reels/memes/posters + copy, PR-gates each one, schedules the rollout (assets are art-direction specs by design, not rendered media) |
+| **VI** | Marketing, PR & Autonomous Social Launch | Plans reels/memes/posters + copy, PR-gates each one, schedules the rollout (campaign assets are art-direction specs, not rendered media), and paints the production's poster from the script |
 
 Full spec and agent contracts: see [`AGENT.md`](./AGENT.md). Shared schemas live in [`contracts/`](./contracts); advisor procedures in [`skills.md`](./skills.md).
 
@@ -117,6 +117,7 @@ falls back to a deterministic mock, so the whole thing runs with an empty `.env`
 |---|---|---|
 | Orchestration | Plain-Python phase DAG with fail-fast edges | `backend/core/orchestrator/graph.py` |
 | Reasoning LLM | **Gemini** via `google-genai` — `gemini-3.6-flash` by default, a separate Pro model for the heavy-reasoning steps, and a fallback chain | `backend/services/gemini_client.py` |
+| Poster art | **Gemini image** — `gemini-3.1-flash-image` with a fallback chain, a style drawn at random per poster, shrunk with **Pillow**; an SVG sketch stands in without a key | `backend/domains/launch/agents/poster_artist.py`, `backend/services/poster_store.py` |
 | Web search | **Tavily** REST (no SDK — `urllib`); optional, skipped when unset | `backend/services/tavily_client.py` |
 | Actor knowledge base | **TMDb** ingest → **PostgreSQL + pgvector**, `sentence-transformers` embeddings (optional extra) | `backend/services/casting_kb/` |
 | Script intake | **pypdf** for the PDF branch (`.txt`/`.fountain`/`.fdx` need no package) | `backend/services/script_intake.py` |
@@ -128,8 +129,9 @@ falls back to a deterministic mock, so the whole thing runs with an empty `.env`
 
 **Deliberately out of scope.** Rendered media and third-party orchestration
 add cost without adding to the system's logic, so they are not planned: no
-image, video or music generation (`agent_visual` and `agent_reel_cutter`
-produce art-direction specs that go through the PR gate), no tape decoding
+video or music generation and no rendered campaign assets (`agent_visual` and
+`agent_reel_cutter` produce art-direction specs that go through the PR gate;
+the one image Lumen paints is the production's poster), no tape decoding
 or transcription (`agent_media_proc` passes the tape reference through), and
 no LangGraph or Google Cloud Agent Builder (the orchestrator is an explicit
 state machine, see Architecture). Still open is live viewers inside the
@@ -176,7 +178,7 @@ lumen/
 │   │   └── skills/              # SKILL.md loader + runner
 │   ├── services/                # gemini_client, tavily_client, supabase_client,
 │   │                            #   auth_store, simulation_store, skill_store,
-│   │                            #   script_intake, mock_db, casting_kb/
+│   │                            #   poster_store, script_intake, mock_db, casting_kb/
 │   ├── mock_data/               # script, candidates, venues, censorship rules, personas
 │   └── domains/                 # THE SANDBOXES — one per product area
 │       ├── casting/             # Phases I & II: router, agents/, prompts
@@ -232,6 +234,7 @@ SUPABASE_KEY=...           #   required once deployed (see Deploy)
 DATABASE_URL=...           # Phase I actor KB only (PostgreSQL + pgvector)
 TMDB_API_KEY=...           # Phase I actor KB only
 GEMINI_PRO_MODEL=...       # optional: model for the heavy-reasoning steps; defaults to the flash model
+GEMINI_IMAGE_MODEL=...     # optional: model that paints the poster; defaults to gemini-3.1-flash-image
 ```
 
 > Never commit `.env`. Once deployed, the API reads the same variables from
@@ -453,7 +456,7 @@ Create a production, then follow the beats below. With no `GEMINI_API_KEY`
 the built-in Neon Nights script stands in for whatever screenplay you drop,
 so these are exactly what you'll see; with a key, Lumen reads your own script.
 
-1. **Drop the script** on **New script** (`/new`) with a $250k budget and a shooting window, and press **Plan my production**. All six phases run, then the Overview opens.
+1. **Drop the script** on **New script** (`/new`) with a $250k budget and a shooting window, and press **Plan my production**. All six phases run, then the Overview opens and the poster paints beside the title. Click it for full size, and **Paint another style** for a new take (an offline sketch until `GEMINI_API_KEY` is set).
 2. **Phase I/II — Cast** (`/cast`): an over-budget applicant is ruled out with the reason spelled out; each role shows its top pick and runners-up.
 3. **Phase III — Schedule** (`/schedule`): **Changes Lumen made** lists the venue conflict the Scheduler and Location Agent negotiated, and the two scenes no day suits the whole cast. Those are booked anyway and sent to the sign-off queue, which no page shows yet.
 4. **Phase V — Audience** (`/audience`): 200 synthetic viewers produce the Tomatometer, scene-by-scene scores and reviews, and the Overview names the scene where viewers drifted.

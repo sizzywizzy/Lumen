@@ -10,7 +10,9 @@ Install `google-genai` (see requirements.txt) before setting a real key.
 `generate_json_traced` adds what the audience simulator needs: which model
 actually served the call, whether it fell back, and whether the result is real
 or mock — so the UI can never present mock output as a live model result.
+`generate_image_traced` paints the production's poster with the same trace.
 """
+import base64
 import json
 import os
 import random
@@ -223,6 +225,91 @@ def generate_json_with_search(
         reason = "adc_reauth_required" if "Reauthentication" in last_error else "all_models_failed"
         return mock, {"source": "mock", "model": None, "reason": reason, "error": last_error[:300]}
     raise GeminiUnavailable(last_error or "All Gemini models failed.")
+
+
+def _image_candidates() -> list[str]:
+    """Image models to try, in order: the configured one, then its fallbacks."""
+    if config.GEMINI_API_KEY:
+        chain = [config.GEMINI_IMAGE_MODEL, *config.GEMINI_IMAGE_FALLBACK_MODELS]
+    else:
+        chain = [config.VERTEX_IMAGE_MODEL]
+    return list(dict.fromkeys(model for model in chain if model))
+
+
+def _first_image(response: Any) -> tuple[Optional[bytes], str, str]:
+    """(bytes, mime_type, why_not) for the first inline image in a reply. A reply
+    without one says why when it can: a blocked prompt or a finish reason such
+    as IMAGE_SAFETY."""
+    why = ""
+    block = getattr(getattr(response, "prompt_feedback", None), "block_reason", None)
+    if block:
+        why = f"prompt blocked ({getattr(block, 'value', block)})"
+    for candidate in getattr(response, "candidates", None) or []:
+        for part in getattr(getattr(candidate, "content", None), "parts", None) or []:
+            blob = getattr(part, "inline_data", None)
+            data = getattr(blob, "data", None)
+            mime = str(getattr(blob, "mime_type", "") or "")
+            if data and mime.startswith("image/"):
+                return (base64.b64decode(data) if isinstance(data, str) else bytes(data)), mime, ""
+        reason = getattr(candidate, "finish_reason", None)
+        if reason and not why:
+            why = f"finished with {getattr(reason, 'value', reason)}"
+    return None, "", why or "the reply held no image"
+
+
+def generate_image_traced(
+    prompt: str,
+    *,
+    aspect_ratio: str = "2:3",
+    attempts_per_model: int = 2,
+) -> tuple[Optional[bytes], str, dict[str, Any]]:
+    """Paint one image and return (image_bytes, mime_type, trace).
+
+    The bytes are None when no model is configured or every image model failed;
+    the trace says which, so the caller can draw its own stand-in and label it
+    as one. trace = {source: "gemini"|"mock", model, attempts, fell_back, reason, error}
+    """
+    if not config.has_gemini():
+        return None, "", {"source": "mock", "model": None, "reason": "no_api_key"}
+
+    from google.genai import types
+
+    client = _get_client()
+    last_error = ""
+    total_attempts = 0
+    image_config = types.GenerateContentConfig(
+        response_modalities=["IMAGE"],
+        image_config=types.ImageConfig(aspect_ratio=aspect_ratio),
+    )
+
+    for model_index, model in enumerate(_image_candidates()):
+        for attempt in range(attempts_per_model):
+            total_attempts += 1
+            try:
+                response = client.models.generate_content(model=model, contents=prompt, config=image_config)
+            except Exception as exc:  # noqa: BLE001 — classified by message, like the JSON calls
+                last_error = f"{type(exc).__name__}: {exc}"
+                text = str(exc)
+                if any(code in text for code in _MODEL_GONE):
+                    break
+                if any(code in text for code in _RETRYABLE) and attempt + 1 < attempts_per_model:
+                    time.sleep(1.5 * (attempt + 1) + random.random())
+                    continue
+                break
+            data, mime, why = _first_image(response)
+            if data is not None:
+                return data, mime, {
+                    "source": "gemini",
+                    "model": model,
+                    "attempts": total_attempts,
+                    "fell_back": model_index > 0,
+                }
+            # A safety block or a text-only reply: the same model rarely paints
+            # on a second ask, so the next model gets the prompt instead.
+            last_error = f"{model}: {why}"
+            break
+
+    return None, "", {"source": "mock", "model": None, "reason": "all_models_failed", "error": last_error[:300]}
 
 
 def map_concurrent(items: Iterable, worker: Callable, max_workers: Optional[int] = None) -> list:

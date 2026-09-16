@@ -1,5 +1,5 @@
 import Icon from "./Icon.jsx";
-import { cn } from "../lib/utils.js";
+import { cn, initials } from "../lib/utils.js";
 
 // Generated artwork for places where a photo belongs but none exists yet: a
 // film-frame tile for every location on the schedule and a title-card poster
@@ -60,6 +60,26 @@ export function LocationArt({ type, venue, image, size = "md", className }) {
   );
 }
 
+// A portrait sitting in for a headshot nobody has sent yet: a head and
+// shoulders lit from one side, in a colour taken from the actor's name, with
+// their initials. Honest about being a placeholder, never someone else's face.
+export function PortraitArt({ name, decorative = false, className }) {
+  const art = FALLBACK[hash(name) % FALLBACK.length];
+  return (
+    <span
+      className={cn("portrait-art", className)}
+      style={{ "--art-a": art.a, "--art-b": art.b, "--art-c": art.c }}
+      {...(decorative ? { "aria-hidden": true } : { role: "img", "aria-label": `No headshot of ${name} yet` })}
+    >
+      <svg viewBox="0 0 100 125" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">
+        <circle cx="50" cy="52" r="19" />
+        <path d="M12 125c1-26 17-45 38-45s37 19 38 45z" />
+      </svg>
+      <span className="portrait-art__initials">{initials(name)}</span>
+    </span>
+  );
+}
+
 // Genre sets the poster's light: noir goes blue and magenta, horror red, and
 // so on. The title is set in the logo's serif over the camera's beam.
 const GENRE_LIGHT = [
@@ -76,27 +96,27 @@ const GENRE_LIGHT = [
 ];
 
 // A portrait title card for the production. Pass `image` for the real poster
-// once one exists; until then the card paints its own key art.
-export function PosterCard({ title, genre, image, size = "md", className }) {
+// once one exists; until then the card paints its own key art. Either way the
+// title (and, on the larger sizes, the tagline) is set over the art here, since
+// painted posters carry no lettering of their own. `busy` shows the poster
+// developing while a new one paints.
+export function PosterCard({ title, genre, image, tagline, description, busy = false, size = "md", className }) {
   const text = String(genre || "").toLowerCase();
   const light = GENRE_LIGHT.find((g) => g.match.test(text)) || { a: "#1c1b1f", b: "#3a3540", c: "#fac33d" };
   const words = String(title || "Untitled").trim();
   return (
     <div
-      className={cn("poster", `poster--${size}`, image && "poster--photo", className)}
+      className={cn("poster", `poster--${size}`, image && "poster--photo", busy && "is-painting", className)}
       style={{ "--art-a": light.a, "--art-b": light.b, "--art-c": light.c }}
       role="img"
-      aria-label={`${words} poster`}
+      aria-label={description ? `${words} poster: ${description}` : `${words} poster`}
     >
-      {image ? (
-        <img src={image} alt="" loading="lazy" />
-      ) : (
-        <>
-          <span className="poster__beam" aria-hidden="true" />
-          <span className="poster__title">{words}</span>
-          <span className="poster__caption">{genre ? genre : "A Lumen production"}</span>
-        </>
-      )}
+      {/* keyed by the image, so each new poster fades in rather than swapping in place */}
+      {image ? <img key={image} src={image} alt="" /> : <span className="poster__beam" aria-hidden="true" />}
+      {tagline && <span className="poster__tagline">{tagline}</span>}
+      <span className="poster__title">{words}</span>
+      <span className="poster__caption">{genre ? genre : "A Lumen production"}</span>
+      {busy && <span className="poster__develop" aria-hidden="true" />}
     </div>
   );
 }

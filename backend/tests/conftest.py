@@ -20,6 +20,19 @@ def state_dir(tmp_path, monkeypatch):
     return tmp_path
 
 
+@pytest.fixture(autouse=True)
+def posters_paint_inline(monkeypatch):
+    """A pipeline run starts the production's poster on a background thread
+    (domains/launch/posters.py). A thread like that outlives its test, and once
+    the test's patches are undone it reads and writes the real `.state/` (or
+    Supabase), so in tests every poster paints inline and no run carries over."""
+    from domains.launch import posters
+
+    monkeypatch.setattr(posters, "_spawn", lambda target, *args: target(*args))
+    monkeypatch.setattr(posters, "_ACTIVE", set())
+    monkeypatch.setattr(posters, "_FAILED", {})
+
+
 @pytest.fixture
 def offline(monkeypatch):
     """Force the mock fallbacks, even on a machine with Gemini credentials."""

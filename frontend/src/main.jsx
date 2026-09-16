@@ -6,12 +6,15 @@ import { ThemeProvider } from "./theme/ThemeProvider.jsx";
 import { AuthProvider } from "./shared/AuthContext.jsx";
 import { ProjectProvider } from "./shared/ProjectContext.jsx";
 import { installPressEffects } from "./lib/pressEffects.js";
+import { installScrollReveal } from "./lib/scrollReveal.js";
 import "./index.css";
 import "./site.css";
 import "./tactile.css";
 
-// Click ripples and press feedback for every control, app-wide.
+// Click ripples and press feedback for every control, and blocks rising into
+// focus as they scroll into view, app-wide.
 installPressEffects();
+installScrollReveal();
 
 // AuthProvider sits above ProjectProvider: the active production comes from the
 // signed-in member's memberships, so pipeline state can only ever load for a

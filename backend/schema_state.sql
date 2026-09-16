@@ -2,8 +2,9 @@
 --
 -- Only needed when SUPABASE_URL + SUPABASE_KEY are configured. With no
 -- credentials the same records are kept as JSON under backend/.state/.
--- Written by services/supabase_client.py (global_state) and
--- services/simulation_store.py (cn_simulations, cn_simulations_panel).
+-- Written by services/supabase_client.py (global_state),
+-- services/simulation_store.py (cn_simulations, cn_simulations_panel) and
+-- services/poster_store.py (cn_posters).
 
 -- One GlobalState document per production: every phase's output, the A2A
 -- event log the Live Agent Terminal polls, and the screenplay from intake.
@@ -46,9 +47,27 @@ create table if not exists cn_simulations_panel (
     panel         jsonb not null          -- personas, responses, cohorts, distribution
 );
 
+-- The production's poster (agent_visual key art): one row per production,
+-- replaced only once a new poster has painted. Every key
+-- services/poster_store.py writes has a column here.
+create table if not exists cn_posters (
+    project_id         text primary key,    -- == GlobalState.project_id
+    poster_id          text not null,       -- PST_<hex>, new with every poster
+    created_at         text not null,
+    started_by         text,                -- the user whose run or request painted it
+    script_fingerprint text,                -- the screenplay it was painted from
+    title              text,
+    style              jsonb not null default '{}'::jsonb,  -- the style drawn at random
+    concept            jsonb not null default '{}'::jsonb,  -- tagline, scene, palette, alt text
+    provenance         jsonb not null default '{}'::jsonb,  -- live model or offline sketch, per step
+    image_mime         text not null,
+    image_base64       text not null
+);
+
 -- The API reaches Supabase with the secret key and enforces membership itself
 -- (see core/auth/deps.py), so these tables must never be exposed to anon
 -- clients. Deny-all RLS makes that explicit.
 alter table global_state         enable row level security;
 alter table cn_simulations       enable row level security;
 alter table cn_simulations_panel enable row level security;
+alter table cn_posters           enable row level security;
