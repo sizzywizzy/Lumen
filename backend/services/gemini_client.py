@@ -1,9 +1,12 @@
 """Gemini wrapper — the ONLY place LLM calls happen.
 
 Guardrails (AGENT.md): Flash by default, Pro only for heavy reasoning, and
-structured JSON output always (never parse prose). With no GEMINI_API_KEY (and
-no Vertex opt-in, see core/config.py) the caller gets its `mock` value back,
-so the whole pipeline demos offline.
+structured JSON output always (never parse prose). With no GEMINI_API_KEY the
+caller gets its `mock` value back, so the whole pipeline demos offline.
+
+Lumen stays on Gemini's free tier: every call is a JSON text request made with
+an API key. Nothing here uses the paid-only features (Google Search grounding,
+image generation) or Vertex AI.
 
 Install `google-genai` (see requirements.txt) before setting a real key.
 
@@ -11,71 +14,111 @@ Install `google-genai` (see requirements.txt) before setting a real key.
 `generate_json_traced` adds what the audience simulator needs: which model
 actually served the call, whether it fell back, and whether the result is real
 or mock — so the UI can never present mock output as a live model result.
-`generate_image_traced` paints the production's poster with the same trace.
+`recording()` counts both kinds for a block of work, which is how a plan can
+say which of its parts came from Lumen's sample output.
 """
-import base64
+import contextvars
 import json
-import os
 import random
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Callable, Iterable, Optional
+from contextlib import contextmanager
+from typing import Any, Callable, Iterable, Iterator, Optional
 
 from core import config
 
 _client = None
 _client_lock = threading.Lock()
 
-# Errors worth trying the next model / another attempt for.
-_RETRYABLE = ("429", "RESOURCE_EXHAUSTED", "503", "UNAVAILABLE", "500", "INTERNAL", "504", "DEADLINE")
+# The count kept for the block of work running now, or None when nobody asked.
+_tally: contextvars.ContextVar[Optional[dict[str, Any]]] = contextvars.ContextVar("gemini_tally", default=None)
+_tally_lock = threading.Lock()
+
+# Errors worth another attempt on the same model. Anything else, including a
+# 504 DEADLINE_EXCEEDED (the model already took the whole timeout, so a retry
+# would likely wait that long again), moves straight on to the next model.
+_RETRYABLE = ("429", "RESOURCE_EXHAUSTED", "503", "UNAVAILABLE", "500", "INTERNAL")
 _MODEL_GONE = ("404", "NOT_FOUND")
+# A rate-limited reply can say how long to wait (RetryInfo). Longer waits than
+# this are better spent on the next model in the chain, whose quota is its own.
+MAX_RETRY_WAIT_S = 20.0
 
 
 class GeminiUnavailable(RuntimeError):
     """Every candidate model failed. Carries the last error for reporting."""
 
 
+@contextmanager
+def recording() -> Iterator[dict[str, Any]]:
+    """Count the calls made inside the block: {live, sample, reasons}.
+
+    The orchestrator opens one per phase, so a plan can say which of its parts
+    the model wrote and which fell back to an agent's sample output.
+    """
+    tally: dict[str, Any] = {"live": 0, "sample": 0, "reasons": []}
+    token = _tally.set(tally)
+    try:
+        yield tally
+    finally:
+        _tally.reset(token)
+
+
+def _record(live: bool, reason: str = "") -> None:
+    tally = _tally.get()
+    if tally is None:
+        return
+    with _tally_lock:  # batched agent work counts from several threads
+        tally["live" if live else "sample"] += 1
+        if reason and reason not in tally["reasons"]:
+            tally["reasons"].append(reason)
+
+
 def _get_client():
     global _client
     with _client_lock:
         if _client is None:
+            if not config.GEMINI_API_KEY:
+                raise GeminiUnavailable("No Gemini access: set GEMINI_API_KEY.")
             from google import genai  # imported lazily so mock mode needs no install
             from google.genai import types
 
-            if config.GEMINI_API_KEY:
-                _client = genai.Client(
-                    api_key=config.GEMINI_API_KEY,
-                    http_options=types.HttpOptions(timeout=config.GEMINI_TIMEOUT_MS),
-                )
-            elif config.has_vertex():
-                # Vertex AI on Google Cloud credentials, switched on explicitly
-                # with GOOGLE_GENAI_USE_VERTEXAI and GOOGLE_CLOUD_PROJECT.
-                _client = genai.Client(
-                    vertexai=True,
-                    project=config.GOOGLE_CLOUD_PROJECT,
-                    location=config.GOOGLE_CLOUD_LOCATION,
-                    http_options=types.HttpOptions(timeout=config.GEMINI_TIMEOUT_MS),
-                )
-            else:
-                raise GeminiUnavailable(
-                    "No Gemini access: set GEMINI_API_KEY, or GOOGLE_GENAI_USE_VERTEXAI=true "
-                    "with GOOGLE_CLOUD_PROJECT and gcloud credentials."
-                )
+            _client = genai.Client(
+                api_key=config.GEMINI_API_KEY,
+                http_options=types.HttpOptions(timeout=config.GEMINI_TIMEOUT_MS),
+            )
     return _client
+
+
+def _retry_after(exc: Exception) -> Optional[float]:
+    """The wait a 429 asks for, in seconds, when the reply carries one."""
+    details = getattr(exc, "details", None)
+    error = details.get("error", details) if isinstance(details, dict) else {}
+    for item in (error.get("details") or []) if isinstance(error, dict) else []:
+        if isinstance(item, dict) and str(item.get("@type", "")).endswith("RetryInfo"):
+            try:
+                return float(str(item.get("retryDelay", "")).rstrip("s"))
+            except ValueError:
+                return None
+    return None
+
+
+def _backoff(exc: Exception, attempt: int) -> Optional[float]:
+    """Seconds to wait before trying the same model again, or None to move on
+    to the next model. Free-tier keys are rate-limited per minute, and Google
+    says how long to wait; waiting that long beats burning the retry at once."""
+    asked = _retry_after(exc)
+    if asked is None:
+        return 1.5 * (attempt + 1) + random.random()
+    return asked + random.random() / 2 if asked <= MAX_RETRY_WAIT_S else None
 
 
 def _candidates(tier: str) -> list[str]:
     """Models to try, in order, for a tier: the tier's configured model first,
     then the fallback chain, so a retired or overloaded model degrades the run
     instead of ending it (AGENT.md: Flash by default, Pro for heavy reasoning)."""
-    if config.GEMINI_API_KEY:
-        preferred = config.GEMINI_PRO_MODEL if tier == "pro" else config.GEMINI_FLASH_MODEL
-        chain = [preferred, config.GEMINI_FLASH_MODEL, *config.GEMINI_FALLBACK_MODELS]
-    else:
-        # Vertex AI via ADC: the VERTEX_* settings default to Flash to conserve credits.
-        preferred = config.VERTEX_PRO_MODEL if tier == "pro" else config.VERTEX_FLASH_MODEL
-        chain = [preferred, config.VERTEX_FLASH_MODEL]
+    preferred = config.GEMINI_PRO_MODEL if tier == "pro" else config.GEMINI_FLASH_MODEL
+    chain = [preferred, config.GEMINI_FLASH_MODEL, *config.GEMINI_FALLBACK_MODELS]
     ordered: list[str] = []
     for model in chain:
         if model and model not in ordered:
@@ -121,6 +164,7 @@ def generate_json_traced(
     """
     if not config.has_gemini():
         if mock is not None:
+            _record(False, "no_api_key")
             return mock, {"source": "mock", "model": None, "reason": "no_api_key"}
         raise GeminiUnavailable("GEMINI_API_KEY not set and no mock provided for this call.")
 
@@ -141,7 +185,9 @@ def generate_json_traced(
                         "response_mime_type": "application/json",
                     },
                 )
-                return _extract_json(response.text), {
+                data = _extract_json(response.text)
+                _record(True)
+                return data, {
                     "source": "gemini",
                     "model": model,
                     "attempts": total_attempts,
@@ -152,12 +198,14 @@ def generate_json_traced(
                 text = str(exc)
                 if any(code in text for code in _MODEL_GONE):
                     break  # this model is gone; try the next one immediately
-                if any(code in text for code in _RETRYABLE) and attempt + 1 < attempts_per_model:
-                    time.sleep(1.5 * (attempt + 1) + random.random())
+                wait = _backoff(exc, attempt) if any(code in text for code in _RETRYABLE) else None
+                if wait is not None and attempt + 1 < attempts_per_model:
+                    time.sleep(wait)
                     continue
                 break  # non-retryable (bad request, auth) — move to next model
 
     if mock is not None:
+        _record(False, "all_models_failed")
         return mock, {"source": "mock", "model": None, "reason": "all_models_failed", "error": last_error[:300]}
     raise GeminiUnavailable(last_error or "All Gemini models failed.")
 
@@ -174,151 +222,6 @@ def generate_json(
     return data
 
 
-def generate_json_with_search(
-    prompt: str,
-    *,
-    tier: str = "pro",
-    system: Optional[str] = None,
-    mock: Optional[dict[str, Any]] = None,
-    attempts_per_model: int = 2,
-) -> tuple[Any, dict[str, Any]]:
-    """Run a prompt with Google Search grounding enabled via Google GenAI SDK.
-
-    Uses types.Tool(google_search=types.GoogleSearch()) to allow the Google Cloud
-    Gemini agent to crawl the web and ground talent discoveries in live web data.
-    """
-    if not config.has_gemini():
-        if mock is not None:
-            return mock, {"source": "mock", "model": None, "reason": "no_api_key"}
-        raise GeminiUnavailable("GEMINI_API_KEY not set and no mock provided for this call.")
-
-    from google.genai import types
-
-    client = _get_client()
-    models = _candidates(tier)
-    last_error = ""
-    total_attempts = 0
-    search_tool = types.Tool(google_search=types.GoogleSearch())
-
-    for model_index, model in enumerate(models):
-        for attempt in range(attempts_per_model):
-            total_attempts += 1
-            try:
-                response = client.models.generate_content(
-                    model=model,
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
-                        system_instruction=system,
-                        tools=[search_tool],
-                    ),
-                )
-                return _extract_json(response.text), {
-                    "source": "gemini_grounded",
-                    "model": model,
-                    "attempts": total_attempts,
-                    "fell_back": model_index > 0,
-                }
-            except Exception as exc:  # noqa: BLE001
-                last_error = f"{type(exc).__name__}: {exc}"
-                text = str(exc)
-                if any(code in text for code in _MODEL_GONE):
-                    break
-                if any(code in text for code in _RETRYABLE) and attempt + 1 < attempts_per_model:
-                    time.sleep(1.5 * (attempt + 1) + random.random())
-                    continue
-                break
-
-    if mock is not None:
-        reason = "adc_reauth_required" if "Reauthentication" in last_error else "all_models_failed"
-        return mock, {"source": "mock", "model": None, "reason": reason, "error": last_error[:300]}
-    raise GeminiUnavailable(last_error or "All Gemini models failed.")
-
-
-def _image_candidates() -> list[str]:
-    """Image models to try, in order: the configured one, then its fallbacks."""
-    if config.GEMINI_API_KEY:
-        chain = [config.GEMINI_IMAGE_MODEL, *config.GEMINI_IMAGE_FALLBACK_MODELS]
-    else:
-        chain = [config.VERTEX_IMAGE_MODEL]
-    return list(dict.fromkeys(model for model in chain if model))
-
-
-def _first_image(response: Any) -> tuple[Optional[bytes], str, str]:
-    """(bytes, mime_type, why_not) for the first inline image in a reply. A reply
-    without one says why when it can: a blocked prompt or a finish reason such
-    as IMAGE_SAFETY."""
-    why = ""
-    block = getattr(getattr(response, "prompt_feedback", None), "block_reason", None)
-    if block:
-        why = f"prompt blocked ({getattr(block, 'value', block)})"
-    for candidate in getattr(response, "candidates", None) or []:
-        for part in getattr(getattr(candidate, "content", None), "parts", None) or []:
-            blob = getattr(part, "inline_data", None)
-            data = getattr(blob, "data", None)
-            mime = str(getattr(blob, "mime_type", "") or "")
-            if data and mime.startswith("image/"):
-                return (base64.b64decode(data) if isinstance(data, str) else bytes(data)), mime, ""
-        reason = getattr(candidate, "finish_reason", None)
-        if reason and not why:
-            why = f"finished with {getattr(reason, 'value', reason)}"
-    return None, "", why or "the reply held no image"
-
-
-def generate_image_traced(
-    prompt: str,
-    *,
-    aspect_ratio: str = "2:3",
-    attempts_per_model: int = 2,
-) -> tuple[Optional[bytes], str, dict[str, Any]]:
-    """Paint one image and return (image_bytes, mime_type, trace).
-
-    The bytes are None when no model is configured or every image model failed;
-    the trace says which, so the caller can draw its own stand-in and label it
-    as one. trace = {source: "gemini"|"mock", model, attempts, fell_back, reason, error}
-    """
-    if not config.has_gemini():
-        return None, "", {"source": "mock", "model": None, "reason": "no_api_key"}
-
-    from google.genai import types
-
-    client = _get_client()
-    last_error = ""
-    total_attempts = 0
-    image_config = types.GenerateContentConfig(
-        response_modalities=["IMAGE"],
-        image_config=types.ImageConfig(aspect_ratio=aspect_ratio),
-    )
-
-    for model_index, model in enumerate(_image_candidates()):
-        for attempt in range(attempts_per_model):
-            total_attempts += 1
-            try:
-                response = client.models.generate_content(model=model, contents=prompt, config=image_config)
-            except Exception as exc:  # noqa: BLE001 — classified by message, like the JSON calls
-                last_error = f"{type(exc).__name__}: {exc}"
-                text = str(exc)
-                if any(code in text for code in _MODEL_GONE):
-                    break
-                if any(code in text for code in _RETRYABLE) and attempt + 1 < attempts_per_model:
-                    time.sleep(1.5 * (attempt + 1) + random.random())
-                    continue
-                break
-            data, mime, why = _first_image(response)
-            if data is not None:
-                return data, mime, {
-                    "source": "gemini",
-                    "model": model,
-                    "attempts": total_attempts,
-                    "fell_back": model_index > 0,
-                }
-            # A safety block or a text-only reply: the same model rarely paints
-            # on a second ask, so the next model gets the prompt instead.
-            last_error = f"{model}: {why}"
-            break
-
-    return None, "", {"source": "mock", "model": None, "reason": "all_models_failed", "error": last_error[:300]}
-
-
 def map_concurrent(items: Iterable, worker: Callable, max_workers: Optional[int] = None) -> list:
     """Run `worker` over `items` with bounded concurrency, preserving order.
 
@@ -330,12 +233,17 @@ def map_concurrent(items: Iterable, worker: Callable, max_workers: Optional[int]
     if not items:
         return []
     workers = max(1, min(max_workers or config.GEMINI_MAX_CONCURRENCY, len(items)))
+    tally = _tally.get()  # a worker thread starts with an empty context
 
     def guarded(item):
+        token = _tally.set(tally) if tally is not None else None
         try:
             return worker(item)
         except Exception as exc:  # noqa: BLE001 — surfaced to the caller as a value
             return exc
+        finally:
+            if token is not None:
+                _tally.reset(token)
 
     with ThreadPoolExecutor(max_workers=workers) as pool:
         return list(pool.map(guarded, items))

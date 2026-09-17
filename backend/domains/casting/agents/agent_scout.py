@@ -1,20 +1,26 @@
-"""Google Cloud Talent Scout Agent (agent_casting_scout).
+"""Talent Scout Agent (agent_casting_scout).
 
-Crawls and scouts actors for the production matching:
+Finds actors for the production that match:
 1. Target Locality (local hire actors within the director's designated city/market)
 2. Production Budget Cap (strictly vetting quotes against the per-role cap)
 3. Director Notes (character traits, skills, specific casting preferences)
 
-Uses Google Cloud Gemini with Google Search Grounding and Tavily to crawl
-agency rosters, actor databases, and casting calls, with robust contextual fallback.
+Everything it uses is free: Tavily's free plan searches the web, Gemini's free
+tier reads the results and suggests only people they name, and TMDb adds a
+headshot and credits. With no model or no results, a fixed offline cast stands
+in, labelled as such.
 """
-from typing import Any
+import math
+import re
+import unicodedata
+from typing import Any, Optional
 
 from core import config, llm_output
 from core.messaging.envelope import broadcast, log_event, make_envelope
 from core.orchestrator.state import Candidate, GlobalState
 from domains.casting import prompts
 from services import gemini_client, tavily_client
+from services.casting_kb import tmdb
 
 REGIONAL_AGENCIES = {
     "atlanta": ["People Store", "Houghton Talent", "J Pervis Talent", "BMG Southeast"],
@@ -122,14 +128,160 @@ def _generate_fallback_candidates(
                 "followers": raw["followers"],
                 "recent_press": raw["recent_press"],
                 "director_match": raw["director_match"],
-                "scouted_via": "Google Cloud Autonomous Talent Scout Agent",
+                "scouted_via": "Offline demo cast",
             },
         })
     return out
 
 
+OFFLINE_REASONS = {
+    "no_api_key": "no GEMINI_API_KEY",
+    "no_search_key": "no TAVILY_API_KEY; set it to search the web for free",
+    "no_web_results": "the web search found nothing; Tavily's free searches for the month may be used up",
+    "nobody_found": "the web results named nobody suitable",
+    "model_failed": "Gemini did not answer; its free daily limit may be used up",
+}
+NEUTRAL_FOLLOWERS = 10_000  # stands in for an unknown following (a middling hype score)
+RESULT_CHARS = 700
+_MONEY = re.compile(r"(\d[\d,]*(?:\.\d+)?)\s*([km])?(?![a-z])", re.IGNORECASE)
+_SCALE = {"k": 1_000, "m": 1_000_000}
+
+
+def _fee(value: Any) -> Optional[float]:
+    """A fee the model wrote as 20000, "$20,000", "20k" or a range
+    ("$15,000-25,000", "15-20k": the middle of it), or None."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return float(value) if math.isfinite(value) and value > 0 else None
+    found = [(float(digits.replace(",", "")), unit.lower()) for digits, unit in _MONEY.findall(str(value or ""))]
+    # "15-20k": the bare 15 takes the range's unit
+    scale = next((_SCALE[unit] for _, unit in reversed(found) if unit), 1)
+    amounts = [amount * (_SCALE[unit] if unit else scale if amount < 1000 else 1) for amount, unit in found]
+    amounts = [amount for amount in amounts if amount > 0]
+    return sum(amounts) / len(amounts) if amounts else None
+
+
+def _plain(text: str) -> str:
+    """Lower case, without accents, apostrophes or other punctuation, for
+    matching names: "Ana Ruíz" is "ana ruiz", "M\u2019Cormack" is "mcormack"."""
+    letters = unicodedata.normalize("NFKD", str(text or "").casefold())
+    letters = "".join(ch for ch in letters if not unicodedata.combining(ch))
+    letters = re.sub("['`\u2018\u2019]", "", letters)
+    return " ".join(re.sub(r"[^\w\s]", " ", letters).split())
+
+
+def _name_pattern(name: str) -> re.Pattern:
+    """The whole name, not part of a longer one. Scripts written without spaces
+    between words (Japanese, Chinese) can only be matched as a substring."""
+    if name.isascii():
+        return re.compile(rf"(?<!\w){re.escape(name)}(?!\w)")
+    return re.compile(re.escape(name))
+
+
+def _web_results(queries: list[str]) -> list[dict[str, str]]:
+    """Up to two Tavily searches, one credit each on the free plan."""
+    results: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for query in queries[:2]:
+        found = tavily_client.search(query, max_results=5)
+        if found.get("error"):
+            print(f"[lumen] Tavily search failed: {found['error']}"[:300], flush=True)
+        for item in found.get("results", []):
+            url = str(item.get("url") or "")
+            if url and url not in seen:
+                seen.add(url)
+                results.append(item)
+    return results
+
+
+def _results_block(results: list[dict[str, str]]) -> str:
+    if not results:
+        return ""
+    lines = [f"[{i}] {r.get('title', '')} ({r.get('url', '')})\n{str(r.get('content') or '')[:RESULT_CHARS]}"
+             for i, r in enumerate(results, 1)]
+    return "WEB RESULTS:\n" + "\n\n".join(lines) + "\n\n"
+
+
+def _rows(data: Any) -> list[dict]:
+    rows = data.get("candidates") if isinstance(data, dict) else data
+    return [row for row in rows if isinstance(row, dict)] if isinstance(rows, list) else []
+
+
+def _named_in_results(rows: list[dict], results: list[dict[str, str]]) -> list[dict]:
+    """Keep the people the web results actually name, each with the url that
+    names them. A name the model made up appears in no result and is dropped,
+    and so is a reel link that is not one of the results."""
+    texts = [_plain(f"{r.get('title', '')} {r.get('content', '')}") for r in results]
+    urls = {r.get("url") for r in results if r.get("url")}
+    kept = []
+    for row in rows:
+        # "Dee Walsh (actress)" is Dee Walsh; "Glover (Childish Gambino)" is only "Glover".
+        written = " ".join(re.sub(r"\([^)]*\)", " ", str(row.get("name") or "")).split())
+        name = _plain(written)
+        # A first name alone ("Artemis") could be anyone, or a company.
+        if not name or (name.isascii() and len(name.split()) < 2):
+            continue
+        whole_name = _name_pattern(name)
+        hits = [i for i, text in enumerate(texts) if whole_name.search(text)]
+        if not hits:
+            continue
+        cited = llm_output.number(row.get("source"), 0) - 1
+        index = int(cited) if cited in hits else hits[0]
+        row = {**row, "name": written, "source_url": results[index].get("url", "")}
+        if row.get("media_url") not in urls:
+            row.pop("media_url", None)
+        kept.append(row)
+    return kept
+
+
+def _live_candidates(brief: str, results: list[dict[str, str]]) -> tuple[list[dict], dict[str, Any], str]:
+    """(rows, trace, source): Gemini's picks from the Tavily results, with
+    source "web_results", or no rows with source "offline" and trace["reason"]
+    saying why.
+    """
+    if not config.has_gemini():
+        return [], {"source": "mock", "reason": "no_api_key"}, "offline"
+    if not results:
+        reason = "no_web_results" if config.has_tavily() else "no_search_key"
+        return [], {"source": "mock", "reason": reason}, "offline"
+    data, trace = gemini_client.generate_json_traced(
+        brief + _results_block(results) + "Suggest actors from these results only.",
+        tier="flash", system=prompts.SCOUT_WEB_SYSTEM, mock={"candidates": []},
+    )
+    if trace.get("source") != "gemini":
+        return [], {**trace, "reason": "model_failed"}, "offline"
+    rows = _named_in_results(_rows(data), results)
+    if not rows:
+        return [], {**trace, "source": "mock", "reason": "nobody_found"}, "offline"
+    return rows, trace, "web_results"
+
+
+def _tmdb_enrich(meta: dict[str, Any], name: str) -> None:
+    """A headshot, TMDb page and known-for credits when TMDb lists an actor by
+    that name (free). Presented as a name match: TMDb cannot confirm it is the
+    same person the web result meant."""
+    try:
+        profile = tmdb.profile_for(name)
+    except Exception as exc:  # noqa: BLE001 — enrichment is a nicety; the candidate stands without it
+        print(f"[lumen] TMDb lookup for {name!r} failed: {type(exc).__name__}", flush=True)
+        return
+    if not profile:
+        meta["tmdb_match"] = "none"
+        return
+    meta.update({key: value for key, value in profile.items() if value})
+    meta["tmdb_match"] = "name"
+
+
 def scout_candidates(state: GlobalState) -> list[Candidate]:
-    """Execute live Google Cloud Agent crawling for actors in locality within budget."""
+    """Find actors near the filming locality, within the per-role budget cap,
+    who suit the roles and the director's notes.
+
+    Live suggestions come from Gemini reading web results fetched through
+    Tavily's free plan. Only people those results name are kept, and TMDb
+    (free) adds a headshot and credits where it lists them.
+    With no model or no results, the offline demo cast stands in, labelled.
+    """
     locality = getattr(state, "locality", None) or state.script_context.get("locality") or "Los Angeles, CA"
     director_notes = getattr(state, "director_notes", None) or state.script_context.get("director_notes") or ""
     budget_cap = state.budget_state.cap
@@ -151,18 +303,13 @@ def scout_candidates(state: GlobalState) -> list[Candidate]:
         },
     ))
 
-    # 2. Formulate targeted search queries for the crawler
+    # 2. The searches: who works near the locality. The roles and the
+    #    director's notes go to the model, not the search engine: genre words
+    #    ("neo-noir") find articles about famous films and their stars.
     queries = [
-        f"working actors based in {locality} casting agency talent roster",
-        f"indie film actors in {locality} day rate budget quote",
+        f"actors based in {locality} talent agency roster",
+        f"{locality} based actors actresses local independent film",
     ]
-    if director_notes:
-        queries.append(f"actors {locality} {director_notes[:60]}")
-    for role_id, role_info in list(roles.items())[:2]:
-        desc = role_info.get("description", role_info.get("name", role_id))
-        queries.append(f"{desc} actors in {locality} local hire")
-
-    # Broadcast crawling activity to Live Agent Terminal
     log_event(state, broadcast("agent_casting_scout", "crawl_locality_started", {
         "locality": locality,
         "queries": queries,
@@ -170,67 +317,35 @@ def scout_candidates(state: GlobalState) -> list[Candidate]:
         "director_notes": director_notes or "General role fit",
     }))
 
-    # 3. If Tavily search is enabled, execute web queries to augment context
-    web_snippets = []
-    if config.has_tavily():
-        for q in queries[:2]:
-            t_res = tavily_client.search(q, max_results=2)
-            for item in t_res.get("results", []):
-                web_snippets.append(f"{item.get('title')}: {item.get('content')[:250]}")
-
-    # 4. Prepare prompt and mock fallback for the Google Cloud Gemini Agent
-    fallback_data = _generate_fallback_candidates(locality, role_cap, director_notes, roles)
-    mock_payload = {"candidates": fallback_data}
-
-    prompt = (
+    # 3. Live suggestions, else the offline pool.
+    results = _web_results(queries) if config.has_tavily() else []
+    brief = (
         f"Production Target Locality: {locality}\n"
         f"Maximum Actor Quote Cap: ${role_cap:,.0f} USD per role (from total budget ${budget_cap:,.0f})\n"
         f"Director's Notes: {director_notes if director_notes else 'Open casting, authentic local hire'}\n"
         f"Roles to Cast:\n"
         + "\n".join(f"- {rid}: {info.get('name', rid)} ({info.get('description', '')})" for rid, info in roles.items())
         + "\n\n"
-        + (f"Recent Web Search Intel:\n" + "\n".join(web_snippets) + "\n\n" if web_snippets else "")
-        + f"Search and crawl for working/emerging actors living in {locality} who fit the budget cap of ${role_cap:,.0f} "
-        f"and align with the director notes. Include their name, targeted role_id, a showreel link, local agency, "
-        f"quoted rate (must generally fit under ${role_cap:,.0f}), followers, and a director_match explanation."
     )
-
-    # 5. Call Gemini with Google Search tool grounding if configured
-    raw_candidates = []
-    trace = {"source": "mock", "reason": "uninitialized"}
     try:
-        data, trace = gemini_client.generate_json_with_search(
-            prompt,
-            tier="flash",
-            system=prompts.SCOUT_SYSTEM,
-            mock=mock_payload,
-        )
-        if isinstance(data, dict) and "candidates" in data and isinstance(data["candidates"], list):
-            raw_candidates = data["candidates"]
-        elif isinstance(data, list):
-            raw_candidates = data
-        else:
-            raw_candidates = fallback_data
-    except Exception:
-        raw_candidates = fallback_data
-        trace = {"source": "mock", "reason": "exception"}
-
-    raw_candidates = [r for r in raw_candidates if isinstance(r, dict)]
-    if not raw_candidates:
-        raw_candidates = fallback_data
-
-    is_live = trace.get("source") == "gemini_grounded"
+        live_rows, trace, source = _live_candidates(brief, results)
+    except Exception as exc:  # noqa: BLE001 — a failed live source still leaves the offline cast
+        print(f"[lumen] live scouting failed: {type(exc).__name__}: {exc}"[:300], flush=True)
+        live_rows, trace, source = [], {"source": "mock", "reason": "model_failed"}, "offline"
+    is_live = source != "offline"
+    raw_candidates = live_rows or _generate_fallback_candidates(locality, role_cap, director_notes, roles)
     if is_live:
-        scouted_via_label = f"Google Cloud Vertex AI ({trace.get('model')}) + Search Grounding"
-    elif trace.get("reason") == "adc_reauth_required":
-        scouted_via_label = "Local Talent Synthesis (Google Cloud ADC reauthentication required)"
+        scouted_via_label = f"Gemini ({trace.get('model')}) reading web results from Tavily"
+        ingest_source = "live_web_results"
     else:
-        scouted_via_label = "Local Talent Synthesis (Offline Demo Fallback)"
+        reason = trace.get("reason", "")
+        scouted_via_label = f"Offline demo cast ({OFFLINE_REASONS.get(reason, reason or 'no live source')})"
+        ingest_source = "offline_fallback"
 
-    # 6. Parse and instantiate Candidate models. A live reply is checked field by
-    #    field: a candidate for a role the script does not have would be locked
-    #    by synthesis for a phantom part, so an unknown role id falls back to
-    #    the round-robin pick, and quotes and follower counts must be numbers.
+    # 4. Candidates, checked field by field: a candidate for a role the script
+    #    does not have would be locked by synthesis for a phantom part, so an
+    #    unknown role id falls back to the round-robin pick, and quotes and
+    #    follower counts must be numbers.
     role_ids = list(roles)
     agencies = _match_regional_agencies(locality)
     candidates: list[Candidate] = []
@@ -246,13 +361,30 @@ def scout_candidates(state: GlobalState) -> list[Candidate]:
             role_id = role_ids[idx % len(role_ids)]
         meta = dict(llm_output.mapping(raw.get("metadata")))
         meta.setdefault("locality", locality)
-        meta["quote_usd"] = llm_output.number(meta.get("quote_usd"), round(role_cap * 0.75, -2), 0)
-        meta.setdefault("agency", agencies[idx % len(agencies)])
+        default_quote = round(role_cap * 0.75, -2)
+        if is_live:
+            meta["quote_usd"] = _fee(meta.get("quote_usd")) or default_quote
+        else:
+            meta["quote_usd"] = llm_output.number(meta.get("quote_usd"), default_quote, 0)
+        if is_live:
+            # Nobody publishes their fee or following; the model's numbers are estimates.
+            meta["quote_is_estimate"] = True
+            if llm_output.number(meta.get("followers"), -1) < 0:
+                meta["followers"] = NEUTRAL_FOLLOWERS
+                meta["followers_estimated"] = True
+            for key in ("agency", "recent_press", "director_match"):
+                meta[key] = llm_output.text(meta.get(key), "", 400)
+            if raw.get("source_url"):
+                meta["source_url"] = raw["source_url"]
+        else:
+            meta.setdefault("agency", agencies[idx % len(agencies)])
         meta["followers"] = int(llm_output.number(meta.get("followers"), 50000 + (idx * 25000), 0))
         meta.setdefault("recent_press", f"Active working actor in {locality}.")
         meta.setdefault("director_match", f"Scouted for '{locality}' match with director notes.")
         meta["scouted_via"] = scouted_via_label
         meta["is_live_scouted"] = is_live
+        if is_live and config.has_tmdb():
+            _tmdb_enrich(meta, name)
 
         media_url = llm_output.text(raw.get("media_url"), f"https://reels.lumen.internal/{cid.lower()}_audition.mp4", 500)
 
@@ -272,22 +404,22 @@ def scout_candidates(state: GlobalState) -> list[Candidate]:
             "name": candidate.name,
             "role_id": candidate.role_id,
             "locality": meta.get("locality", locality),
-            "agency": meta.get("agency", "Direct Roster"),
+            "agency": meta.get("agency") or ("not stated" if is_live else "Direct Roster"),
             "quote_usd": meta.get("quote_usd", 0),
             "budget_cap_usd": role_cap,
             "director_match": meta.get("director_match", ""),
-            "source": "live_google_search" if is_live else "offline_fallback",
+            "source": ingest_source,
+            "source_url": meta.get("source_url"),
+            "tmdb_match": meta.get("tmdb_match"),
         }))
 
     log_event(state, broadcast("agent_casting_scout", "crawl_locality_completed", {
         "locality": locality,
         "scouted_count": len(candidates),
         "per_role_budget_cap_usd": role_cap,
-        "source": "live_google_search" if is_live else "offline_fallback",
-        "summary": (
-            f"Scouted {len(candidates)} local actors in {locality} via "
-            f"{'Live Google Cloud Web Search' if is_live else 'Offline Locality Synthesis (no GEMINI_API_KEY set)'}."
-        ),
+        "source": ingest_source,
+        "web_results": len(results),
+        "summary": f"Scouted {len(candidates)} actors for {locality}: {scouted_via_label}.",
     }))
 
     return candidates

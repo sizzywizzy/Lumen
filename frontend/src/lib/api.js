@@ -172,7 +172,7 @@ export const api = {
   getScript: (projectId) => request(`/api/production/script/${projectId}`),
 
   // ---- poster ---------------------------------------------------------------
-  // A pipeline run on a new screenplay paints its poster on a background
+  // A pipeline run on a new screenplay makes its poster on a background
   // thread; poll getPoster while it says "painting". The image is fetched once
   // per poster id, which is also what keeps a cached copy from going stale.
   getPoster: (projectId) => request(`/api/launch/poster/${projectId}`),

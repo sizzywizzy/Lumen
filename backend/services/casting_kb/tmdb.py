@@ -1,4 +1,6 @@
 """TMDb client and normalization helpers for actor knowledge-base records."""
+import re
+import unicodedata
 from typing import Any
 
 import requests
@@ -6,18 +8,24 @@ import requests
 from core import config
 
 TMDB_BASE_URL = "https://api.themoviedb.org/3"
+# TMDb's own alias for the same API. Some networks cannot reach every server
+# behind api.themoviedb.org, so a dropped connection is retried here.
+TMDB_ALT_BASE_URL = "https://api.tmdb.org/3"
+
+
+def _get(path: str, params: dict[str, Any], timeout: float) -> dict[str, Any]:
+    try:
+        response = requests.get(f"{TMDB_BASE_URL}{path}", params=params, timeout=timeout)
+    except requests.exceptions.ConnectionError:
+        response = requests.get(f"{TMDB_ALT_BASE_URL}{path}", params=params, timeout=timeout)
+    response.raise_for_status()
+    return response.json()
 
 
 def _request(path: str, **params: Any) -> dict[str, Any]:
     if not config.TMDB_API_KEY:
         raise RuntimeError("TMDB_API_KEY is not configured")
-    response = requests.get(
-        f"{TMDB_BASE_URL}{path}",
-        params={"api_key": config.TMDB_API_KEY, "language": config.TMDB_LANGUAGE, **params},
-        timeout=20,
-    )
-    response.raise_for_status()
-    return response.json()
+    return _get(path, {"api_key": config.TMDB_API_KEY, "language": config.TMDB_LANGUAGE, **params}, timeout=20)
 
 
 def search_people(query: str, page: int = 1) -> list[dict[str, Any]]:
@@ -26,6 +34,61 @@ def search_people(query: str, page: int = 1) -> list[dict[str, Any]]:
 
 def fetch_person(person_id: int) -> dict[str, Any]:
     return _request(f"/person/{person_id}", append_to_response="combined_credits")
+
+
+IMAGE_BASE = "https://image.tmdb.org/t/p"
+PROFILE_LOOKUP_TIMEOUT_S = 8
+
+
+def _norm(name: str) -> str:
+    """Case, accents and punctuation aside, so "Ana Ruíz" matches "Ana Ruiz"."""
+    letters = unicodedata.normalize("NFKD", str(name or "").casefold())
+    letters = "".join(ch for ch in letters if not unicodedata.combining(ch))
+    letters = re.sub("['`\u2018\u2019]", "", letters)
+    return " ".join(re.sub(r"[^\w\s]", " ", letters).split())
+
+
+def profile_for(name: str) -> dict[str, Any] | None:
+    """A public TMDb profile for an actor the scout named, or None.
+
+    Matched on the exact name, and only when TMDb lists exactly one actor by
+    it: when several share a name, the most popular one is more likely a
+    famous namesake than the local actor the scout found. Even a unique match
+    can be someone else, so callers present it as a name match. Returns the
+    TMDb id and page, a headshot url and up to four known-for credits.
+    """
+    if not config.TMDB_API_KEY or not _norm(name):
+        return None
+    found = _get(
+        "/search/person",
+        {"api_key": config.TMDB_API_KEY, "language": config.TMDB_LANGUAGE, "query": name,
+         "include_adult": "false"},
+        timeout=PROFILE_LOOKUP_TIMEOUT_S,
+    )
+    matches = [
+        person for person in found.get("results", [])
+        if _norm(person.get("name")) == _norm(name) and person.get("known_for_department") == "Acting"
+    ]
+    if len(matches) != 1:
+        return None
+    person = matches[0]
+    credits = []
+    for work in person.get("known_for") or []:
+        title = str(work.get("title") or work.get("name") or "").strip()
+        if not title:
+            continue
+        dated = str(work.get("release_date") or work.get("first_air_date") or "")
+        credits.append({
+            "title": title,
+            "year": dated[:4],
+            "kind": "Film" if work.get("media_type") == "movie" else "Series",
+        })
+    return {
+        "tmdb_id": person["id"],
+        "tmdb_url": f"https://www.themoviedb.org/person/{person['id']}",
+        "headshot_url": f"{IMAGE_BASE}/w342{person['profile_path']}" if person.get("profile_path") else None,
+        "credits": credits[:4],
+    }
 
 
 def extract_physical_traits(person: dict[str, Any]) -> list[str]:

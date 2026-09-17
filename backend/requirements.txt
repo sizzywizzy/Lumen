@@ -6,9 +6,6 @@ pydantic>=2.6
 # Required for live Gemini calls (audience simulation, agent reasoning).
 # Without it the pipeline still runs on each agent's mock fallback.
 google-genai>=1.0            # services/gemini_client.py
-# Shrinks a painted poster (a model PNG runs to ~1.5 MB) to a JPEG before it is
-# stored. Without it the poster is stored as the model sent it.
-Pillow>=10.0                 # domains/launch/agents/poster_artist.py
 
 # Screenplay text extraction for the intake dropzone. PDFs need pypdf;
 # .fdx uploads are untrusted XML, parsed with defusedxml (DTDs refused).
@@ -16,17 +13,14 @@ pypdf>=4.0                   # services/script_intake.py
 defusedxml>=0.7              # services/script_intake.py
 
 # Shared persistence. Required for any deployment whose filesystem is ephemeral
-# (Render, Cloud Run) - without it, accounts and simulations are lost on redeploy.
+# (Render's included) - without it, accounts and simulations are lost on redeploy.
 # Activates only when SUPABASE_URL + SUPABASE_KEY are set; otherwise the app
 # falls back to local JSON under backend/.state/. Force either side with
 # LUMEN_STATE_BACKEND=local|supabase.
 supabase>=2.4                # services/{supabase_client,auth_store,simulation_store}.py
 # Tavily needs no package — services/tavily_client.py calls its REST API with
-# urllib. Set TAVILY_API_KEY to enable web-grounded cultural research.
-
-# Google Cloud SQL (uncomment when using Cloud SQL instead of Supabase)
-# google-cloud-sql>=3.0
-# pymysql>=1.1
+# urllib. Set TAVILY_API_KEY for the talent scout's web search and web-grounded
+# cultural research.
 
 # Phase I actor knowledge base
 psycopg[binary]>=3.2

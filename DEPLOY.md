@@ -13,7 +13,7 @@ Three hosts, each with a free tier:
     │
     └──── calls VITE_API_URL/api ──► Render   (FastAPI container) ──► Supabase (Postgres)
                                         │
-                                        └──► Gemini · Tavily (when keys are set)
+                                        └──► Gemini · Tavily · TMDb (when keys are set)
 ```
 
 The browser calls the API directly. Only the API holds keys or talks to
@@ -35,11 +35,7 @@ backend keeps working after the request ends:
 
 Render runs the container as one long-lived process, which is what the code
 expects. The same `Dockerfile` works on other container hosts (Railway,
-Fly.io, Google Cloud Run) as long as they keep one instance running with CPU
-between requests. The Cloud Run files in the repo (`GCP_DEPLOYMENT.md`,
-`cloudbuild.yaml`, `deploy-*.sh`) predate this setup and do neither: they
-scale to ten instances and to zero, and the frontend image never learns the
-API's URL. Don't deploy with them as they stand (see [`TODO.md`](TODO.md)).
+Fly.io) as long as they keep one instance running with CPU between requests.
 
 ## 1. Supabase (database)
 
@@ -61,8 +57,8 @@ API's URL. Don't deploy with them as they stand (see [`TODO.md`](TODO.md)).
    **New → Blueprint** and connect this repository. Render reads `render.yaml`
    and sets up a web service called `lumen-api`.
 2. Fill in the variables it asks for: `SUPABASE_URL` and `SUPABASE_KEY` from
-   step 1, plus `GEMINI_API_KEY` and `TAVILY_API_KEY` if you have them (leave
-   them blank to keep the offline fallbacks). Leave `LUMEN_CORS_ORIGINS` blank
+   step 1, plus `GEMINI_API_KEY`, `TAVILY_API_KEY` and `TMDB_API_KEY` if you have
+   them. Free keys are enough; leave them blank to keep the offline fallbacks. Leave `LUMEN_CORS_ORIGINS` blank
    for now.
 3. Once the deploy is live, open `https://<your-service>.onrender.com/api/health`.
    It should return `{"status": "ok", ...}`. That only proves the container is
@@ -99,6 +95,12 @@ add those too if you use them.
 
 ## Limits to know
 
+- **Everything here runs on free plans.** Lumen uses only Gemini's free
+  tier (no Google Search grounding, image generation or Vertex AI), so keep
+  billing off on the Google project behind your key. Free Gemini keys have
+  request limits, and Google may use free-tier prompts to improve its products.
+  Tavily's free plan allows 1,000 searches a month, and each pipeline run
+  uses two.
 - **Free Render instances sleep** after 15 minutes without traffic, and the
   first request after that takes about a minute. Paid instances stay awake.
 - **Run exactly one API instance.** Background runs live in that one process,

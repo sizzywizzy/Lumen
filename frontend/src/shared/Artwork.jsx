@@ -98,8 +98,8 @@ const GENRE_LIGHT = [
 // A portrait title card for the production. Pass `image` for the real poster
 // once one exists; until then the card paints its own key art. Either way the
 // title (and, on the larger sizes, the tagline) is set over the art here, since
-// painted posters carry no lettering of their own. `busy` shows the poster
-// developing while a new one paints.
+// the poster art carries no lettering of its own. `busy` shows the poster
+// developing while a new one is made.
 export function PosterCard({ title, genre, image, tagline, description, busy = false, size = "md", className }) {
   const text = String(genre || "").toLowerCase();
   const light = GENRE_LIGHT.find((g) => g.match.test(text)) || { a: "#1c1b1f", b: "#3a3540", c: "#fac33d" };

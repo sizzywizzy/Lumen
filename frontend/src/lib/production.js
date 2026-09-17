@@ -72,6 +72,33 @@ export function productionTitle(state, fallback) {
   return state?.script_context?.title || fallback || "Your production";
 }
 
+// Why a plan carries Lumen's sample output instead of the model's. The
+// backend counts each phase's calls in `model_use` (core/orchestrator/graph.py).
+const SAMPLE_REASONS = {
+  no_api_key: "the server has no Gemini key",
+  all_models_failed: "Gemini didn't answer",
+};
+const SAMPLE_FIXES = {
+  no_api_key: "Set GEMINI_API_KEY on the server and plan again.",
+  all_models_failed: "Its free daily limit may be used up. Try again later.",
+};
+
+export function sampleOutput(state) {
+  const phases = Object.values(state?.model_use || {}).filter((use) => use && typeof use === "object");
+  const count = (key) => phases.reduce((total, use) => total + (Number(use[key]) || 0), 0);
+  const sample = count("sample");
+  if (!sample) return null;
+  const reason = phases.map((use) => use.reason).find(Boolean) || "all_models_failed";
+  return {
+    sample,
+    steps: sample + count("live"),
+    // the whole plan describes Lumen's sample film, not the stored screenplay
+    script: phases.some((use) => use.sample_script === true),
+    why: SAMPLE_REASONS[reason] || SAMPLE_REASONS.all_models_failed,
+    fix: SAMPLE_FIXES[reason] || SAMPLE_FIXES.all_models_failed,
+  };
+}
+
 // ---------------------------------------------------------------- schedule ---
 
 export function shootDays(state) {

@@ -11,9 +11,10 @@ Agents never call each other across phases — they emit A2A envelopes and the
 orchestrator decides what runs next.
 """
 from dataclasses import dataclass
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
 
 from core.orchestrator.state import GlobalState
+from services import gemini_client
 
 PhaseFn = Callable[[GlobalState], GlobalState]
 # A conditional edge inspects state after a phase; returning a string halts the
@@ -34,6 +35,23 @@ class PhaseNode:
     # exactly these onto the stored state (core/orchestrator/merge.py).
     owns: tuple[str, ...] = ()
     escalations: tuple[str, ...] = ()
+
+
+def _phase_use(node: PhaseNode, state: GlobalState, tally: dict[str, Any], logged: int) -> dict[str, Any]:
+    """What a phase's model calls came to: how many the model answered, how many
+    fell back to an agent's sample output, and why. Phase I also says when a
+    stored screenplay went unread, because the whole plan then describes Lumen's
+    sample script rather than the producer's."""
+    use: dict[str, Any] = {"live": tally["live"], "sample": tally["sample"]}
+    if tally["reasons"]:
+        use["reason"] = tally["reasons"][0]
+    read_sample_script = any(
+        event.get("intent") == "mandate_ready" and (event.get("payload") or {}).get("source") == "demo"
+        for event in state.event_log[logged:]
+    )
+    if read_sample_script and (state.script_context or {}).get("raw_text"):
+        use["sample_script"] = True
+    return use
 
 
 def _no_viable_candidates(state: GlobalState) -> Optional[str]:
@@ -102,7 +120,10 @@ class Orchestrator:
             report(node.key, "running")
             # A re-run replaces an earlier halt on this phase rather than stacking it.
             state.clear_escalations(f"{node.key}_halt")
-            state = node.run(state)
+            logged = len(state.event_log)
+            with gemini_client.recording() as tally:
+                state = node.run(state)
+            state.model_use = {**state.model_use, node.key: _phase_use(node, state, tally, logged)}
             halt_reason = node.fail_fast(state) if node.fail_fast else None
             if halt_reason:
                 state.escalate(queue_item=f"{node.key}_halt", reason=halt_reason)
