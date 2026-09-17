@@ -7,9 +7,10 @@ Mounts one router per team workspace plus the shared pipeline, state and event
 endpoints. Pipeline runs work in the background (poll /api/pipeline/status),
 and the Live Agent Terminal pages through /api/events.
 """
+from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, model_validator
 
@@ -30,7 +31,25 @@ from domains.production.router import router as production_router
 from domains.skills.router import router as skills_router
 from services import auth_store, script_intake, supabase_client
 
-app = FastAPI(title="Lumen", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    """Refuse to start on a configuration error the host cannot heal.
+
+    `config.has_supabase()` raises when LUMEN_STATE_BACKEND=supabase is set
+    without credentials or without the `supabase` package. Both mean every
+    request would 500, so the deploy should fail here and be reported as
+    failed rather than go live and serve errors.
+
+    Connectivity is deliberately not checked at boot: a Supabase blip would
+    otherwise turn a restart into a crash loop. /api/health probes that on
+    every call instead.
+    """
+    config.has_supabase()
+    yield
+
+
+app = FastAPI(title="Lumen", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -128,8 +147,21 @@ def _pipeline_summary(state: GlobalState) -> dict:
 
 
 @app.get("/api/health")
-def health():
-    return {"status": "ok", "phases": Orchestrator().phase_keys()}
+def health(response: Response):
+    """Liveness plus the state store, because this is the host's health gate.
+
+    503 when the configured store cannot be read, so a deploy with the wrong
+    Supabase key — or one where backend/schema_*.sql was never run — is caught
+    here instead of by the first producer who tries to sign up.
+    """
+    store = supabase_client.store_status()
+    if not store["reachable"]:
+        response.status_code = 503
+    return {
+        "status": "ok" if store["reachable"] else "degraded",
+        "phases": Orchestrator().phase_keys(),
+        "store": store,
+    }
 
 
 @app.post("/api/pipeline/init")

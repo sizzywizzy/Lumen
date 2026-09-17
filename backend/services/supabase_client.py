@@ -111,3 +111,43 @@ def list_projects() -> list[str]:
     if not config.LOCAL_STATE_DIR.exists():
         return []
     return [p.stem for p in sorted(config.LOCAL_STATE_DIR.glob("PROJ_*.json"))]
+
+
+def store_status() -> dict[str, Any]:
+    """Whether the configured state store can actually be read.
+
+    `/api/health` is the host's health gate (`healthCheckPath` in render.yaml),
+    and a container whose Supabase settings are wrong used to boot, answer
+    `{"status": "ok"}` and be marked live while every real request returned
+    500. So health asks this instead of only reporting that the process is up:
+    the probe does the cheapest read the store allows — one indexed column,
+    at most one row — and says what came back.
+
+    A configuration error (`LUMEN_STATE_BACKEND=supabase` with no credentials,
+    or without the `supabase` package) surfaces here as unreachable too, since
+    `config.has_supabase()` raises it rather than returning.
+    """
+    try:
+        supabase = config.has_supabase()
+    except RuntimeError as exc:  # misconfigured on purpose — see core/config.py
+        return {"backend": "supabase", "reachable": False, "detail": str(exc)[:200]}
+
+    if supabase:
+        try:
+            _get_supabase().table("global_state").select("project_id").limit(1).execute()
+        except Exception as exc:  # network, bad key, or schema_state.sql never run
+            return {"backend": "supabase", "reachable": False,
+                    "detail": f"{type(exc).__name__}: {exc}"[:200]}
+        return {"backend": "supabase", "reachable": True}
+
+    # Local JSON: the directory has to exist and accept a write, which is what
+    # a read-only or wiped container filesystem fails.
+    try:
+        config.LOCAL_STATE_DIR.mkdir(parents=True, exist_ok=True)
+        probe = config.LOCAL_STATE_DIR / ".health"
+        probe.write_text("ok", encoding="utf-8")
+        probe.unlink()
+    except OSError as exc:
+        return {"backend": "local", "reachable": False,
+                "detail": f"{type(exc).__name__}: {exc}"[:200]}
+    return {"backend": "local", "reachable": True}
