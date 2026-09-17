@@ -61,14 +61,23 @@ Fly.io) as long as they keep one instance running with CPU between requests.
    them. Free keys are enough; leave them blank to keep the offline fallbacks. Leave `LUMEN_CORS_ORIGINS` blank
    for now.
 3. Once the deploy is live, open `https://<your-service>.onrender.com/api/health`.
-   It should return `{"status": "ok", ...}`. That only proves the container is
-   up; creating a production once the frontend is live proves the database
-   works.
+   It reads the state store before answering, so it tells you whether step 1
+   actually worked:
 
-`render.yaml` sets `LUMEN_STATE_BACKEND=supabase`, so a missing Supabase setting
-fails loudly instead of quietly keeping accounts on a disk that is wiped on
-every restart. From then on, Render redeploys each push that touches
-`backend/`, `skills/` or the `Dockerfile`, once GitHub Actions passes.
+   | Response | Meaning |
+   |---|---|
+   | `200` · `{"status": "ok", "store": {"backend": "supabase", "reachable": true}}` | The API is up and Supabase answers. Go to step 3. |
+   | `503` · `{"status": "degraded", "store": {"reachable": false, "detail": "…"}}` | The container is up but the database is not readable. `detail` says why — usually a wrong `SUPABASE_KEY` (use the secret key, not the anon one) or `backend/schema_*.sql` never run. |
+   | Render shows the deploy as **failed** | `LUMEN_STATE_BACKEND=supabase` with `SUPABASE_URL`/`SUPABASE_KEY` blank. The API refuses to boot rather than go live and fail every request; the deploy log names the missing setting. |
+
+`render.yaml` sets `LUMEN_STATE_BACKEND=supabase`, so Supabase settings that
+are missing or wrong are caught at the door instead of quietly keeping
+accounts on a disk that is wiped on every restart. Missing credentials stop
+the boot, since nothing can fix that at runtime; an unreachable Supabase lets
+the container start — so you can read its logs — and shows up as a `503` from
+`/api/health`, which is also the path Render health-checks. From then on,
+Render redeploys each push that touches `backend/`, `skills/` or the
+`Dockerfile`, once GitHub Actions passes.
 
 ## 3. Vercel (frontend)
 
