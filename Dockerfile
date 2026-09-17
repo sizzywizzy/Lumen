@@ -1,5 +1,5 @@
 # Dockerfile for the Lumen backend (FastAPI). Render builds it from render.yaml;
-# the same image runs on any container host (Cloud Run, Railway, Fly.io).
+# the same image runs on other long-running container hosts (Railway, Fly.io).
 # Multi-stage build for optimization
 
 FROM python:3.11-slim as builder

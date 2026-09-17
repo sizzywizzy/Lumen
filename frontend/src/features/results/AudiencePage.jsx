@@ -3,7 +3,7 @@ import { useProject } from "../../shared/ProjectContext.jsx";
 import { cn } from "../../lib/utils.js";
 import { hasResults, productionTitle, screening } from "../../lib/production.js";
 import { PencilNote, Ticket } from "../../shared/Artifacts.jsx";
-import { Card, NoPlanYet, Quotes, ScoreSummary } from "./parts.jsx";
+import { Card, NoPlanYet, Quotes, SampleDataNote, ScoreSummary } from "./parts.jsx";
 
 export default function AudiencePage() {
   const { state } = useProject();
@@ -23,6 +23,8 @@ export default function AudiencePage() {
         </div>
         {screen && <PencilNote className="page-hint">one house, every seat filled</PencilNote>}
       </div>
+
+      <SampleDataNote state={state} />
 
       {screen && (
         <div className="dash-grid">

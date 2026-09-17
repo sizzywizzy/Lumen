@@ -140,7 +140,7 @@ def _profiler(state: GlobalState) -> None:
 
 
 def _intake(state: GlobalState) -> None:
-    """Use the Google Cloud Talent Scout Agent to crawl for local actors fitting budget & director notes."""
+    """Ask the talent scout for local actors who fit the budget and the director's notes."""
     scouted = scout_candidates(state)
     state.candidates.extend(scouted)
 

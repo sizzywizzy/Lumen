@@ -3,20 +3,19 @@
 Every poster draws its style at random from prompts.POSTER_STYLES, never the
 style of the poster it replaces, so asking again gives a different take:
 
-  agent_visual drafts the concept (tagline, scene, palette) with Flash
+  agent_visual writes the concept (a tagline and a palette) with Flash
   -> agent_pr_risk vets it (verify_brand_safety); a blocked draft is redrafted,
      at most MAX_ASSET_REGENERATIONS times, then the offline concept stands in
-  -> a Gemini image model paints portrait art with no lettering. The Overview
-     sets the title and tagline over it, so the type is always spelled right
-     and set in the site's own faces
+  -> Lumen draws the art as an SVG in the style's motif and the concept's
+     palette, with no lettering: the Overview sets the title and tagline over
+     it, so the type is always spelled right and set in the site's own faces
   -> agent_visual broadcasts asset_status_update
 
-With no model configured, or when every image model fails, an SVG sketch drawn
-from the same style and palette stands in, and the provenance says so: the page
-never passes a sketch off as AI art.
+No model paints anything: image generation is not in Gemini's free tier. With
+no key, or when the model fails, the concept comes from the genre, and the
+provenance says so.
 """
 import base64
-import io
 import math
 import random
 import re
@@ -32,9 +31,7 @@ from services import gemini_client
 
 ASSET_ID = "AST_POSTER_KEYART"
 SCRIPT_CHARS = 12_000  # the opening pages are plenty to art-direct from
-MAX_EDGE = 1536  # longest side a painted poster is stored at
-PAINTED_TYPES = ("image/png", "image/jpeg", "image/webp")
-W, H = 600, 900  # the sketch's canvas: 2:3, like the painted art
+W, H = 600, 900  # the art's canvas: 2:3, a one-sheet's proportions
 _HEX = re.compile(r"#[0-9a-fA-F]{6}")
 
 
@@ -57,20 +54,15 @@ def _facts(state: GlobalState) -> dict[str, str]:
     }
 
 
-def _offline_concept(facts: dict[str, str], style: dict[str, str]) -> dict[str, Any]:
-    """The concept by genre alone: what the offline sketch draws, and the fallback
+def _offline_concept(facts: dict[str, str]) -> dict[str, Any]:
+    """The concept by genre alone: what an offline poster uses, and the fallback
     for a malformed or repeatedly blocked draft. Spoiler-free by construction."""
     genre = facts["genre"].lower()
     tagline, palette = next(
         ((line, colours) for words, line, colours in prompts.POSTER_GENRES if any(w in genre for w in words)),
         prompts.POSTER_DEFAULT,
     )
-    return {
-        "tagline": tagline,
-        "scene": f"A lone figure on a hill under a glowing sky, rendered as {style['direction']}.",
-        "alt_text": f"{style['label']} art for {facts['title']}: a lone figure on a hill under a glowing sky.",
-        "palette": list(palette),
-    }
+    return {"tagline": tagline, "palette": list(palette)}
 
 
 def _palette(value: Any, default: list[str]) -> list[str]:
@@ -96,7 +88,7 @@ def _concept_prompt(facts: dict[str, str], style: dict[str, str], blocked: list[
 def _concept(state: GlobalState, facts: dict[str, str], style: dict[str, str]) -> tuple[dict[str, Any], dict[str, Any]]:
     """Draft the concept and put it through agent_pr_risk, redrafting a blocked
     one. Returns (concept, trace)."""
-    offline = _offline_concept(facts, style)
+    offline = _offline_concept(facts)
     blocked: list[str] = []
     for attempt in range(config.MAX_ASSET_REGENERATIONS):
         reply, trace = gemini_client.generate_json_traced(
@@ -106,13 +98,11 @@ def _concept(state: GlobalState, facts: dict[str, str], style: dict[str, str]) -
         # Coerced field by field, so a malformed reply degrades to the offline concept.
         concept = {
             "tagline": llm_output.text(draft.get("tagline"), offline["tagline"], 120),
-            "scene": llm_output.text(draft.get("scene"), offline["scene"], 700),
-            "alt_text": llm_output.text(draft.get("alt_text"), offline["alt_text"], 300),
             "palette": _palette(draft.get("palette"), offline["palette"]),
         }
         request = log_event(state, make_envelope(
             "agent_visual", "agent_pr_risk", "verify_brand_safety",
-            {"asset_id": ASSET_ID, "caption": f"{concept['tagline']} {concept['scene']}"},
+            {"asset_id": ASSET_ID, "caption": concept["tagline"]},
         ))
         verdict = pr_risk_check(state, request)
         if verdict["status"] == "APPROVED":
@@ -126,36 +116,7 @@ def _concept(state: GlobalState, facts: dict[str, str], style: dict[str, str]) -
     return offline, {"source": "mock", "model": None, "reason": "pr_blocked", "blocked": blocked}
 
 
-def _image_prompt(concept: dict[str, Any], style: dict[str, str]) -> str:
-    return (
-        f"Key art for a theatrical film poster, portrait format. Style: {style['direction']}. "
-        f"Scene: {concept['scene']} Colour palette: {', '.join(concept['palette'])}. "
-        "Keep the top fifth and the bottom quarter calm and uncluttered for type that is added later. "
-        "No text of any kind: no letters, words, numbers, logos, credits or watermarks. "
-        "Do not depict any real or recognisable person."
-    )
-
-
-def _shrink(data: bytes, mime: str) -> tuple[bytes, str]:
-    """A painted poster as a JPEG at most MAX_EDGE on its longest side, when
-    Pillow is installed and that comes out smaller; the model's bytes otherwise."""
-    try:
-        from PIL import Image
-    except ImportError:
-        return data, mime
-    try:
-        with Image.open(io.BytesIO(data)) as painted:
-            picture = painted.convert("RGB")
-        picture.thumbnail((MAX_EDGE, MAX_EDGE))
-        out = io.BytesIO()
-        picture.save(out, "JPEG", quality=88, optimize=True, progressive=True)
-    except Exception:  # noqa: BLE001 — bytes Pillow cannot read are stored as they came
-        return data, mime
-    shrunk = out.getvalue()
-    return (shrunk, "image/jpeg") if len(shrunk) < len(data) else (data, mime)
-
-
-# ------------------------------------------------------------ offline sketch --
+# ------------------------------------------------------------------ the art --
 
 
 def _rgb(colour: str) -> tuple[int, int, int]:
@@ -206,9 +167,9 @@ def _figure(x: float, y: float, scale: float, ink: str) -> str:
 
 
 def sketch_svg(palette: list[str], motif: str, seed: int) -> bytes:
-    """The offline stand-in for painted art: a lone figure on a hill under a
-    glowing sky, drawn in the style's motif and the concept's palette. No
-    lettering, like the painted art, so the page sets the same title over either."""
+    """The poster art: a lone figure on a hill under a glowing sky, drawn in the
+    style's motif and the concept's palette. No lettering, so the page sets the
+    title and tagline over it."""
     rng = random.Random(seed)
     colours = sorted((c for c in palette if _HEX.fullmatch(c)), key=_luma)
     if len(colours) < 3:
@@ -271,7 +232,7 @@ def sketch_svg(palette: list[str], motif: str, seed: int) -> bytes:
     return svg.encode("utf-8")
 
 
-# ---------------------------------------------------------------- painting --
+# --------------------------------------------------------------- the poster --
 
 
 def paint(
@@ -287,21 +248,14 @@ def paint(
     style = pick_style(previous_style, rng)
     facts = _facts(state)
     concept, concept_trace = _concept(state, facts, style)
-
-    image, mime, image_trace = gemini_client.generate_image_traced(_image_prompt(concept, style))
-    if image is not None and mime in PAINTED_TYPES:
-        image, mime = _shrink(image, mime)
-    else:
-        if image is not None:
-            image_trace = {"source": "mock", "model": None, "reason": "unsupported_image_type", "error": mime[:60]}
-        image, mime = sketch_svg(concept["palette"], style["sketch"], rng.randrange(2**31)), "image/svg+xml"
-        concept = {**concept, "alt_text": f"{style['label']} sketch for {facts['title']}: "
-                                          "a lone figure on a hill under a glowing sky."}
+    art = sketch_svg(concept["palette"], style["sketch"], rng.randrange(2**31))
+    concept = {**concept, "alt_text": f"{style['label']} art for {facts['title']}: "
+                                      "a lone figure on a hill under a glowing sky."}
 
     poster_id = new_id("PST").upper()
     log_event(state, broadcast("agent_visual", "asset_status_update", {
         "asset_id": ASSET_ID, "type": "poster", "status": "APPROVED", "poster_id": poster_id,
-        "style": style["label"], "painted_by": image_trace.get("model") or "offline_sketch",
+        "style": style["label"], "concept_by": concept_trace.get("model") or "offline",
     }))
     return {
         "project_id": state.project_id,
@@ -312,7 +266,7 @@ def paint(
         "title": facts["title"],
         "style": {"key": style["key"], "label": style["label"]},
         "concept": concept,
-        "provenance": {"concept": concept_trace, "image": image_trace},
-        "image_mime": mime,
-        "image_base64": base64.b64encode(image).decode("ascii"),
+        "provenance": {"concept": concept_trace},
+        "image_mime": "image/svg+xml",
+        "image_base64": base64.b64encode(art).decode("ascii"),
     }

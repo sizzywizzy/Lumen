@@ -178,6 +178,22 @@
         }
       }
     },
+    "model_use": {
+      "type": "object",
+      "description": "per phase key, what its last run made of its model calls",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "live": { "type": "integer", "description": "calls the model answered" },
+          "sample": { "type": "integer", "description": "calls that fell back to an agent's sample output" },
+          "reason": { "type": "string", "enum": ["no_api_key", "all_models_failed"] },
+          "sample_script": {
+            "type": "boolean",
+            "description": "true when a stored screenplay went unread and Lumen's sample script stood in"
+          }
+        }
+      }
+    },
     "event_log": {
       "type": "array",
       "description": "every A2A envelope, in order",

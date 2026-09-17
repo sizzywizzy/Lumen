@@ -522,6 +522,11 @@ button.credit__frame:hover { translate: 0 -2px; box-shadow: 0 12px 20px -10px va
 .actor-profile__text { font-size: 15px; line-height: 1.55; color: var(--on-surface-variant); }
 .actor-profile__empty { font-family: var(--font-hand); font-size: 23px; line-height: 1.3; color: var(--on-surface-variant); }
 .actor-profile__reel { margin-top: 22px; }
+.actor-profile__via {
+  margin-top: 6px; font-family: var(--font-typewriter); font-size: 13px; line-height: 18px; color: var(--on-surface-variant);
+}
+.actor-profile__links { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 22px; }
+.actor-profile__fine { padding-top: 14px; border-top: 1px dashed var(--outline-variant); font-size: 13px; line-height: 19px; color: var(--on-surface-variant); }
 
 /* opening a profile: the cards glide and resize into their new places */
 ::view-transition-group(*) { animation-duration: .5s; animation-timing-function: cubic-bezier(0.2, 0.7, 0.2, 1); overflow: clip; }
