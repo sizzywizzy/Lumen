@@ -28,9 +28,9 @@ clearing each territory, guessing how audiences will react, planning the
 campaign. In Lumen, 30-plus specialist agents split that work between them and
 trade requests and answers in one shared message format.
 
-- **Casting.** Scouts actors near the shoot, scores each on audition fit, buzz,
-  PR risk and fee, and drops anyone too risky or over budget before the
-  expensive checks.
+- **Casting.** Finds working actors near the shoot through web search, scores
+  each on audition fit, buzz, PR risk and fee, and drops anyone too risky or
+  over budget before the expensive checks.
 - **Scheduling.** Breaks the script into scenes, books venues on days the whole
   cast is free, and lays out the shoot days and the daily spend.
 - **Release clearance.** Checks every scene and music cue against each
@@ -39,7 +39,7 @@ trade requests and answers in one shared message format.
   Tomatometer, audience score, reviews, the scene where a group of viewers
   drifts, and a suggested recut.
 - **Launch.** Plans the campaign's reels, memes and copy, sends each through a
-  PR-risk check that bounces spoilers, schedules the rollout and paints the
+  PR-risk check that bounces spoilers, schedules the rollout and designs the
   film's poster.
 - **Sign-off queue.** Cast picks, schedule clashes, blocked territories and
   recuts wait on the Overview, each linked to the page where it is decided.
@@ -121,8 +121,9 @@ flowchart TB
 
     subgraph ext["Optional services"]
         direction TB
-        gemini["Gemini<br/>reasoning + poster art"]
+        gemini["Gemini<br/>reasoning · free tier"]
         tavily["Tavily<br/>web search"]
+        tmdb["TMDb<br/>actor photos + credits"]
         kb[("Actor knowledge base<br/>TMDb + pgvector")]
     end
 ```
@@ -137,7 +138,9 @@ flowchart TB
   A negotiation stops after two rounds.
 - **Validated output.** Model replies are JSON, checked field by field.
   Anything malformed falls back to the agent's deterministic mock, which is
-  also what runs when no key is set.
+  also what runs when no key is set. A run counts both kinds, and the
+  Overview and Audience pages say when a plan is sample output rather than
+  a read of your screenplay.
 - **Safe background runs.** A run answers `202` and the page polls it. When it
   finishes, only the fields its agents own are merged onto the stored state,
   so edits saved during the run are kept.
@@ -197,14 +200,15 @@ advisors' procedures in [skills.md](skills.md).
 |---|---|
 | Frontend | React 18, React Router 7, Vite; hand-rolled CSS with light and dark themes |
 | Backend | Python, FastAPI, Pydantic v2, Uvicorn |
-| AI | Gemini through `google-genai` for reasoning and poster art; Tavily web search |
+| AI | Gemini through `google-genai` (free tier only); Tavily web search; TMDb actor photos |
 | Data | Supabase (Postgres), or local JSON with no setup; TMDb actor knowledge base on pgvector |
 | Script formats | PDF, Final Draft, Fountain, plain text |
 | Ops | GitHub Actions CI; Vercel, Render and Supabase for hosting |
 
 Lumen plans media rather than rendering it: campaign assets are art-direction
 specs, auditions are judged from the role brief and the tape link, and the
-poster is the one image it paints.
+poster is the one image it makes: art Lumen draws itself, with a tagline and
+colours Gemini picks from your script.
 
 ## Getting started
 
@@ -233,14 +237,27 @@ scene, the UAE release is blocked over an alcohol reference, a spoiler meme is
 rejected and redrafted, and the recut advisor predicts a +6 Tomatometer lift.
 The whole conversation is under **Agents → Agent log**.
 
-| Key in `.env` | Turns on |
-|---|---|
-| `GEMINI_API_KEY` | Live reasoning and poster art; Lumen reads your own script |
-| `TAVILY_API_KEY` | Web search for talent scouting and cultural research |
-| `SUPABASE_URL`, `SUPABASE_KEY` | Shared storage instead of `backend/.state/` (required when deployed) |
-| `DATABASE_URL`, `TMDB_API_KEY` | The [actor knowledge base](backend/services/casting_kb/README.md) |
+| Key in `.env` | Turns on | Cost |
+|---|---|---|
+| `GEMINI_API_KEY` | Live reasoning; Lumen reads your own script | Free tier |
+| `TAVILY_API_KEY` | Web search for talent scouting and cultural research | Free plan: 1,000 searches a month |
+| `TMDB_API_KEY` | Photos and credits for the actors the scout finds | Free for non-commercial use |
+| `SUPABASE_URL`, `SUPABASE_KEY` | Shared storage instead of `backend/.state/` (required when deployed) | Free plan |
+| `DATABASE_URL` | The [actor knowledge base](backend/services/casting_kb/README.md), with `TMDB_API_KEY` | Free plan |
 
-[`.env.example`](.env.example) lists the rest (model choices, Vertex AI, CORS).
+Lumen uses only free plans, so running it costs nothing, and it has no code
+for paid features: no Google Search grounding, image generation or Vertex AI.
+On each run the scout makes two Tavily searches. Gemini suggests actors from
+those pages only, and any name the pages don't mention is dropped. When
+exactly one actor on TMDb has that name, TMDb adds a photo and credits,
+labelled as a match by name. Fees and follower counts for these actors are
+labelled as estimates. Free Gemini keys have per-minute and daily request
+limits, so a run may slow down while Lumen waits them out. Google's terms let
+it use free-tier prompts to improve its products, so don't upload a script
+that must stay confidential. Keep billing off on the Google project behind
+your key: a project without a billing account is never charged.
+
+[`.env.example`](.env.example) lists the rest (model choices, CORS).
 A few more commands; `make help` lists a shortcut for each:
 
 ```bash

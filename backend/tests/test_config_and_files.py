@@ -1,5 +1,5 @@
-"""Configuration and the local JSON files: quoted .env values, Vertex only
-when switched on, and writes that never leave half a file behind."""
+"""Configuration and the local JSON files: quoted .env values, Gemini only
+through an API key, and writes that never leave half a file behind."""
 import json
 import os
 
@@ -17,31 +17,12 @@ def test_env_values_lose_only_matching_quotes(raw, value):
     assert config._env_value(raw) == value
 
 
-def test_gcloud_credentials_alone_never_switch_on_vertex(monkeypatch):
-    monkeypatch.setattr(config, "GEMINI_API_KEY", "")
-    monkeypatch.setattr(config, "has_adc", lambda: True)
-    monkeypatch.setattr(config, "USE_VERTEX", False)
-    monkeypatch.setattr(config, "GOOGLE_CLOUD_PROJECT", "some-project")
-    assert config.has_vertex() is False
-    monkeypatch.setattr(config, "USE_VERTEX", True)
-    monkeypatch.setattr(config, "GOOGLE_CLOUD_PROJECT", "")
-    assert config.has_vertex() is False, "no project, no Vertex"
-    monkeypatch.setattr(config, "GOOGLE_CLOUD_PROJECT", "some-project")
-    assert config.has_vertex() is True
-
-
-def test_no_project_id_ships_in_the_code():
-    source = (config.BACKEND_DIR / "core" / "config.py").read_text(encoding="utf-8")
-    assert 'GOOGLE_CLOUD_PROJECT", "")' in source
-
-
-def test_the_gemini_client_refuses_to_guess_a_backend(monkeypatch):
+def test_gemini_needs_an_api_key(monkeypatch):
+    """Only a key reaches Gemini; Google Cloud credentials on the machine never do."""
     from services import gemini_client
 
     monkeypatch.setattr(config, "GEMINI_API_KEY", "")
-    monkeypatch.setattr(config, "has_vertex", lambda: False)
     monkeypatch.setattr(gemini_client, "_client", None)
-    pytest.importorskip("google.genai")
     with pytest.raises(gemini_client.GeminiUnavailable):
         gemini_client._get_client()
 

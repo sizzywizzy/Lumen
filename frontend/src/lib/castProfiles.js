@@ -198,9 +198,14 @@ export function castProfile(candidate) {
     press: text(meta.recent_press),
     match: text(meta.director_match),
     review: text(meta.qualitative_review),
-    followers: Number(meta.followers) || demo?.followers || 0,
+    followers: meta.followers_estimated ? 0 : Number(meta.followers) || demo?.followers || 0,
+    feeIsEstimate: meta.quote_is_estimate === true,
     reel: webLink(candidate?.media_url),
     note: text(meta.casting_note) || demo?.note || "",
+    // how the scout found them, the page that names them, and a TMDb match
+    foundVia: meta.is_live_scouted === true ? text(meta.scouted_via) : "",
+    source: webLink(meta.source_url),
+    tmdb: meta.tmdb_match === "name" ? webLink(meta.tmdb_url) : null,
   };
 }
 

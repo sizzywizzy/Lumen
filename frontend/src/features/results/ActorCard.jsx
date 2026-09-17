@@ -173,6 +173,7 @@ export default function ActorCard({ person, role, index, open, onToggle }) {
                 {[person.place, profile.agency && `Represented by ${profile.agency}`].filter(Boolean).join(" · ")}
               </p>
             )}
+            {profile.foundVia && <p className="actor-profile__via">Found by {profile.foundVia}</p>}
             <button
               type="button"
               className="btn btn--icon actor-profile__close"
@@ -192,7 +193,10 @@ export default function ActorCard({ person, role, index, open, onToggle }) {
 
           <dl className="actor-profile__facts">
             <div>
-              <dt>{person.ruledOut ? "Asking fee" : "Fee"}</dt>
+              <dt>
+                {person.ruledOut ? "Asking fee" : "Fee"}
+                {profile.feeIsEstimate && " (estimate)"}
+              </dt>
               <dd>{money(person.fee)}</dd>
             </div>
             {!person.ruledOut && (
@@ -300,8 +304,33 @@ export default function ActorCard({ person, role, index, open, onToggle }) {
                   <Icon name="arrow_outward" size={16} />
                 </a>
               )}
+              {(profile.source || profile.tmdb) && (
+                <div className="actor-profile__links">
+                  {profile.source && (
+                    <a className="card-link" href={profile.source} target="_blank" rel="noreferrer noopener">
+                      Where Lumen found them
+                      <Icon name="arrow_outward" size={16} />
+                    </a>
+                  )}
+                  {profile.tmdb && (
+                    <a className="card-link" href={profile.tmdb} target="_blank" rel="noreferrer noopener">
+                      TMDB profile
+                      <Icon name="arrow_outward" size={16} />
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
           </div>
+
+          {(profile.feeIsEstimate || profile.tmdb) && (
+            <p className="actor-profile__fine">
+              {profile.feeIsEstimate && "The fee is Lumen's estimate, not a quote. Check it and the details above before reaching out. "}
+              {profile.tmdb &&
+                "The photo and credits come from TMDB, matched by name, so confirm it is the same person. " +
+                  "This product uses the TMDB API but is not endorsed or certified by TMDB."}
+            </p>
+          )}
         </div>
       )}
     </li>

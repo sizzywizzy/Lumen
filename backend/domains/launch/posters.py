@@ -1,11 +1,11 @@
 """Poster runs: one background thread per production at a time.
 
-A poster takes two model calls and can take half a minute, so it never holds
-up a request: the route answers 202 and the Overview polls `status`, like
-advisor runs and audience simulations.
+A poster's concept is a model call (two when PR review sends it back) and can
+take a while, so it never holds up a request: the route answers 202 and the
+Overview polls `status`, like advisor runs and audience simulations.
 
   start(project_id, user_id)        a new poster in a different random style
-  start_if_missing(state, user_id)  after a pipeline run: paints only when the
+  start_if_missing(state, user_id)  after a pipeline run: makes one only when the
                                     stored poster was not made from this screenplay
   status(project_id)                what the Overview polls
 """
@@ -16,7 +16,7 @@ from core.orchestrator.state import GlobalState
 from domains.launch.agents import poster_artist
 from services import poster_store, supabase_client
 
-# Productions with a poster painting now, and each production's last failure
+# Productions with a poster in progress, and each production's last failure
 # until its next attempt. Kept in memory like advisor runs: the API runs as one
 # process (render.yaml), and a restart just ends the attempt.
 _ACTIVE: set[str] = set()
@@ -25,11 +25,11 @@ _LOCK = threading.Lock()
 
 
 class PosterBusy(RuntimeError):
-    """A poster is already painting for this production."""
+    """A poster is already being made for this production."""
 
 
 def run(project_id: str, user_id: Optional[str]) -> dict[str, Any]:
-    """Paint and store one poster now. The thread body; tests call it directly."""
+    """Make and store one poster now. The thread body; tests call it directly."""
     state = supabase_client.load_state(project_id)
     if state is None:
         raise LookupError(f"No project state for {project_id}.")
@@ -39,7 +39,7 @@ def run(project_id: str, user_id: Optional[str]) -> dict[str, Any]:
         state, previous_style=(current.get("style") or {}).get("key", ""), started_by=user_id,
     )
     poster_store.save(record)
-    # The model calls took a while: merge the traffic onto whatever is stored
+    # The model call took a while: merge the traffic onto whatever is stored
     # now instead of saving back the copy loaded before them.
     supabase_client.append_events(project_id, state.event_log[baseline:], state)
     return record
@@ -61,7 +61,7 @@ def _spawn(target, *args) -> None:
 
 
 def start(project_id: str, user_id: Optional[str]) -> None:
-    """Paint a new poster in the background. Raises PosterBusy if one is painting."""
+    """Make a new poster in the background. Raises PosterBusy if one is in progress."""
     with _LOCK:
         if project_id in _ACTIVE:
             raise PosterBusy(project_id)
@@ -88,17 +88,18 @@ def public(record: Optional[dict[str, Any]]) -> Optional[dict[str, Any]]:
     if not record:
         return None
     concept = record.get("concept") or {}
-    image = (record.get("provenance") or {}).get("image") or {}
-    painted = image.get("source") == "gemini"
+    trace = (record.get("provenance") or {}).get("concept") or {}
+    written = trace.get("source") == "gemini"
     return {
         "poster_id": record.get("poster_id"),
         "created_at": record.get("created_at"),
         "style": record.get("style") or {},
         "tagline": concept.get("tagline", ""),
         "alt_text": concept.get("alt_text", ""),
-        "painted_by": image.get("model") if painted else None,
-        # no_api_key | all_models_failed | unsupported_image_type, for a sketch
-        "sketch_reason": None if painted else image.get("reason", "no_api_key"),
+        # the model that wrote the tagline and picked the colours from the script
+        "written_by": trace.get("model") if written else None,
+        # why the genre's tagline and colours stand in: no_api_key | all_models_failed | pr_blocked
+        "fallback_reason": None if written else trace.get("reason") or "no_api_key",
         "script_fingerprint": record.get("script_fingerprint") or "",
     }
 

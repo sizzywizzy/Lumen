@@ -33,11 +33,16 @@ services:
       # The secret (service role) key; see backend/schema_*.sql.
       - key: SUPABASE_KEY
         sync: false
-      # Optional: blank runs every agent on its offline fallback.
+      # Optional: blank runs every agent on its offline fallback. A free key is
+      # all Lumen uses; it has no paid Gemini features.
       - key: GEMINI_API_KEY
         sync: false
-      # Optional: blank disables web-grounded cultural research.
+      # Optional (free plan): the talent scout's web search and web-grounded
+      # cultural research. Blank shows a labelled demo cast instead.
       - key: TAVILY_API_KEY
+        sync: false
+      # Optional (free): photos and credits for the actors the scout finds.
+      - key: TMDB_API_KEY
         sync: false
       # Your Vercel URL once the frontend is live, e.g. https://lumen.vercel.app.
       # Blank allows any origin.

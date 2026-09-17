@@ -83,6 +83,11 @@ def merge_run(
                     copy.deepcopy(run.script_context), latest.script_context, (*keep_context, "scenes"))
             else:
                 _set(merged, path, copy.deepcopy(_get(run, path)))
+    # Each phase that ran reports its own model calls again; the rest stand.
+    merged.model_use = {
+        **merged.model_use,
+        **{node.key: copy.deepcopy(run.model_use[node.key]) for node in ran if node.key in run.model_use},
+    }
     prefixes = tuple(p for node in ran for p in (*node.escalations, f"{node.key}_halt"))
     if prefixes:
         merged.human_escalations = [

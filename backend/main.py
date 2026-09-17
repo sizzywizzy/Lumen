@@ -156,7 +156,7 @@ def run_pipeline(req: InitRequest, user: User = Depends(current_user)):
 
     A run resets the pipeline's output, not the material: the screenplay and
     the intake inputs carry over, so a run after a page reload plans the same
-    production. Once the plan is saved, the screenplay's poster paints in the
+    production. Once the plan is saved, the screenplay's poster is made in the
     background (re-running the same screenplay keeps its poster).
     """
     _require_producer(user, req.project_id)

@@ -251,7 +251,7 @@ export default function IntakePage() {
               />
             </div>
             <p className="mono-data muted" style={{ marginTop: 10 }}>
-              Directs Google Cloud agents to crawl local hire talent within budget.
+              The talent scout searches the web for local actors within budget.
             </p>
           </Panel>
         </div>

@@ -102,24 +102,33 @@ def test_copy_without_a_caption_is_dropped_and_the_release_kept(offline, monkeyp
 def test_scouted_candidates_are_held_to_the_scripts_roles(offline, monkeypatch):
     """A live scout may name a role the script does not have, or give its
     numbers as prose; neither may reach synthesis as a phantom lock or a crash."""
+    from core import config
+    from services import tavily_client
+
     reply = {"candidates": [
-        {"name": "Ada Phantom", "role_id": "ROLE_SIDEKICK",
+        {"name": "Ada Phantom", "role_id": "ROLE_SIDEKICK", "source": 1,
          "metadata": {"quote_usd": "$20,000", "followers": "lots"}},
         {"name": "Lower Case", "role_id": "role_antag", "metadata": {"quote_usd": 9000, "followers": 1200}},
-        {"id": "DUP", "name": "First"}, {"id": "DUP", "name": "Second"},
+        {"id": "DUP", "name": "First Dup"}, {"id": "DUP", "name": "Second Dup"},
         "not a candidate",
     ]}
-    monkeypatch.setattr(gemini_client, "generate_json_with_search",
-                        lambda prompt, **kwargs: (reply, {"source": "gemini_grounded", "model": "flash"}))
+    page = {"title": "Local talent", "url": "https://example.org/roster",
+            "content": "Ada Phantom, Lower Case, First Dup and Second Dup are on the roster."}
+    monkeypatch.setattr(config, "has_gemini", lambda: True)
+    monkeypatch.setattr(config, "has_tavily", lambda: True)
+    monkeypatch.setattr(tavily_client, "search", lambda query, max_results=4: {"results": [page]})
+    monkeypatch.setattr(gemini_client, "generate_json", lambda prompt, **kwargs: kwargs.get("mock"))
+    monkeypatch.setattr(gemini_client, "generate_json_traced",
+                        lambda prompt, **kwargs: (reply, {"source": "gemini", "model": "flash"}))
     state = Orchestrator().run(_fresh(), start="phase1", end="phase2")
 
     roles = set(state.role_requirements)
     assert {c.role_id for c in state.candidates} <= roles
     by_name = {c.name: c for c in state.candidates}
-    assert set(by_name) == {"Ada Phantom", "Lower Case", "First", "Second"}
+    assert set(by_name) == {"Ada Phantom", "Lower Case", "First Dup", "Second Dup"}
     assert by_name["Lower Case"].role_id == "ROLE_ANTAG"
-    assert by_name["Ada Phantom"].metadata["followers"] == 50000
-    assert isinstance(by_name["Ada Phantom"].metadata["quote_usd"], float)
+    assert by_name["Ada Phantom"].metadata["followers_estimated"] is True
+    assert by_name["Ada Phantom"].metadata["quote_usd"] == 20000.0, "a fee written as \"$20,000\" is read"
     assert len({c.id for c in state.candidates}) == 4, "duplicate ids are renumbered"
     locked = [e.queue_item for e in state.human_escalations if e.queue_item.startswith("cast_signoff:")]
     assert {item.split(":", 1)[1] for item in locked} <= roles

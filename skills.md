@@ -192,7 +192,7 @@ Shared plumbing for all four:
 | Code | `backend/services/casting_kb/` (`ingest`, `embeddings`, `matching`), `backend/migrations/001_actor_knowledge_base.sql` |
 | Purpose | TMDb ingestion and semantic search over actors for Phase I sourcing. |
 | Used by | Casting endpoints `/api/casting/actors/*`; not required by the advisors. |
-| Dependencies | `DATABASE_URL` or Cloud SQL variables, `TMDB_API_KEY`, `sentence-transformers`, `psycopg`. |
+| Dependencies | `DATABASE_URL`, `TMDB_API_KEY`, `sentence-transformers`, `psycopg`. |
 | Failure | Endpoints answer 503 when the database is not configured. |
 
 ### B10. Run stores

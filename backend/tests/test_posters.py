@@ -1,13 +1,14 @@
 """The production's poster.
 
-agent_visual paints one per screenplay after a pipeline run, in a style drawn at
-random, and a new poster on request never repeats the style it replaces. With
-no model it is an SVG sketch that says so, a spoiler never reaches it, members
-can see it and only producers can ask for another. Runs paint inline here
-(conftest.posters_paint_inline), so each request below has finished when it returns.
+agent_visual makes one per screenplay after a pipeline run: Gemini writes the
+tagline and picks the colours, and Lumen draws the art as an SVG in a style
+drawn at random. A new poster on request never repeats the style it replaces,
+the page says where the tagline came from, a spoiler never reaches it, members
+can see it and only producers can ask for another. Runs work inline here
+(conftest.background_work_runs_inline), so each request below has finished
+when it returns.
 """
 import base64
-import io
 from xml.etree import ElementTree
 
 import pytest
@@ -44,18 +45,21 @@ def _join(user, role):
     ))
 
 
-def test_an_offline_poster_is_a_sketch_that_says_so(state_dir, offline):
+def _unsafe(svg):
+    """Lettering to misspell, or anything in the art that could run."""
+    return [el for el in svg.iter() if el.tag.rsplit("}", 1)[-1] in ("text", "script", "foreignObject")]
+
+
+def test_an_offline_poster_says_where_its_tagline_came_from(state_dir, offline):
     _seed()
     record = posters.run(PROJECT, "usr_1")
 
     assert record["image_mime"] == "image/svg+xml"
-    svg = ElementTree.fromstring(base64.b64decode(record["image_base64"]))
-    # no lettering to misspell, and nothing in it that could run
-    assert not [el for el in svg.iter() if el.tag.rsplit("}", 1)[-1] in ("text", "script", "foreignObject")]
+    assert not _unsafe(ElementTree.fromstring(base64.b64decode(record["image_base64"])))
     shown = posters.status(PROJECT)
     assert shown["status"] == "ready"
-    assert shown["poster"]["painted_by"] is None
-    assert shown["poster"]["sketch_reason"] == "no_api_key"
+    assert shown["poster"]["written_by"] is None
+    assert shown["poster"]["fallback_reason"] == "no_api_key"
     assert shown["poster"]["tagline"] == "Every city keeps a secret."
     intents = [e["intent"] for e in supabase_client.load_state(PROJECT).event_log]
     assert intents == ["verify_brand_safety", "brand_safety_result", "asset_status_update"]
@@ -69,13 +73,18 @@ def test_a_new_poster_never_repeats_the_style_it_replaces(state_dir, offline):
 
 
 @pytest.mark.parametrize("style", prompts.POSTER_STYLES, ids=lambda style: style["key"])
-def test_every_offline_concept_clears_pr_review(style):
+def test_every_style_draws_clean_art(style):
+    art = poster_artist.sketch_svg(["#101820", "#2b4a6f", "#f2c14e"], style["sketch"], seed=7)
+    assert not _unsafe(ElementTree.fromstring(art))
+
+
+def test_every_offline_concept_clears_pr_review():
     """The offline concept is what stands in after a blocked draft, so it must pass."""
     state = GlobalState(project_id=PROJECT)
     for genre in GENRES:
-        concept = poster_artist._offline_concept({"title": "Neon Nights", "genre": genre}, style)
+        concept = poster_artist._offline_concept({"title": "Neon Nights", "genre": genre})
         request = make_envelope("agent_visual", "agent_pr_risk", "verify_brand_safety", {
-            "asset_id": poster_artist.ASSET_ID, "caption": f"{concept['tagline']} {concept['scene']}",
+            "asset_id": poster_artist.ASSET_ID, "caption": concept["tagline"],
         })
         assert pr_risk_check(state, request)["status"] == "APPROVED", (genre, concept)
 
@@ -101,29 +110,27 @@ def test_a_spoiler_is_redrafted_and_never_reaches_the_poster(state_dir, offline,
     assert intents.count("brand_safety_result") == config.MAX_ASSET_REGENERATIONS
 
 
-def test_a_painted_poster_is_shrunk_and_credited_to_its_model(state_dir, offline, monkeypatch):
-    image_lib = pytest.importorskip("PIL.Image")
+def test_a_written_concept_colours_the_art_and_is_credited(state_dir, offline, monkeypatch):
     _seed()
-    canvas = io.BytesIO()
-    image_lib.effect_noise((1100, 1650), 48).convert("RGB").save(canvas, "PNG")  # a model-sized PNG, over MAX_EDGE
-    prompts_sent = []
+    systems = []
 
-    def painted(prompt, **kwargs):
-        prompts_sent.append(prompt)
-        return canvas.getvalue(), "image/png", {"source": "gemini", "model": "gemini-3.1-flash-image"}
+    def drafted(prompt, **kwargs):
+        systems.append(kwargs.get("system"))
+        return ({"tagline": "The city never forgets.", "palette": ["#101820", "#2b4a6f", "#f2c14e"]},
+                {"source": "gemini", "model": "gemini-3.6-flash"})
 
-    monkeypatch.setattr(gemini_client, "generate_image_traced", painted)
+    monkeypatch.setattr(gemini_client, "generate_json_traced", drafted)
     record = posters.run(PROJECT, "usr_1")
 
-    assert record["image_mime"] == "image/jpeg"
-    with image_lib.open(io.BytesIO(base64.b64decode(record["image_base64"]))) as stored:
-        assert max(stored.size) == poster_artist.MAX_EDGE
-    assert posters.status(PROJECT)["poster"]["painted_by"] == "gemini-3.1-flash-image"
-    assert "No text of any kind" in prompts_sent[0]
-    assert "real or recognisable person" in prompts_sent[0]
+    assert systems == [prompts.POSTER_SYSTEM], "one text request, and nothing else"
+    assert record["image_mime"] == "image/svg+xml"
+    assert "#f2c14e" in base64.b64decode(record["image_base64"]).decode("utf-8")
+    shown = posters.status(PROJECT)["poster"]
+    assert shown["tagline"] == "The city never forgets."
+    assert shown["written_by"] == "gemini-3.6-flash" and shown["fallback_reason"] is None
 
 
-def test_a_pipeline_run_paints_one_poster_per_screenplay(state_dir, offline, signed_in, make_production):
+def test_a_pipeline_run_makes_one_poster_per_screenplay(state_dir, offline, signed_in, make_production):
     user, token = signed_in()
     make_production(user)
     client = TestClient(app)
@@ -174,7 +181,7 @@ def test_members_see_the_poster_and_only_producers_ask_for_another(state_dir, of
     assert again["style"]["key"] != first["style"]["key"]
 
 
-def test_one_poster_paints_at_a_time_and_a_failure_is_reported(state_dir, offline, signed_in, make_production, monkeypatch):
+def test_one_poster_at_a_time_and_a_failure_is_reported(state_dir, offline, signed_in, make_production, monkeypatch):
     user, token = signed_in()
     make_production(user)
     _seed()

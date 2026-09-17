@@ -8,7 +8,7 @@ import {
   budgetSummary, capitalize, castByRole, dateRange, hasResults, hoursText, productionTitle, scheduleStats, screening,
 } from "../../lib/production.js";
 import { PencilNote } from "../../shared/Artifacts.jsx";
-import { ActorTile, Card, CardLink, DayBars, Legend, NoPlanYet, Stat, ViewerBar } from "./parts.jsx";
+import { ActorTile, Card, CardLink, DayBars, Legend, NoPlanYet, SampleDataNote, Stat, ViewerBar } from "./parts.jsx";
 import ProductionPoster from "./ProductionPoster.jsx";
 import SignOffQueue from "./SignOffQueue.jsx";
 
@@ -55,7 +55,7 @@ export default function OverviewPage() {
     <>
       <div className="page-top page-top--poster">
         <div className="page-top__lead">
-          {/* the poster Lumen paints for the script: the title card stands in while it paints */}
+          {/* the poster Lumen draws for the script: the title card stands in until it's ready */}
           <ProductionPoster
             projectId={projectId}
             title={productionTitle(state, activeProduction?.name)}
@@ -75,6 +75,8 @@ export default function OverviewPage() {
           </Link>
         )}
       </div>
+
+      <SampleDataNote state={state} />
 
       <div className="dash-grid">
         <SignOffQueue state={state} className="col-12 card--signoff" />
