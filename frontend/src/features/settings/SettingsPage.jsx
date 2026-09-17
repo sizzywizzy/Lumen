@@ -9,8 +9,8 @@ import { useTheme } from "../../theme/ThemeProvider.jsx";
 import { cn, money, shortDate, statusLabel } from "../../lib/utils.js";
 
 const THEMES = [
-  { key: "light", label: "Light", icon: "light_mode", hint: "Warm grey pages with white cards. The default." },
-  { key: "dark", label: "Dark", icon: "dark_mode", hint: "Warm charcoal, easier on the eyes at night." },
+  { key: "dark", label: "Dark", icon: "dark_mode", hint: "A dark stage lit from above. The default." },
+  { key: "light", label: "Light", icon: "light_mode", hint: "Warm paper tones for bright rooms." },
 ];
 
 // Where casting stands for the production as a whole.
@@ -28,7 +28,7 @@ export default function SettingsPage() {
     <>
       <PageHeader
         title="Settings"
-        sub="How Lumen looks, the rules for the shooting schedule, and a summary of this production."
+        sub="How Lumen looks, the rules for the shooting schedule and the budget, and a summary of this production."
         size="lg"
       />
 
@@ -55,21 +55,20 @@ export default function SettingsPage() {
           ))}
         </div>
         <p className="muted body-sm" style={{ marginTop: 12 }}>
-          Your choice is saved in this browser and applies to every screen. Lumen starts in light mode.
-
+          Your choice is saved in this browser and applies to every screen. Lumen starts in dark mode.
         </p>
       </Panel>
 
       <Panel className="panel--pad">
         <h3 className="panel-title mono-label" style={{ marginBottom: 16 }}>
           <Icon name="tune" />
-          Schedule rules
+          Schedule rules and budget
         </h3>
         {state ? (
           <DirectorControls />
         ) : (
           <EmptyState icon="settings" title="Nothing to set yet">
-            Drop a script first. Once it has been read, you can adjust the schedule rules here.
+            Drop a script first. Once it has been read, you can adjust the schedule rules and the budget here.
           </EmptyState>
         )}
       </Panel>
@@ -98,7 +97,7 @@ export default function SettingsPage() {
           </div>
           <div className="between">
             <span className="muted">Agent messages</span>
-            <span>{state?.event_log?.length ?? 0}</span>
+            <span>{state?.event_count ?? state?.event_log?.length ?? 0}</span>
           </div>
           {intake?.fileName && (
             <div className="between">

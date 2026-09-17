@@ -10,9 +10,10 @@ google-genai>=1.0            # services/gemini_client.py
 # stored. Without it the poster is stored as the model sent it.
 Pillow>=10.0                 # domains/launch/agents/poster_artist.py
 
-# Screenplay text extraction for the intake dropzone (PDF branch).
-# .txt/.fountain/.fdx need no package; only PDFs use this.
+# Screenplay text extraction for the intake dropzone. PDFs need pypdf;
+# .fdx uploads are untrusted XML, parsed with defusedxml (DTDs refused).
 pypdf>=4.0                   # services/script_intake.py
+defusedxml>=0.7              # services/script_intake.py
 
 # Shared persistence. Required for any deployment whose filesystem is ephemeral
 # (Render, Cloud Run) - without it, accounts and simulations are lost on redeploy.

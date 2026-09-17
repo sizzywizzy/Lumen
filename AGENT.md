@@ -9,6 +9,8 @@ This is the single source of truth. If you add or change an agent, update this f
 
 **Orchestrator.** One `agent_director_orchestrator` runs an explicit, framework-free state machine (`backend/core/orchestrator/graph.py`). It owns `GlobalState`, routes work between phases, applies fail-fast edges, resets each phase's own output before that phase runs again, and holds the queue of items needing a human. Agents never call each other directly across phases — they emit A2A messages that the orchestrator routes.
 
+**Runs.** A pipeline run (all six phases, or a range) works in the background (`backend/domains/pipeline/jobs.py`): the route answers `202`, the dashboard polls `GET /api/pipeline/status/<project_id>`, and one run per production goes at a time. Each `PhaseNode` declares the `GlobalState` fields and escalation prefixes it `owns`; a finished run copies exactly those onto the state stored at that moment (`backend/core/orchestrator/merge.py`), so edits saved while it ran are kept. A full run starts from a reset state and keeps only the material: the screenplay, the schedule rules and the expenses.
+
 **GlobalState.** One JSON object, persisted in Supabase, passed through the entire pipeline (Section 3).
 
 **A2A envelope.** Every message between agents uses one shape (Section 2). All traffic is appended to `GlobalState.event_log` so the UI's Live Agent Terminal can replay it.
@@ -16,7 +18,7 @@ This is the single source of truth. If you add or change an agent, update this f
 **Guardrails (apply to every agent):**
 - `max_iterations` = 1–2 per negotiation loop. Never unbounded.
 - **Fail-fast:** non-compliant items (PR liability, over budget, hard censorship block) are purged before expensive steps.
-- **Model tiering:** Gemini 2.0 Flash by default; Gemini 2.0 Pro only for heavy reasoning (final synthesis, aggregation, recut).
+- **Model tiering:** the Flash tier (`GEMINI_FLASH_MODEL`) by default; the Pro tier (`GEMINI_PRO_MODEL`) only for heavy reasoning (script reads, final synthesis, recut). Both default to `gemini-3.6-flash` (`backend/core/config.py`), each followed by a fallback chain. Vertex AI stands in for a key only on explicit opt-in (`GOOGLE_GENAI_USE_VERTEXAI` plus `GOOGLE_CLOUD_PROJECT`).
 - **Structured output:** every agent returns validated JSON (Gemini JSON mode). Never parse prose.
 - **Cost:** keep model inputs small (clipped script reads, screening packets), batch where possible, cache reusable prompts.
 
@@ -37,6 +39,7 @@ This is the single source of truth. If you add or change an agent, update this f
 ```
 
 Rules:
+- `message_id` ends in a number that only goes up: the sequence starts from the process's start time in microseconds, so ids stay unique in an event log that outlives a restart.
 - `sender`/`recipient` are always agent IDs from this file.
 - `intent` is from the vocabulary in Section 5.
 - A **request** expects a reply (matching `in_reply_to`); a **broadcast** to the orchestrator does not.
@@ -55,9 +58,10 @@ Rules:
   "candidates":       [ { "id", "name", "metadata", "media_url", "scores", "status" } ],
   "casting_status":   "SOURCING | SCREENING | LOCKED",
   "schedule":         { "stripboard": [ /* scene_id, date, venue */ ], "conflicts": [] },
-  "budget_state":     { "daily_burn", "cap" /* total budget from intake — sets every downstream cap */, "alerts": [] },
+  "budget_state":     { "daily_burn", "cap" /* total budget from intake or Settings — sets every downstream cap */, "alerts": [],
+                        "expenses": [] /* logged by the team */, "total_budget", "spent", "remaining" /* derived from cap and expenses */ },
   "compliance_state": { "<territory>": "CLEARED | AWAITING_QC | BLOCKED" },
-  "audience_report":  { "tomatometer", "audience_score", "heatmap", "weakest_scene_id" },
+  "audience_report":  { "tomatometer", "audience_score", "heatmap", "weakest_scene_id", "screening_source" /* live | mixed | offline */ },
   "marketing_assets": [ { "asset_id", "type", "status", "source_scene_id" } ],
   "human_escalations":[ { "queue_item", "reason" } ],
   "event_log":        [ /* every A2A envelope, in order */ ]
@@ -79,20 +83,24 @@ Each entry: **ID** · role · model · inputs → outputs · intents it sends/ha
 Model: Gemini Pro. In: `script_context`, exec brief; reads the screenplay dropped at intake when one is stored (`script_context.raw_text`), the demo script otherwise. Out: `role_requirements`, `scoring_weights`.
 Intents: emits `mandate_ready`.
 
-**`agent_intake`** — *Sourcing / Intake Gateway (webhook).*
-Model: none (service). In: applicant links (Backstage/Actors Access/email). Out: appended `candidates[]`.
+**`agent_casting_scout`** — *Talent Scout.*
+Model: Gemini Flash with Google Search grounding, plus Tavily when configured; an offline pool of local actors otherwise. In: `locality`, `director_notes`, `role_requirements`, the per-role cap. Out: scouted candidates for `agent_intake`. A candidate the model files under a role the script does not have goes to one of the script's roles instead, and quotes and follower counts must be numbers.
+Intents: handles `scout_local_talent`; broadcasts `crawl_locality_started` and `crawl_locality_completed`.
+
+**`agent_intake`** — *Sourcing / Intake Gateway.*
+Model: none (service). In: the scout's candidates. Out: `candidates[]`, rebuilt on every Phase I run.
 Intents: emits `candidate_ingested`.
 
 **`agent_market_synergy`** — *Clout / Hype check.*
-Model: Gemini Flash + Tavily. In: candidate. Out: normalized Hype score.
+Model: none (a log scale over follower counts). In: candidate. Out: normalized Hype score.
 Intents: handles `score_candidate`, emits `hype_scored`.
 
 **`agent_pr_shield`** — *Brand Safety & PR Shield / "Drama Filter."*
-Model: Gemini Flash + safety settings + Tavily. In: candidate. Out: PR risk flag.
+Model: Gemini Flash. In: the candidate's recent press. Out: PR score and risk flag (a live answer is coerced field by field, so a red flag spelt as text still counts).
 Intents: handles `score_candidate`, emits `pr_scored`; may emit `disqualify` on hard red flag.
 
 **`agent_finance`** — *Finance & ROI / "Wallet Check."*
-Model: Gemini Flash. In: candidate quote vs `budget_state`. Out: budget verdict.
+Model: none (arithmetic). In: candidate quote vs the per-role cap (10% of `budget_state.cap`). Out: budget score; a quote over the cap disqualifies.
 Intents: handles `score_candidate`, emits `budget_scored`; may emit `disqualify`.
 
 **Risk Router** — orchestrator conditional edge. Purges candidates with `disqualify`; advances the rest to Phase II.
@@ -104,7 +112,7 @@ Model: none. In: the tape reference. Out: the same reference, announced to the r
 Intents: emits `media_ready`.
 
 **`agent_audition_analytics`** — *Multimodal Analytics / "AI Co-Director."*
-Model: Gemini Pro (multimodal). In: 720p clip + transcript + `role_requirements`. Out: qualitative review + Audition score.
+Model: Gemini Pro. In: the role brief (`role_requirements`) and the tape reference (no decoding, by design). Out: qualitative review + Audition score.
 Intents: handles `review_audition`, emits `audition_scored`.
 
 **`agent_synthesis`** — *Final Scorecard.*
@@ -114,18 +122,18 @@ Intents: emits `leaderboard_ready`; pushes top-N to `human_escalations`.
 
 ### Phase III — Script → Schedule
 
-**`agent_breakdown`** — Model: Gemini Pro when a screenplay is stored, else none. In: the uploaded screenplay (scenes constrained to venue types in `Venue_DB` and to the profiler's role ids, capped at 30) or `Script_DB(scene_id, INT/EXT, location_type, characters_needed, estimated_time_hours)`. Out: structured scene requirements, also kept on `script_context.scenes` for Phases IV and V. Emits `breakdown_ready`.
+**`agent_breakdown`** — Model: Gemini Pro when a screenplay is stored, else none. In: the uploaded screenplay (scenes constrained to venue types in `Venue_DB` and to the profiler's role ids, capped at 30) or `Script_DB(scene_id, INT/EXT, location_type, characters_needed, estimated_time_hours, tags, assets)`. Out: structured scene requirements, also kept on `script_context.scenes` for Phases IV and V. A scene's `assets` (licensed music cues) keep only ids `Clearance_DB` knows. Emits `breakdown_ready`.
 
 **`agent_location`** — In: scene reqs + `Venue_DB(venue_name, cost_per_day, available_dates)`. Out: venue matches/permits. Handles `check_venue_availability`, emits `venue_offer`.
 
-**`agent_scheduler_shoot`** — *Stripboard.* In: breakdown + venues + cast availability. Out: `schedule.stripboard`, budget burn. Sends `check_venue_availability`; emits `schedule_updated`.
+**`agent_scheduler_shoot`** — *Stripboard.* In: breakdown + venues + cast availability. Out: `schedule.stripboard`, `schedule.conflicts` (reason `venue_unavailable`, `past_wrap` or `cast_unavailable`), budget burn. A scene no venue can host goes to the queue as `venue:<scene>`, a shoot past the wrap date as `schedule:past_wrap`, and scenes booked on a day their cast is away as `schedule:cast`. Sends `check_venue_availability`; emits `schedule_updated`.
 **Demo A2A:** `agent_scheduler_shoot` → `check_venue_availability` (Scene 12, Tue) → `agent_location` replies `venue_offer` (Wed) → scheduler rebuilds stripboard → broadcasts `schedule_updated`.
 
 ### Phase IV — Compliance, Localization & Launch Prep
 
-**`agent_rights_clearance`** — In: assets + `Clearance_DB`, `Censorship_Rules_DB`. Out: per-asset clearance verdict. Handles `verify_regional_compliance`, emits `compliance_result`.
+**`agent_rights_clearance`** — In: each scene's content tags and the assets the breakdown lists, against `Clearance_DB` and `Censorship_Rules_DB`. Out: per-element clearance verdict. Handles `verify_regional_compliance`, emits `compliance_result`.
 
-**`agent_localization`** — In: cut + target territory. Out: subs/dubs plan; sets `compliance_state[territory]`. Sends `verify_regional_compliance`; broadcasts `task_status_update` (BLOCKED/CLEARED).
+**`agent_localization`** — In: cut + target territory. Out: subs/dubs plan; sets `compliance_state[territory]`, and queues `compliance:<territory>` with a plain sentence when a territory blocks. Sends `verify_regional_compliance`; broadcasts `task_status_update` (BLOCKED/CLEARED).
 
 **`agent_qc`** — In: cut. Out: technical pass/fail (resolution, audio mix, timeline lock). Emits `qc_result`.
 
@@ -134,16 +142,18 @@ Intents: emits `leaderboard_ready`; pushes top-N to `human_escalations`.
 
 ### Phase V — Audience Simulation & Predictive Reviews
 
-**`agent_persona_foundry`** — Model: Gemini Flash (ADK loop). Out: `Persona_DB(persona_id, age_bracket, gender, region, genre_affinities[], viewer_type, attention_span, cultural_flags[])`. Emits `personas_ready`.
+**`agent_persona_foundry`** — Model: none (seeded). Out: a panel of 200 personas from `core/audience/personas.py`, seeded by the production and its screenplay, grouped into at most 28 cohorts (age band × market region × genre affinity). Personas carry taste and viewing habits, the market they watch in and an age group — never gender, ethnicity, religion or income. Emits `personas_ready`.
 
-**`agent_viewer`** — Model: Gemini Flash (batched 10/call). In: screening packet + persona. Out: `Screening_DB(persona_id, title_id, scene_scores[], overall_score, sentiment, review_text, would_recommend, drop_off_scene)`. Handles `screen_film`.
+**`agent_viewer`** — Model: Gemini Flash, five cohorts to a call, the calls concurrent (`audience_sim.screen_scenes`, the same machinery as the Audience Analyst). In: the film's brief, every scene (title, summary, tags) and the cohorts. Out: a score per scene per cohort; each viewer's scene scores follow from their cohort's, moved by their own pacing tolerance, story preference, content sensitivity, viewing frequency and a seeded jitter. A reply that skips a scene, or scores it with something that is not a number, falls back to the stated offline rules for that score. Handles `screen_film`.
 
-**`agent_aggregation`** — *Tallyman.* Model: Python + Gemini Pro. In: all verdicts. Out: `Aggregate_DB(title_id, tomatometer, audience_score, imdb_weighted, score_distribution, demographic_breakdown, weakest_scene_id)` → `audience_report`. Detects anomalies; sends `diagnose_engagement_anomaly`; broadcasts `simulation_verdict_update`.
+**`agent_aggregation`** — *Tallyman.* Model: Python + Gemini Pro. In: all viewers' scores. Out: `audience_report` (tomatometer, audience score, per-scene heatmap, weakest scene, `screening_source`). Compares groups of viewers (age band, market region, genre affinity, pacing tolerance, viewing frequency) on the weakest scene, and sends `diagnose_engagement_anomaly` for the group furthest below everyone (under 80%); broadcasts `simulation_verdict_update`.
 
 **`agent_critic`** — Model: Gemini Flash. Out: representative reviews in outlet voices. Emits `reviews_ready`.
 
-**`agent_recut_advisor`** — Model: Gemini Pro. In: anomaly. Out: root cause + remediation + predicted lift. Handles `diagnose_engagement_anomaly`, emits `diagnosis_result`.
-**Demo A2A:** `agent_aggregation` → `diagnose_engagement_anomaly` (18–24M, Act 2) → `agent_recut_advisor` replies `diagnosis_result` (trim & intercut, +6) → aggregation broadcasts `simulation_verdict_update`.
+**`agent_recut_advisor`** — Model: Gemini Pro. In: anomaly. Out: root cause + remediation + predicted lift, queued as `recut:<scene>`. Handles `diagnose_engagement_anomaly`, emits `diagnosis_result`.
+**Demo A2A:** `agent_aggregation` → `diagnose_engagement_anomaly` (viewers under 25, the act-two exposition scene) → `agent_recut_advisor` replies `diagnosis_result` (trim & intercut, +6) → aggregation broadcasts `simulation_verdict_update`.
+
+**`agent_script_analyst`** — *Material read for the audience simulator.* Model: Gemini Pro. In: the screenplay or synopsis. Out: genre, tone, themes, content flags and the dimensions the material can support. Used by the Audience Analyst and Cultural Researcher advisors and the Marketing page's simulations, not by the pipeline's Phase V (which reads the Phase I brief and the Phase III breakdown). Handles `screen_film` from `agent_persona_foundry`.
 
 ### Phase VI — Marketing, PR & Autonomous Social Launch
 
@@ -176,9 +186,11 @@ Each advisor runs the procedure written in `skills/<name>/SKILL.md` (Section 8):
 
 ## 5. Intent Vocabulary
 
-Requests/replies: `verify_regional_compliance` / `compliance_result`, `check_venue_availability` / `venue_offer`, `diagnose_engagement_anomaly` / `diagnosis_result`, `verify_brand_safety` / `brand_safety_result`, `score_candidate` / `*_scored`, `review_audition` / `audition_scored`, `screen_film`, `request_audience_insights`.
+Requests/replies: `verify_regional_compliance` / `compliance_result`, `check_venue_availability` / `venue_offer`, `diagnose_engagement_anomaly` / `diagnosis_result`, `verify_brand_safety` / `brand_safety_result`, `score_candidate` / `*_scored`, `review_audition` / `audition_scored`, `scout_local_talent` / `talent_scouted`, `screen_film`, `request_audience_insights`.
 
-Broadcasts (to orchestrator): `mandate_ready`, `candidate_ingested`, `media_ready`, `leaderboard_ready`, `breakdown_ready`, `schedule_updated`, `task_status_update`, `qc_result`, `telemetry_update`, `personas_ready`, `reviews_ready`, `simulation_verdict_update`, `campaign_plan_ready`, `reel_ready`, `asset_scheduled`, `asset_status_update`, `disqualify`.
+Broadcasts (to orchestrator): `mandate_ready`, `candidate_ingested`, `crawl_locality_started`, `crawl_locality_completed`, `media_ready`, `leaderboard_ready`, `breakdown_ready`, `schedule_updated`, `task_status_update`, `qc_result`, `telemetry_update`, `personas_ready`, `reviews_ready`, `simulation_verdict_update`, `campaign_plan_ready`, `reel_ready`, `asset_scheduled`, `asset_status_update`, `disqualify`.
+
+`contracts/a2a_envelope.json` and `core/messaging/envelope.py` hold the same list; a test keeps them equal.
 
 ---
 
@@ -223,6 +235,7 @@ Broadcasts (to orchestrator): `mandate_ready`, `candidate_ingested`, `media_read
 4. Return structured JSON only.
 5. Add a fail-fast / `max_iterations` guard.
 6. Append all its traffic to `event_log` so it shows in the Live Agent Terminal.
+7. If it writes a new `GlobalState` field or raises a new kind of escalation, add them to its phase's `owns` / `escalations` in `graph.py`, or a background run will not carry them onto the stored state.
 
 ---
 
@@ -231,7 +244,7 @@ Broadcasts (to orchestrator): `mandate_ready`, `candidate_ingested`, `media_read
 A skill is a procedure an agent follows, stored at `skills/<name>/SKILL.md` in the repo root (next to `backend/`). Frontmatter: `name`, `description` (when to use it), and `metadata` (`agent`, `phase`, `model`, `owner`, `reads`, `writes`, `intents`, `version`, plus skill-specific defaults such as `panel_size` or `markets`). The Markdown body is the agent's system instruction and ends with the exact JSON shape it returns.
 
 - Registry: `backend/core/skills/registry.py` — parsed fresh on every run, so edits need no restart.
-- Runners: `backend/domains/skills/agents.py`, one per skill, keyed by `name`; every runner has an offline fallback so the zero-key demo still works.
+- Runners: `backend/domains/skills/agents.py`, one per skill, keyed by `name`; every runner has an offline fallback so the zero-key demo still works. When a skill needs phase output that is not there yet (`PREPARED_PHASES`), those phase agents run on the advisor's copy and their output is merged onto the stored state before the advisory step, the same way pipeline runs merge.
 - API: `GET /api/skills`, `POST /api/skills/<name>/run/<project_id>` (producer or owner), `GET /api/skills/runs/<project_id>`.
 - Every run records the SKILL.md fingerprint and whether each model call was live or the fallback.
 - Skill agents reuse the intent vocabulary in Section 5; adding a skill never adds an intent.

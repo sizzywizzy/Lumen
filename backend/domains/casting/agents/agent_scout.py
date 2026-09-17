@@ -10,7 +10,7 @@ agency rosters, actor databases, and casting calls, with robust contextual fallb
 """
 from typing import Any
 
-from core import config
+from core import config, llm_output
 from core.messaging.envelope import broadcast, log_event, make_envelope
 from core.orchestrator.state import Candidate, GlobalState
 from domains.casting import prompts
@@ -215,6 +215,7 @@ def scout_candidates(state: GlobalState) -> list[Candidate]:
         raw_candidates = fallback_data
         trace = {"source": "mock", "reason": "exception"}
 
+    raw_candidates = [r for r in raw_candidates if isinstance(r, dict)]
     if not raw_candidates:
         raw_candidates = fallback_data
 
@@ -226,23 +227,34 @@ def scout_candidates(state: GlobalState) -> list[Candidate]:
     else:
         scouted_via_label = "Local Talent Synthesis (Offline Demo Fallback)"
 
-    # 6. Parse and instantiate Candidate models
+    # 6. Parse and instantiate Candidate models. A live reply is checked field by
+    #    field: a candidate for a role the script does not have would be locked
+    #    by synthesis for a phantom part, so an unknown role id falls back to
+    #    the round-robin pick, and quotes and follower counts must be numbers.
+    role_ids = list(roles)
+    agencies = _match_regional_agencies(locality)
     candidates: list[Candidate] = []
+    seen_ids: set[str] = set()
     for idx, raw in enumerate(raw_candidates):
-        cid = raw.get("id") or f"CAND_LOC_{idx+1:03d}"
-        name = raw.get("name") or f"Local Talent #{idx+1}"
-        role_id = raw.get("role_id") or list(roles.keys())[idx % len(roles)]
-        meta = raw.get("metadata") or {}
+        cid = llm_output.text(raw.get("id"), "", 40)
+        if not cid or cid in seen_ids:
+            cid = f"CAND_LOC_{idx+1:03d}"
+        seen_ids.add(cid)
+        name = llm_output.text(raw.get("name"), f"Local Talent #{idx+1}", 120)
+        role_id = llm_output.text(raw.get("role_id")).upper()
+        if role_id not in roles:
+            role_id = role_ids[idx % len(role_ids)]
+        meta = dict(llm_output.mapping(raw.get("metadata")))
         meta.setdefault("locality", locality)
-        meta.setdefault("quote_usd", round(role_cap * 0.75, -2))
-        meta.setdefault("agency", _match_regional_agencies(locality)[idx % len(_match_regional_agencies(locality))])
-        meta.setdefault("followers", 50000 + (idx * 25000))
+        meta["quote_usd"] = llm_output.number(meta.get("quote_usd"), round(role_cap * 0.75, -2), 0)
+        meta.setdefault("agency", agencies[idx % len(agencies)])
+        meta["followers"] = int(llm_output.number(meta.get("followers"), 50000 + (idx * 25000), 0))
         meta.setdefault("recent_press", f"Active working actor in {locality}.")
         meta.setdefault("director_match", f"Scouted for '{locality}' match with director notes.")
         meta["scouted_via"] = scouted_via_label
         meta["is_live_scouted"] = is_live
 
-        media_url = raw.get("media_url") or f"https://reels.lumen.internal/{cid.lower()}_audition.mp4"
+        media_url = llm_output.text(raw.get("media_url"), f"https://reels.lumen.internal/{cid.lower()}_audition.mp4", 500)
 
         candidate = Candidate(
             id=cid,

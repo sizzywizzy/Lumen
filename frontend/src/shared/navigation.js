@@ -1,22 +1,7 @@
-// One nav definition drives the desktop sidebar, the mobile bottom bar and the
-// route table, so navigation can never point at a screen that does not exist.
-export const PRIMARY_NAV = [
-  { to: "/", label: "Script Intake", short: "Intake", icon: "description", end: true },
-  { to: "/casting", label: "Casting", short: "Casting", icon: "groups" },
-  { to: "/schedule", label: "Schedule", short: "Schedule", icon: "event_note" },
-  { to: "/marketing", label: "Marketing", short: "Launch", icon: "campaign" },
-  { to: "/advisors", label: "AI Advisors", short: "Advisors", icon: "auto_awesome" },
-];
-
-export const SECONDARY_NAV = [
-  { to: "/logs", label: "Logs", short: "Logs", icon: "terminal" },
-  { to: "/team", label: "Team", short: "Team", icon: "diversity_3" },
-  { to: "/settings", label: "Settings", short: "Settings", icon: "settings" },
-];
-
-// Sub-line shown under each page title. Stage names only — no phase numbering.
+// Sub-line shown under the title of the agent-layer screens (casting board,
+// production and launch desks, advisors). Stage names only — no phase
+// numbering. The menus themselves live in AppLayout.jsx and AgentsMenu.jsx.
 export const STAGE_BY_PATH = {
-  "/": "Intake",
   "/casting": "Pre-casting & Audition",
   "/schedule": "Schedule & Compliance",
   "/marketing": "Audience & Marketing",

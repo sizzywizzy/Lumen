@@ -8,11 +8,12 @@ Flow:
                        account and session. No shared password, ever.
   4. Everything else — resolved through the caller's membership row.
 """
+from functools import lru_cache
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 
-from core.auth import security
+from core.auth import ratelimit, security
 from core.auth.deps import current_user, membership_for, optional_user
 from core.auth.models import (
     Invite,
@@ -26,10 +27,22 @@ from core.auth.models import (
     User,
     role_at_least,
 )
-from core.orchestrator.state import BudgetState, GlobalState
+from core.orchestrator.state import GlobalState
 from services import auth_store, supabase_client
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+
+# Each attempt costs a full PBKDF2 hash, so both are limited per client address.
+SIGN_INS = ratelimit.SlidingWindow(limit=20, window=10 * 60)
+SIGN_UPS = ratelimit.SlidingWindow(limit=10, window=60 * 60)
+
+EMAIL_TAKEN = "An account with that email already exists. Sign in instead."
+
+
+@lru_cache(maxsize=1)
+def _dummy_hash() -> str:
+    """A digest to verify against when the email is unknown, made once."""
+    return security.hash_password(security.new_token())
 
 
 def _public_user(user: User) -> dict:
@@ -71,46 +84,57 @@ def _session_payload(user: User, token: str) -> dict:
 
 
 @router.post("/register", status_code=201)
-def register(req: RegisterRequest):
-    """Step 1 — create the production account. The creator becomes its owner."""
+def register(req: RegisterRequest, request: Request):
+    """Step 1 — create the production account. The creator becomes its owner.
+
+    The account, the production, the membership and the production's first
+    state are written together: if any later write fails, the account is
+    removed again, so a sign-up never leaves an account with no production.
+    """
+    ratelimit.enforce(SIGN_UPS, request)
     if auth_store.get_user_by_email(req.email):
-        raise HTTPException(409, "An account with that email already exists. Sign in instead.")
+        raise HTTPException(409, EMAIL_TAKEN)
 
     now = security.iso(security.now())
-    user = auth_store.save_user(
-        User(
-            id=security.new_id("usr"),
-            email=req.email,
-            name=req.name.strip(),
-            password_hash=security.hash_password(req.password),
-            created_at=now,
-        )
+    user = User(
+        id=security.new_id("usr"),
+        email=req.email,
+        name=req.name.strip(),
+        password_hash=security.hash_password(req.password),
+        created_at=now,
     )
+    try:
+        auth_store.create_user(user)
+    except auth_store.AlreadyExists:
+        raise HTTPException(409, EMAIL_TAKEN) from None
 
-    project_id = auth_store.unique_project_id(security.project_id_from_name(req.production_name))
-    auth_store.save_production(
-        Production(id=project_id, name=req.production_name.strip(), owner_id=user.id, created_at=now)
-    )
-    auth_store.save_membership(
-        Membership(user_id=user.id, project_id=project_id, role="owner", created_at=now)
-    )
-
-    # Seed the GlobalState this production's dashboard reads, unless one is
-    # already on disk for this id (so an existing demo project is adopted).
-    if supabase_client.load_state(project_id) is None:
-        supabase_client.save_state(
-            GlobalState(project_id=project_id, budget_state=BudgetState())
+    try:
+        production = auth_store.create_production(Production(
+            id=security.project_id_from_name(req.production_name),
+            name=req.production_name.strip(), owner_id=user.id, created_at=now,
+        ))
+        auth_store.save_membership(
+            Membership(user_id=user.id, project_id=production.id, role="owner", created_at=now)
         )
+        # Seed the GlobalState this production's dashboard reads, unless one is
+        # already stored for this id (so an existing demo project is adopted).
+        with supabase_client.project_lock(production.id):
+            if supabase_client.load_state(production.id) is None:
+                supabase_client.save_state(GlobalState(project_id=production.id))
+    except Exception:
+        auth_store.delete_account(user.id)
+        raise
 
     return _session_payload(user, _mint_session(user))
 
 
 @router.post("/login")
-def login(req: LoginRequest):
+def login(req: LoginRequest, request: Request):
+    ratelimit.enforce(SIGN_INS, request)
     user = auth_store.get_user_by_email(req.email)
     # Verify against a dummy hash when the user is unknown so that a wrong
     # email and a wrong password take the same time to answer.
-    encoded = user.password_hash if user else security.hash_password("timing-equaliser")
+    encoded = user.password_hash if user else _dummy_hash()
     if not security.verify_password(req.password, encoded) or user is None:
         raise HTTPException(401, "Email or password is incorrect.")
     return _session_payload(user, _mint_session(user))
@@ -225,7 +249,7 @@ def preview_invite(token: str, user: Optional[User] = Depends(optional_user)):
 
 
 @router.post("/join")
-def join(req: JoinRequest, user: Optional[User] = Depends(optional_user)):
+def join(req: JoinRequest, request: Request, user: Optional[User] = Depends(optional_user)):
     """Step 3 — redeem an invite.
 
     Signed in: the production is added to the existing account.
@@ -247,18 +271,22 @@ def join(req: JoinRequest, user: Optional[User] = Depends(optional_user)):
     if user is None:
         if not (req.email and req.password and req.name):
             raise HTTPException(400, "Provide a name, email and password to create your account.")
+        ratelimit.enforce(SIGN_UPS, request)
+        taken = "An account with that email already exists. Sign in, then open the invite link again."
         if auth_store.get_user_by_email(req.email):
-            raise HTTPException(409, "An account with that email already exists. Sign in, then open the invite link again.")
+            raise HTTPException(409, taken)
         _check_password_strength(req.password)
-        user = auth_store.save_user(
-            User(
-                id=security.new_id("usr"),
-                email=req.email,
-                name=req.name.strip(),
-                password_hash=security.hash_password(req.password),
-                created_at=now,
-            )
+        user = User(
+            id=security.new_id("usr"),
+            email=req.email,
+            name=req.name.strip(),
+            password_hash=security.hash_password(req.password),
+            created_at=now,
         )
+        try:
+            auth_store.create_user(user)
+        except auth_store.AlreadyExists:
+            raise HTTPException(409, taken) from None
 
     if auth_store.get_membership(user.id, invite.project_id) is None:
         auth_store.save_membership(

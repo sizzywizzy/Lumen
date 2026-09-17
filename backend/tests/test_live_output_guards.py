@@ -68,7 +68,7 @@ def test_phase5_escalates_a_recut_even_when_the_diagnosis_is_junk(offline, monke
     _answer_with(monkeypatch, {launch_prompts.RECUT_SYSTEM: {"root_cause": None, "predicted_lift": "big"}})
     state = Orchestrator().run(_fresh(), start="phase5", end="phase5")
     recut = [e for e in state.human_escalations if e.queue_item.startswith("recut:")]
-    assert recut and "EXPOSITION_OVERLOAD" in recut[0].reason and "+6" in recut[0].reason
+    assert recut and "exposition overload" in recut[0].reason and "+6" in recut[0].reason
 
 
 def test_phase6_builds_a_campaign_from_replies_of_the_wrong_shape(offline, monkeypatch):
@@ -97,3 +97,38 @@ def test_copy_without_a_caption_is_dropped_and_the_release_kept(offline, monkeyp
     assert copy[0].content["hashtags"] == ["#Neon", "7"]
     press = next(a for a in state.marketing_assets if a.type == "press_release")
     assert (press.content["headline"], press.content["body"]) == ("Neon Nights announced", "42")
+
+
+def test_scouted_candidates_are_held_to_the_scripts_roles(offline, monkeypatch):
+    """A live scout may name a role the script does not have, or give its
+    numbers as prose; neither may reach synthesis as a phantom lock or a crash."""
+    reply = {"candidates": [
+        {"name": "Ada Phantom", "role_id": "ROLE_SIDEKICK",
+         "metadata": {"quote_usd": "$20,000", "followers": "lots"}},
+        {"name": "Lower Case", "role_id": "role_antag", "metadata": {"quote_usd": 9000, "followers": 1200}},
+        {"id": "DUP", "name": "First"}, {"id": "DUP", "name": "Second"},
+        "not a candidate",
+    ]}
+    monkeypatch.setattr(gemini_client, "generate_json_with_search",
+                        lambda prompt, **kwargs: (reply, {"source": "gemini_grounded", "model": "flash"}))
+    state = Orchestrator().run(_fresh(), start="phase1", end="phase2")
+
+    roles = set(state.role_requirements)
+    assert {c.role_id for c in state.candidates} <= roles
+    by_name = {c.name: c for c in state.candidates}
+    assert set(by_name) == {"Ada Phantom", "Lower Case", "First", "Second"}
+    assert by_name["Lower Case"].role_id == "ROLE_ANTAG"
+    assert by_name["Ada Phantom"].metadata["followers"] == 50000
+    assert isinstance(by_name["Ada Phantom"].metadata["quote_usd"], float)
+    assert len({c.id for c in state.candidates}) == 4, "duplicate ids are renumbered"
+    locked = [e.queue_item for e in state.human_escalations if e.queue_item.startswith("cast_signoff:")]
+    assert {item.split(":", 1)[1] for item in locked} <= roles
+
+
+def test_a_zero_budget_rules_everyone_out_instead_of_crashing(offline):
+    from core.orchestrator.state import BudgetState
+
+    state = _fresh()
+    state.budget_state = BudgetState(cap=0)
+    state = Orchestrator().run(state, start="phase1", end="phase1")
+    assert state.candidates and all(c.scores["budget"] == 0 for c in state.candidates)

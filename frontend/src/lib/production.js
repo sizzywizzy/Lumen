@@ -303,3 +303,110 @@ export function screening(state) {
     reviews: Array.isArray(report.reviews) ? report.reviews : [],
   };
 }
+
+// -------------------------------------------------------------- the run ---
+
+// What each phase of a pipeline run is doing, as a producer would say it.
+const PHASE_WORDS = {
+  phase1: "Finding actors for each role",
+  phase2: "Reviewing the auditions",
+  phase3: "Booking shoot days and venues",
+  phase4: "Checking each territory's rules",
+  phase5: "Screening the story with test viewers",
+  phase6: "Planning the launch",
+};
+
+export function phaseWords(key) {
+  return PHASE_WORDS[key] || "Working";
+}
+
+// ---------------------------------------------------------------- sign-off ---
+
+const TERRITORIES = { US: "US", UK: "UK", UAE: "UAE", FR: "France", IN: "India", JP: "Japan" };
+
+function quotedScene(state, sceneId) {
+  const entry = (state?.schedule?.stripboard || []).find((e) => e.scene_id === sceneId);
+  const title = state?.audience_report?.scene_titles?.[sceneId] || sceneName(entry || { scene_id: sceneId });
+  return `“${title}”`;
+}
+
+// What the agents are waiting for a person to decide
+// (GlobalState.human_escalations), and where on the site to decide it.
+const SIGN_OFF_KINDS = [
+  {
+    test: (id) => id.startsWith("cast_signoff:"),
+    icon: "how_to_reg", kicker: "Casting", action: "Casting board", to: "/casting",
+    title: (arg, state) => `Confirm who plays ${roleName(state, arg)}`,
+  },
+  {
+    test: (id) => id === "schedule:past_wrap",
+    icon: "event_busy", kicker: "Schedule", action: "Production desk", to: "/production",
+    title: () => "The shoot runs past the wrap date",
+  },
+  {
+    test: (id) => id === "schedule:cast",
+    icon: "person_off", kicker: "Schedule", action: "Production desk", to: "/production",
+    title: () => "Scenes booked on days their cast is away",
+  },
+  {
+    test: (id) => id.startsWith("venue:"),
+    icon: "location_off", kicker: "Schedule", action: "Production desk", to: "/production",
+    title: (arg, state) => `No venue for ${quotedScene(state, arg)}`,
+  },
+  {
+    test: (id) => id.startsWith("compliance:"),
+    icon: "gpp_bad", kicker: "Release", action: "Clearances", to: "/production",
+    title: (arg) => `Release blocked in ${TERRITORIES[arg] || arg}`,
+  },
+  {
+    test: (id) => id.startsWith("recut:"),
+    icon: "movie_edit", kicker: "Edit", action: "Test screening", to: "/audience",
+    title: (arg, state) => `Recut ${quotedScene(state, arg)}`,
+  },
+  {
+    test: (id) => id.startsWith("asset:"),
+    icon: "campaign", kicker: "Launch", action: "Launch desk", to: "/marketing",
+    title: () => "A campaign post was held back",
+  },
+  {
+    test: (id) => /^phase\d_halt$/.test(id),
+    icon: "pan_tool", kicker: "Pipeline", action: "Agent log", to: "/logs",
+    title: () => "Planning stopped early",
+  },
+];
+
+// Older saved states wrote some reasons as codes or raw data; newer runs write sentences.
+function plainSentence(reason) {
+  const text = String(reason || "")
+    .replace(/:\s*\[\{.*\}\]\s*$/s, "")
+    .replace(/\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\b/g, (code) => code.replace(/_/g, " ").toLowerCase())
+    .replace(/\s*->\s*/g, " → ")
+    .replace(/"([^"]+)"/g, "“$1”")
+    .trim();
+  if (!text) return "";
+  return capitalize(text) + (/[.!?)”"]$/.test(text) ? "" : ".");
+}
+
+// Grouped by kind in the order above (casting first), whatever order the
+// phases raised them in.
+export function signOffs(state) {
+  const rank = (item) => {
+    const at = SIGN_OFF_KINDS.findIndex((k) => k.test(String(item.queue_item || "")));
+    return at === -1 ? SIGN_OFF_KINDS.length : at;
+  };
+  const items = [...(state?.human_escalations || [])].sort((a, b) => rank(a) - rank(b));
+  return items.map((item, index) => {
+    const id = String(item.queue_item || "");
+    const arg = id.includes(":") ? id.slice(id.indexOf(":") + 1) : "";
+    const kind = SIGN_OFF_KINDS.find((k) => k.test(id));
+    return {
+      key: `${index}-${id}`,
+      icon: kind?.icon || "pending_actions",
+      kicker: kind?.kicker || "Decision",
+      title: kind ? kind.title(arg, state) : capitalize(id.replace(/[_:]+/g, " ")),
+      reason: plainSentence(item.reason),
+      action: kind?.action || "Agent log",
+      to: kind?.to || "/logs",
+    };
+  });
+}

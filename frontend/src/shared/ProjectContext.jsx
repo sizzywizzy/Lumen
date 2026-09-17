@@ -8,12 +8,21 @@ import { useAuth } from "./AuthContext.jsx";
 //
 // The project id comes from the signed-in member's active production, so a
 // user only ever loads a GlobalState their membership grants them.
+//
+// Pipeline runs work in the background on the server. Starting one returns at
+// once; this context polls the run's status until it settles, then reloads
+// the state and replays the run's messages in the terminal. A run that was
+// already going when the page loaded is picked up the same way.
 
 const REVEAL_MS = 60; // terminal replay speed per message
+const POLL_MS = 1500;
+const EMPTY_FEED = { events: [], revealed: 0, offset: 0, count: 0 };
 
 // Plain formats are read as text in the browser; anything else (.pdf, .fdx)
 // goes up as base64 and the backend extracts it.
 const PLAIN_TEXT = /\.(txt|fountain|md|markdown|text)$/i;
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function readAsBase64(file) {
   return new Promise((resolve, reject) => {
@@ -22,6 +31,14 @@ function readAsBase64(file) {
     reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
     reader.readAsDataURL(file);
   });
+}
+
+// Raised when the production changes while a run is being watched: the
+// result belongs to the other production, so it is dropped quietly.
+class Superseded extends Error {
+  constructor() {
+    super("You switched productions, so this page stopped following that plan. It keeps going on the server.");
+  }
 }
 
 const ProjectContext = createContext(null);
@@ -34,133 +51,191 @@ export function ProjectProvider({ children }) {
   const [directorNotes, setDirectorNotes] = useState("");
   const [intake, setIntake] = useState(null); // { budget, start, wrap, notes, locality, fileName }
   const [state, setState] = useState(null);
-  const [events, setEvents] = useState([]);
-  const [revealed, setRevealed] = useState(0);
+  // The terminal feed: the latest envelopes, how many are shown so far, where
+  // the first one sits in the full log, and how long the full log is.
+  const [feed, setFeed] = useState(EMPTY_FEED);
   const [running, setRunning] = useState(false);
+  const [job, setJob] = useState(null); // the pipeline run in flight, else the last one
   const [error, setError] = useState("");
   const timerRef = useRef(null);
+  const projectRef = useRef(projectId);
+  projectRef.current = projectId;
 
-  // Load whatever the backend already has for this project.
+  const stopReplay = () => clearInterval(timerRef.current);
+
+  // Take a freshly loaded state. `replayFrom` is the index in its event_log
+  // from which messages are revealed one by one; null shows them all at once.
+  const adopt = useCallback((s, replayFrom = null) => {
+    setState(s);
+    if (s.locality) setLocality(s.locality);
+    if (s.director_notes) setDirectorNotes(s.director_notes);
+    const events = s.event_log || [];
+    stopReplay();
+    setFeed({
+      events,
+      offset: s.event_offset || 0,
+      count: s.event_count ?? events.length,
+      revealed: replayFrom === null ? events.length : Math.min(Math.max(0, replayFrom), events.length),
+    });
+    if (replayFrom === null) return;
+    timerRef.current = setInterval(() => {
+      setFeed((f) => {
+        if (f.revealed >= f.events.length) {
+          clearInterval(timerRef.current);
+          return f;
+        }
+        return { ...f, revealed: f.revealed + 1 };
+      });
+    }, REVEAL_MS);
+  }, []);
+
+  // Poll the production's run until it settles. Resolves with the finished
+  // record; rejects when it failed, or when the server no longer knows it (a
+  // restart ends a run in flight).
+  const waitForRun = useCallback(async (forProject, jobId, onStatus) => {
+    for (;;) {
+      if (projectRef.current !== forProject) throw new Superseded();
+      const status = await api.pipelineStatus(forProject);
+      if (projectRef.current !== forProject) throw new Superseded();
+      setJob(status);
+      onStatus?.(status);
+      if (status.job_id !== jobId) {
+        throw new Error("Lumen restarted before this plan was finished. Please run it again.");
+      }
+      if (status.status === "complete") return status;
+      if (status.status === "failed") {
+        throw new Error(status.error || "Planning stopped before it finished. Please try again.");
+      }
+      await sleep(POLL_MS);
+    }
+  }, []);
+
+  // Start a background run, wait for it, then load the result. The run's own
+  // messages replay in the terminal unless `replay` is off.
+  const runJob = useCallback(
+    async (start, { onStatus, replay = true } = {}) => {
+      const forProject = projectId;
+      const started = await start();
+      setJob(started);
+      const done = await waitForRun(forProject, started.job_id, onStatus);
+      const s = await api.getState(forProject);
+      if (projectRef.current !== forProject) throw new Superseded();
+      adopt(s, replay ? (done.log_start ?? 0) - (s.event_offset || 0) : null);
+      return s;
+    },
+    [projectId, waitForRun, adopt]
+  );
+
+  // Load whatever the backend already has for this project, and pick up a run
+  // that is still going.
   useEffect(() => {
+    stopReplay();
+    setJob(null);
+    setRunning(false);
     if (!projectId || !user) {
       setState(null);
-      setEvents([]);
-      setRevealed(0);
+      setFeed(EMPTY_FEED);
       return undefined;
     }
     let cancelled = false;
     api
       .getState(projectId)
-      .then((s) => {
-        if (cancelled) return;
-        setState(s);
-        if (s.locality) setLocality(s.locality);
-        if (s.director_notes) setDirectorNotes(s.director_notes);
-        setEvents(s.event_log);
-        setRevealed(s.event_log.length);
-      })
+      .then((s) => !cancelled && adopt(s))
       .catch(() => {
         /* no state seeded yet (or backend offline) — the views show empty states */
-        if (!cancelled) setState(null);
+        if (!cancelled) {
+          setState(null);
+          setFeed(EMPTY_FEED);
+        }
+      });
+    api
+      .pipelineStatus(projectId)
+      .then(async (status) => {
+        if (cancelled) return;
+        setJob(status);
+        if (status.status !== "running") return;
+        setRunning(true);
+        try {
+          await waitForRun(projectId, status.job_id);
+          const s = await api.getState(projectId);
+          if (!cancelled) adopt(s);
+        } catch (e) {
+          if (!cancelled && !(e instanceof Superseded)) setError(String(e.message || e));
+        } finally {
+          if (!cancelled) setRunning(false);
+        }
+      })
+      .catch(() => {
+        /* status is advisory; the page still works without it */
       });
     return () => {
       cancelled = true;
     };
-  }, [projectId, user]);
+  }, [projectId, user, adopt, waitForRun]);
 
   useEffect(() => () => clearInterval(timerRef.current), []);
 
-  const runPipeline = useCallback(async () => {
-    if (!projectId || !canEdit) {
-      setError("Your role on this production is read-only.");
-      return;
-    }
-    setRunning(true);
-    setError("");
-    setEvents([]);
-    setRevealed(0);
-    clearInterval(timerRef.current);
-    try {
-      await api.runPipeline(projectId, budget || undefined, locality, directorNotes);
-      const s = await api.getState(projectId);
-      setState(s);
-      setEvents(s.event_log);
-      // Replay the A2A conversation message-by-message in the terminal.
-      timerRef.current = setInterval(() => {
-        setRevealed((r) => {
-          if (r >= s.event_log.length) {
-            clearInterval(timerRef.current);
-            return r;
-          }
-          return r + 1;
-        });
-      }, REVEAL_MS);
-    } catch (e) {
-      setError(String(e.message || e));
-    } finally {
-      setRunning(false);
-    }
-  }, [projectId, budget, locality, directorNotes, canEdit]);
+  // Wraps a run started from a button: one at a time, errors shown in the
+  // page banner. Returns the new state, or null when it did not finish.
+  const guarded = useCallback(
+    async (start, { rethrow = false } = {}) => {
+      if (!projectId || !canEdit) {
+        setError("Your role on this production is read-only.");
+        return null;
+      }
+      setRunning(true);
+      setError("");
+      try {
+        return await runJob(start);
+      } catch (e) {
+        if (e instanceof Superseded) return null;
+        setError(String(e.message || e));
+        if (rethrow) throw e;
+        return null;
+      } finally {
+        if (projectRef.current === projectId) setRunning(false);
+      }
+    },
+    [projectId, canEdit, runJob]
+  );
 
-  // Re-run casting crawler specifically with updated locality and notes
-  const runCasting = useCallback(async (customLocality, customNotes) => {
-    if (!projectId || !canEdit) {
-      setError("Your role on this production is read-only.");
-      return;
-    }
-    const targetLocality = customLocality || locality;
-    const targetNotes = customNotes !== undefined ? customNotes : directorNotes;
-    if (customLocality) setLocality(customLocality);
-    if (customNotes !== undefined) setDirectorNotes(customNotes);
+  const runPipeline = useCallback(
+    () => guarded(() => api.runPipeline(projectId, budget || undefined, locality, directorNotes)),
+    [guarded, projectId, budget, locality, directorNotes]
+  );
 
-    setRunning(true);
-    setError("");
-    clearInterval(timerRef.current);
-    try {
-      await api.runCasting(projectId, { locality: targetLocality, director_notes: targetNotes });
-      const s = await api.getState(projectId);
-      setState(s);
-      setEvents(s.event_log);
-      timerRef.current = setInterval(() => {
-        setRevealed((r) => {
-          if (r >= s.event_log.length) {
-            clearInterval(timerRef.current);
-            return r;
-          }
-          return r + 1;
-        });
-      }, REVEAL_MS);
-      return s;
-    } catch (e) {
-      setError(String(e.message || e));
-      throw e;
-    } finally {
-      setRunning(false);
-    }
-  }, [projectId, locality, directorNotes, canEdit]);
+  // Re-run the talent scout and auditions with an updated locality and notes.
+  const runCasting = useCallback(
+    (customLocality, customNotes) => {
+      const targetLocality = customLocality || locality;
+      const targetNotes = customNotes !== undefined ? customNotes : directorNotes;
+      if (customLocality) setLocality(customLocality);
+      if (customNotes !== undefined) setDirectorNotes(customNotes);
+      return guarded(
+        () => api.runCasting(projectId, { locality: targetLocality, director_notes: targetNotes }),
+        { rethrow: true }
+      );
+    },
+    [guarded, projectId, locality, directorNotes]
+  );
 
   // Re-read the stored GlobalState, e.g. after a skill run appended agent
   // traffic to the event log on the server.
   const refreshState = useCallback(async () => {
     if (!projectId) return;
-    const s = await api.getState(projectId);
-    setState(s);
-    if (s.locality) setLocality(s.locality);
-    if (s.director_notes) setDirectorNotes(s.director_notes);
-    setEvents(s.event_log);
-    setRevealed(s.event_log.length);
-  }, [projectId]);
+    adopt(await api.getState(projectId));
+  }, [projectId, adopt]);
 
   // The whole drop-a-script flow: seed the production, upload the screenplay,
   // run every phase, then load the results. `onStep` hears "reading" and then
-  // "planning" as each real step starts, so the progress screen never claims
-  // something finished before it has.
+  // "planning" (with the run's progress) as each real step starts, so the
+  // progress screen never claims something finished before it has.
   const startRun = useCallback(
     async ({ file, budget: amount, start, wrap, locality: place, notes }, onStep = () => {}) => {
       if (!projectId || !canEdit) throw new Error("Only producers and the owner can drop in a new script.");
       setRunning(true);
       setError("");
-      clearInterval(timerRef.current);
+      stopReplay();
       try {
         onStep("reading");
         await api.initPipeline(projectId, amount, place, notes, start, wrap);
@@ -177,18 +252,16 @@ export function ProjectProvider({ children }) {
         setLocality(place);
         setDirectorNotes(notes);
 
-        onStep("planning");
-        await api.runPipeline(projectId, amount, place, notes, start, wrap);
-        const s = await api.getState(projectId);
-        setState(s);
-        setEvents(s.event_log);
-        setRevealed(s.event_log.length);
-        return s;
+        onStep("planning", null);
+        return await runJob(() => api.runPipeline(projectId, amount, place, notes, start, wrap), {
+          replay: false,
+          onStatus: (status) => onStep("planning", status),
+        });
       } finally {
-        setRunning(false);
+        if (projectRef.current === projectId) setRunning(false);
       }
     },
-    [projectId, canEdit]
+    [projectId, canEdit, runJob]
   );
 
   // Called by the intake screen once the project has been seeded.
@@ -201,19 +274,23 @@ export function ProjectProvider({ children }) {
 
   // Applies a candidate-status change returned by the casting endpoint without
   // a full refetch, so the board updates the moment the request lands.
-  const applyCandidateUpdate = useCallback((candidate, castingStatus, eventLog) => {
+  const applyCandidateUpdate = useCallback((candidate, castingStatus, event) => {
     setState((prev) => {
       if (!prev) return prev;
       return {
         ...prev,
         casting_status: castingStatus ?? prev.casting_status,
         candidates: prev.candidates.map((c) => (c.id === candidate.id ? candidate : c)),
-        event_log: eventLog ?? prev.event_log,
+        event_log: event ? [...prev.event_log, event] : prev.event_log,
+        event_count: event ? (prev.event_count ?? prev.event_log.length) + 1 : prev.event_count,
       };
     });
-    if (eventLog) {
-      setEvents(eventLog);
-      setRevealed(eventLog.length);
+    if (event) {
+      stopReplay();
+      setFeed((f) => {
+        const events = [...f.events, event];
+        return { ...f, events, revealed: events.length, count: f.count + 1 };
+      });
     }
   }, []);
 
@@ -229,10 +306,12 @@ export function ProjectProvider({ children }) {
       startProject,
       state,
       setState,
-      events,
-      revealed,
-      setRevealed,
+      events: feed.events,
+      revealed: feed.revealed,
+      eventOffset: feed.offset,
+      eventCount: feed.count,
       running,
+      job,
       error,
       setError,
       runPipeline,
@@ -250,9 +329,9 @@ export function ProjectProvider({ children }) {
       intake,
       startProject,
       state,
-      events,
-      revealed,
+      feed,
       running,
+      job,
       error,
       runPipeline,
       runCasting,
@@ -271,4 +350,3 @@ export function useProject() {
   if (!ctx) throw new Error("useProject must be used inside <ProjectProvider>");
   return ctx;
 }
-

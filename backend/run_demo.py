@@ -7,8 +7,6 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-if hasattr(sys.stdout, "reconfigure"):
-    sys.stdout.reconfigure(encoding="utf-8")  # Windows consoles/pipes default to cp1252
 
 from core import config
 from core.orchestrator.graph import Orchestrator
@@ -16,15 +14,28 @@ from core.orchestrator.state import BudgetState, GlobalState
 from services import supabase_client
 
 
+def positive_amount(value: str) -> float:
+    """argparse type: a budget above zero, like the intake form requires."""
+    try:
+        amount = float(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{value!r} is not a number") from None
+    if not amount > 0:  # also refuses nan
+        raise argparse.ArgumentTypeError("the budget must be above zero")
+    return amount
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the full Lumen pipeline.")
     parser.add_argument("--project", default="PROJ_NEON_NIGHTS")
-    parser.add_argument("--budget", type=float, default=config.DEFAULT_BUDGET_USD,
+    parser.add_argument("--budget", type=positive_amount, default=config.DEFAULT_BUDGET_USD,
                         help="total production budget in USD (drives casting caps, venues, reach)")
     parser.add_argument("--locality", default="Atlanta, GA", help="filming locality for local talent scouting")
     parser.add_argument("--notes", default="", help="director's notes and casting directives")
     parser.add_argument("--verbose", action="store_true", help="print every A2A envelope")
     args = parser.parse_args()
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")  # Windows consoles/pipes default to cp1252
 
     state = GlobalState(
         project_id=args.project,

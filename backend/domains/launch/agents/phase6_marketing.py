@@ -50,6 +50,12 @@ def _reel_cutter(state: GlobalState) -> None:
     }))
 
 
+def _spoilers(reasons: list[str]) -> str:
+    """spoiler_high:'twist' -> “twist”"""
+    terms = [reason.split(":", 1)[-1].strip("'") for reason in reasons]
+    return ", ".join(f"“{term}”" for term in terms if term) or "the plot"
+
+
 def pr_risk_check(state: GlobalState, request: dict) -> dict:
     """agent_pr_risk: spoiler / cultural / tone / legal verdict on one asset draft."""
     caption = llm_output.text(request["payload"].get("caption")).lower()
@@ -96,7 +102,9 @@ def _visual(state: GlobalState) -> None:
                                 "reasons": verdict["reasons"], "auto_retry": attempt + 1 < config.MAX_ASSET_REGENERATIONS},
         }))
     else:
-        state.escalate(f"asset:{asset.asset_id}", "Meme still blocked after max regenerations")
+        state.escalate(f"asset:{asset.asset_id}",
+                       f"The meme was still held back after {config.MAX_ASSET_REGENERATIONS} drafts for giving away "
+                       f"{_spoilers(asset.content.get('blocked_reasons', []))}. Write one by hand or leave it out.")
 
     # Poster ships with copy merged into the same call (saves a call, per AGENT.md).
     poster = MarketingAsset(asset_id="AST_POSTER_0001", type="poster", status="APPROVED",
@@ -160,7 +168,10 @@ def _copywriter(state: GlobalState, plan: dict) -> None:
             asset.content["blocked_reasons"] = verdict["reasons"]
             update["blocker_details"] = {"blocked_by_agent": "agent_pr_risk",
                                          "reasons": verdict["reasons"], "auto_retry": False}
-            state.escalate(f"asset:{asset.asset_id}", f"Copy blocked by PR risk: {verdict['reasons']}")
+            label = "The press release" if asset_type == "press_release" else                 f"A {content.get('platform') or 'social'} post"
+            state.escalate(f"asset:{asset.asset_id}",
+                           f"{label} was held back for giving away {_spoilers(verdict['reasons'])}. "
+                           "Rewrite it without the spoiler.")
         log_event(state, broadcast("agent_copywriter", "asset_status_update", {**update, "status": asset.status}))
 
 

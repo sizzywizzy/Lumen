@@ -8,7 +8,10 @@ offline mock would have given, so a malformed reply degrades to the demo
 answer instead of crashing the run.
 """
 import math
+import re
 from typing import Any, Optional
+
+_CODE = re.compile(r"^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+$")
 
 
 def mapping(value: Any, default: Optional[dict] = None) -> dict:
@@ -62,3 +65,10 @@ def text(value: Any, default: str = "", limit: Optional[int] = None) -> str:
     if not out:
         out = str(default or "")
     return out[:limit] if limit else out
+
+
+def words(value: Any) -> str:
+    """A code such as EXPOSITION_OVERLOAD as plain words ("exposition
+    overload"); anything already written as prose is returned as it is."""
+    out = text(value)
+    return out.replace("_", " ").lower() if _CODE.match(out) else out

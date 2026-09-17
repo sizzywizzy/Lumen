@@ -3,9 +3,10 @@ import { api } from "../../lib/api.js";
 import { useProject } from "../../shared/ProjectContext.jsx";
 import Icon from "../../shared/Icon.jsx";
 
-// Director constraints that reconfigure the schedule agent
-// (PUT /api/production/settings/{project_id}). Extracted from ProdView so the
-// Settings route can host the same form without duplicating the logic.
+// Director constraints that reconfigure the schedule agent, and the
+// production's total budget (PUT /api/production/settings/{project_id}).
+// Extracted from ProdView so the Settings route can host the same form
+// without duplicating the logic.
 export default function DirectorControls({ onSaved }) {
   const { state, setState } = useProject();
   const budget = state?.budget_state || {};
@@ -17,7 +18,7 @@ export default function DirectorControls({ onSaved }) {
     start_date: schedule.shoot_settings?.start_date || "2026-09-01",
     min_hours_per_day: schedule.shoot_settings?.min_hours_per_day || 6,
     max_hours_per_day: schedule.shoot_settings?.max_hours_per_day || 10,
-    total_budget: budget.total_budget || 100000,
+    budget_usd: budget.cap || 250000,
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -37,7 +38,7 @@ export default function DirectorControls({ onSaved }) {
           .filter(Boolean),
         min_hours_per_day: Number(form.min_hours_per_day),
         max_hours_per_day: Number(form.max_hours_per_day),
-        total_budget: Number(form.total_budget),
+        budget_usd: Number(form.budget_usd) || undefined,
       });
       setState(updated);
       onSaved?.(updated);
@@ -78,7 +79,8 @@ export default function DirectorControls({ onSaved }) {
         </label>
         <label className="field">
           <span className="mono-label">Total budget (USD)</span>
-          <input className="input" type="number" min="0" value={form.total_budget} onChange={set("total_budget")} />
+          <input className="input" type="number" min="1" value={form.budget_usd} onChange={set("budget_usd")} />
+          <span className="field-hint">The same budget you entered with the script. It sets what each role and location can cost.</span>
         </label>
       </div>
       {error && (

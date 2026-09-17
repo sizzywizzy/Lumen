@@ -644,6 +644,31 @@
 /* a card with a slate's stripes along its top edge */
 .card--slate { background: var(--slate-stripes) top / 100% 7px no-repeat, var(--card-sheen), var(--surface-raised); }
 
+/* the sign-off queue: the requests the agents left for a person, typed up
+   like a call sheet, with a pencilled aside */
+.card--signoff { position: relative; background: var(--slate-stripes) top / 100% 7px no-repeat, var(--card-sheen), var(--surface-raised); }
+.signoff-note { right: 150px; top: 30px; font-size: 20px; rotate: -3deg; }
+.signoff-list { list-style: none; margin: 12px 0 0; padding: 0; }
+.signoff-row {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 16px;
+  padding: 14px 0; border-top: 1px dashed var(--outline-variant);
+}
+.signoff-row:first-child { border-top: 0; }
+.signoff-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.signoff-kicker {
+  font-family: var(--font-typewriter); font-size: 12px; line-height: 16px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--gold-ink);
+}
+.signoff-title { font-size: 17px; line-height: 24px; font-weight: 600; }
+.signoff-reason { font-size: 14px; line-height: 21px; color: var(--on-surface-variant); text-wrap: pretty; }
+@media (max-width: 1100px) {
+  .signoff-note { display: none; }
+}
+@media (max-width: 760px) {
+  .signoff-row { grid-template-columns: auto minmax(0, 1fr); gap: 10px 14px; }
+  .signoff-action { grid-column: 2; justify-self: start; }
+}
+
 /* the screening card is a ticket: its notches are a mask, which would cut a
    box-shadow, so the shadow comes from a filter on the card */
 .card--ticket { padding: 0; background: none; border: 0; box-shadow: none; filter: drop-shadow(0 20px 26px rgba(0, 0, 0, 0.45)); }

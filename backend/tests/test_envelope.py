@@ -4,8 +4,10 @@ The envelope is the one shape every agent shares, so these tests guard the
 rules that keep the Live Agent Terminal replayable: a closed intent vocabulary,
 a parseable message_id, and replies that actually link back to their request.
 """
+import importlib
 import json
 import re
+import time
 from pathlib import Path
 
 import pytest
@@ -43,6 +45,22 @@ def test_message_ids_are_unique_across_calls():
     ids = {make_envelope("agent_intake", ORCHESTRATOR, "candidate_ingested", {})["message_id"]
            for _ in range(50)}
     assert len(ids) == 50
+
+
+def _seq(envelope: dict) -> int:
+    return int(envelope["message_id"].rsplit("_", 1)[1])
+
+
+def test_message_ids_keep_increasing_across_a_restart():
+    """Event logs outlive the process: ids after a restart must not reuse old ones."""
+    from core.messaging import envelope as module
+
+    before = _seq(make_envelope("agent_intake", ORCHESTRATOR, "candidate_ingested", {}))
+    assert before >= 1_700_000_000 * 1_000_000, "ids start from the clock, not from 1"
+    time.sleep(0.001)
+    importlib.reload(module)  # what a restart does to the counter
+    after = _seq(module.make_envelope("agent_intake", ORCHESTRATOR, "candidate_ingested", {}))
+    assert after > before
 
 
 def test_reply_targets_the_original_sender_and_links_back():

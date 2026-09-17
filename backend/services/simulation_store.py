@@ -13,6 +13,7 @@ import threading
 from typing import Any, Optional
 
 from core import config
+from services import json_files
 
 _LOCK = threading.RLock()
 _supabase = None
@@ -41,8 +42,7 @@ def save(record: dict[str, Any]) -> dict[str, Any]:
         if config.has_supabase():
             _get_supabase().table(TABLE).upsert(record).execute()
             return record
-        path = _dir(record["project_id"]) / f"{record['simulation_id']}.json"
-        path.write_text(json.dumps(record, indent=2), encoding="utf-8")
+        json_files.write_json(_dir(record["project_id"]) / f"{record['simulation_id']}.json", record, indent=2)
     return record
 
 
@@ -53,10 +53,8 @@ def get(project_id: str, simulation_id: str) -> Optional[dict[str, Any]]:
             .eq("project_id", project_id).eq("simulation_id", simulation_id).execute().data
         )
         return rows[0] if rows else None
-    path = _dir(project_id) / f"{simulation_id}.json"
-    if not path.exists():
-        return None
-    return json.loads(path.read_text(encoding="utf-8"))
+    with _LOCK:
+        return json_files.read_json(_dir(project_id) / f"{simulation_id}.json")
 
 
 def list_for_project(project_id: str) -> list[dict[str, Any]]:
@@ -68,13 +66,14 @@ def list_for_project(project_id: str) -> list[dict[str, Any]]:
         )
     else:
         rows = []
-        for path in _dir(project_id).glob("SIM_*.json"):
-            if path.name.endswith(".panel.json"):
-                continue
-            try:
-                rows.append(json.loads(path.read_text(encoding="utf-8")))
-            except json.JSONDecodeError:
-                continue
+        with _LOCK:
+            for path in _dir(project_id).glob("SIM_*.json"):
+                if path.name.endswith(".panel.json"):
+                    continue
+                try:
+                    rows.append(json_files.read_json(path))
+                except (json.JSONDecodeError, FileNotFoundError):
+                    continue
         rows.sort(key=lambda r: r.get("created_at", ""), reverse=True)
     return rows
 
@@ -87,8 +86,7 @@ def save_panel(project_id: str, simulation_id: str, panel: dict[str, Any]) -> No
                 {"project_id": project_id, "simulation_id": simulation_id, "panel": panel}
             ).execute()
             return
-        path = _dir(project_id) / f"{simulation_id}.panel.json"
-        path.write_text(json.dumps(panel), encoding="utf-8")
+        json_files.write_json(_dir(project_id) / f"{simulation_id}.panel.json", panel)
 
 
 def get_panel(project_id: str, simulation_id: str) -> Optional[dict[str, Any]]:
@@ -98,7 +96,5 @@ def get_panel(project_id: str, simulation_id: str) -> Optional[dict[str, Any]]:
             .eq("project_id", project_id).eq("simulation_id", simulation_id).execute().data
         )
         return rows[0]["panel"] if rows else None
-    path = _dir(project_id) / f"{simulation_id}.panel.json"
-    if not path.exists():
-        return None
-    return json.loads(path.read_text(encoding="utf-8"))
+    with _LOCK:
+        return json_files.read_json(_dir(project_id) / f"{simulation_id}.panel.json")

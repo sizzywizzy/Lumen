@@ -61,7 +61,7 @@ export default function CastingView() {
     setStatusError("");
     try {
       const res = await api.setCandidateStatus(projectId, candidate.id, nextStatus, reason);
-      applyCandidateUpdate(res.candidate, res.casting_status, res.event_log);
+      applyCandidateUpdate(res.candidate, res.casting_status, res.event);
     } catch (e) {
       setStatusError(`Could not update ${candidate.name}: ${e.message || e}`);
     } finally {

@@ -11,12 +11,11 @@ state read would carry the image. The image rides in the record base64-encoded
 (a shrunk poster is a few hundred KB, the offline sketch a few KB); status
 reads skip it and only the image route loads it.
 """
-import json
-import os
 import threading
 from typing import Any, Optional
 
 from core import config
+from services import json_files
 
 _LOCK = threading.RLock()
 _supabase = None
@@ -53,11 +52,8 @@ def save(record: dict[str, Any]) -> dict[str, Any]:
         if config.has_supabase():
             _get_supabase().table(TABLE).upsert(row).execute()
             return row
-        path = _path(row["project_id"])
-        # Written beside the target and renamed, so a status poll never reads half a file.
-        tmp = path.with_suffix(".json.tmp")
-        tmp.write_text(json.dumps(row), encoding="utf-8")
-        os.replace(tmp, path)
+        # Atomic, so a status poll never reads half a file.
+        json_files.write_json(_path(row["project_id"]), row)
     return row
 
 
@@ -67,10 +63,10 @@ def get(project_id: str, *, with_image: bool = False) -> Optional[dict[str, Any]
         columns = ",".join((*META_COLUMNS, IMAGE_COLUMN) if with_image else META_COLUMNS)
         rows = _get_supabase().table(TABLE).select(columns).eq("project_id", project_id).execute().data
         return rows[0] if rows else None
-    path = _path(project_id)
-    if not path.exists():
+    with _LOCK:
+        row = json_files.read_json(_path(project_id))
+    if row is None:
         return None
-    row = json.loads(path.read_text(encoding="utf-8"))
     if not with_image:
         row.pop(IMAGE_COLUMN, None)
     return row

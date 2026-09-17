@@ -18,7 +18,10 @@ import hashlib
 import io
 import re
 from typing import Optional
-from xml.etree import ElementTree
+from xml.etree.ElementTree import ParseError
+
+from defusedxml import DefusedXmlException
+from defusedxml.ElementTree import fromstring as parse_xml
 
 MAX_CHARS = 400_000
 # The keys upload_script writes onto GlobalState.script_context. Phase agents
@@ -38,10 +41,20 @@ def _suffix(filename: str) -> str:
 
 
 def _from_fdx(raw: bytes) -> str:
-    """Final Draft: <Paragraph Type="Action"><Text>…</Text></Paragraph>."""
+    """Final Draft: <Paragraph Type="Action"><Text>…</Text></Paragraph>.
+
+    The upload is untrusted, so it is parsed with defusedxml and any DTD is
+    refused outright: Final Draft files never carry one, and a DTD is how
+    entity-expansion and external-entity attacks get in.
+    """
     try:
-        root = ElementTree.fromstring(raw)
-    except ElementTree.ParseError as exc:
+        root = parse_xml(raw, forbid_dtd=True)
+    except DefusedXmlException as exc:
+        raise ScriptExtractionError(
+            "This .fdx file declares a DTD or entities, which Lumen does not accept. "
+            "Export it again from Final Draft, or upload a PDF or .fountain file."
+        ) from exc
+    except ParseError as exc:
         raise ScriptExtractionError(f"Could not parse the .fdx file: {exc}") from exc
 
     lines: list[str] = []

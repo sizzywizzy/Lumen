@@ -326,7 +326,7 @@ def prepare_casting(skill: Skill, state: GlobalState, params: dict, stage: Stage
         return False
     stage("gather", "complete", candidates=0)
     stage("phases", "running")
-    Orchestrator().run(state, start="phase1", end="phase2")
+    Orchestrator().run(state, *PREPARED_PHASES["casting"])
     stage("phases", "complete", candidates=len(state.candidates), events=len(state.event_log))
     return True
 
@@ -496,7 +496,7 @@ def prepare_scheduling(skill: Skill, state: GlobalState, params: dict, stage: St
         return False
     stage("gather", "complete", scenes=0)
     stage("phases", "running")
-    Orchestrator().run(state, start="phase3", end="phase3")
+    Orchestrator().run(state, *PREPARED_PHASES["scheduling"])
     stage("phases", "complete", scenes=len(state.schedule.stripboard), events=len(state.event_log))
     return True
 
@@ -595,7 +595,7 @@ def run_audience(skill: Skill, state: GlobalState, params: dict, stage: StageFn,
     material, label = _material(state)
     stage("material", "complete", source=label, chars=len(material))
     panel_size = max(20, min(1000, int(params.get("panel_size") or skill.meta_int("panel_size", 200))))
-    seed = int(params.get("seed") or 20260903)
+    seed = int(params["seed"]) if params.get("seed") is not None else 20260903  # 0 is a valid seed
     # The Phase V staged simulator does the screening; the market scan is the
     # cultural-research skill's job, so no markets are passed here.
     result = audience_sim.run_simulation(
@@ -717,12 +717,17 @@ RUNNERS: dict[str, Callable[[Skill, GlobalState, dict, StageFn, list], dict]] = 
     "cultural-research": run_cultural,
 }
 
-# Skills whose inputs may have to be produced by phase agents first. Preparation
-# changes state fields (candidates, stripboard), so the router runs it under the
-# project lock and persists it before the slow advisory step begins.
+# Skills whose inputs may have to be produced by phase agents first, and the
+# phases they run. Preparation changes state fields (candidates, stripboard),
+# so the router merges its output onto the stored state before the slow
+# advisory step begins.
 PREPARERS: dict[str, Callable[[Skill, GlobalState, dict, StageFn], bool]] = {
     "casting": prepare_casting,
     "scheduling": prepare_scheduling,
+}
+PREPARED_PHASES: dict[str, tuple[str, str]] = {
+    "casting": ("phase1", "phase2"),
+    "scheduling": ("phase3", "phase3"),
 }
 
 

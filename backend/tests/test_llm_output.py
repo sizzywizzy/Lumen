@@ -35,3 +35,10 @@ def test_mapping_and_listing_copy_their_defaults():
     assert L.listing("nope", [1]) == [1]
     assert L.listing([2]) == [2]
     assert L.listing(None) == []
+
+
+def test_codes_read_as_words_and_prose_is_left_alone():
+    assert L.words("EXPOSITION_OVERLOAD") == "exposition overload"
+    assert L.words("Too much exposition in act two") == "Too much exposition in act two"
+    assert L.words("UAE") == "UAE"
+    assert L.words(None) == ""

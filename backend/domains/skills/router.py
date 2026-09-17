@@ -22,10 +22,12 @@ from core.audience import personas as panel_lib
 from core.auth.deps import current_user, require_member, require_producer
 from core.auth.models import Membership, User
 from core.auth.security import new_id
+from core.orchestrator import merge
+from core.orchestrator.graph import Orchestrator
 from core.skills import registry
 from core.skills.registry import Skill, SkillNotFound
 from domains.skills import agents
-from services import skill_store, supabase_client
+from services import script_intake, skill_store, supabase_client
 
 router = APIRouter(prefix="/api/skills", tags=["skills"])
 
@@ -120,28 +122,29 @@ def _worker(record: dict, skill: Skill, params: dict) -> None:
                 item["started_at" if status == "running" else "finished_at"] = _now()
         skill_store.save(record)
 
-    # Shared with the audience simulator, so an advisor run and a screening on
-    # the same production serialise their saves. The slow model step runs
-    # outside it.
-    lock = supabase_client.project_lock(project_id)
     try:
-        # 1. Under the project lock: read the state and, when the skill needs
-        #    phase output that is not there yet, run those phase agents and
-        #    persist the result at once, so two runs never seed the same pool.
-        with lock:
-            state = supabase_client.load_state(project_id)
-            if state is None:
-                raise agents.SkillInputError(f"No project state for {project_id}.")
-            if agents.prepare_skill(skill, state, params, stage):
+        # 1. Bring the state up to what the skill needs. When the pool or the
+        #    stripboard is empty, phase agents fill it on this copy and their
+        #    output is merged onto the stored state under the production's
+        #    lock, so an edit saved while they worked is kept.
+        state = supabase_client.load_state(project_id)
+        if state is None:
+            raise agents.SkillInputError(f"No project state for {project_id}.")
+        stored_len = len(state.event_log)
+        if agents.prepare_skill(skill, state, params, stage):
+            ran = Orchestrator().span(*agents.PREPARED_PHASES[skill.name])
+            with supabase_client.project_lock(project_id):
+                latest = supabase_client.load_state(project_id) or state
+                state = merge.merge_run(latest, state, ran, stored_len, keep_context=script_intake.INTAKE_KEYS)
                 supabase_client.save_state(state)
-            baseline = len(state.event_log)
+        baseline = len(state.event_log)
 
-        # 2. Outside the lock: the slow advisory step. It only appends envelopes.
+        # 2. The slow advisory step. It only appends envelopes.
         outcome = agents.run_skill(skill, state, params, stage, prepared=True)
 
-        # 3. Under the lock again: merge this run's envelopes onto whatever the
-        #    stored state is now (another advisor or a producer may have saved
-        #    in the meantime) rather than overwriting it with our stale copy.
+        # 3. Merge this run's envelopes onto whatever the stored state is now
+        #    (another advisor or a producer may have saved in the meantime)
+        #    rather than overwriting it with our stale copy.
         supabase_client.append_events(project_id, state.event_log[baseline:], state)
         record.update({
             "status": "complete",

@@ -130,8 +130,10 @@ export default function AgentLog({ events = [], connected = true, emptyHint, com
           {emptyHint || "Run the pipeline to watch the agents negotiate in real time."}
         </EmptyState>
       )}
-      {events.map((e) =>
-        compact ? <LogLine key={e.message_id} event={e} /> : <LogEntry key={e.message_id} event={e} />
+      {/* the log only grows, so the position keeps keys unique even where
+          older logs repeated a message id */}
+      {events.map((e, i) =>
+        compact ? <LogLine key={`${i}-${e.message_id}`} event={e} /> : <LogEntry key={`${i}-${e.message_id}`} event={e} />
       )}
     </>
   );

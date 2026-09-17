@@ -6,6 +6,10 @@ progress rather than blocking an HTTP request.
 
 Every route is scoped to the caller's production membership: starting a run
 needs producer/owner, reading results needs any role.
+
+One simulation runs per production at a time. Runs in flight are tracked in
+this process's memory, like advisor runs: a record still stored as "running"
+that no thread owns was cut off by a restart and is reported as failed.
 """
 import hashlib
 import threading
@@ -18,7 +22,6 @@ from pydantic import BaseModel, Field, field_validator
 
 from core.audience import personas as panel_lib
 from core.auth.deps import require_member, require_producer
-from core.auth.models import User
 from core.auth.security import new_id
 from domains.launch.agents import audience_sim
 from services import mock_db, simulation_store, supabase_client, tavily_client
@@ -37,6 +40,11 @@ STAGES = [
 
 MAX_PANEL = 1000
 MAX_MATERIAL_CHARS = 200_000
+INTERRUPTED = "Interrupted by a server restart. Start the simulation again."
+
+_ACTIVE: set[str] = set()       # productions with a simulation running now
+_ACTIVE_RUNS: set[str] = set()  # the simulation ids those threads own
+_LOCK = threading.Lock()
 
 DISCLAIMER = (
     "Simulated Audience Feedback. These results come from an AI-generated panel of "
@@ -55,8 +63,19 @@ class SimulationRequest(BaseModel):
     material_label: str = Field(default="", max_length=200)
     panel_size: int = Field(default=500, ge=20, le=MAX_PANEL)
     seed: Optional[int] = Field(default=None, ge=0, le=2**31 - 1)
-    markets: list[str] = Field(default_factory=lambda: ["US", "IN", "GB"])
+    markets: list[str] = Field(default_factory=lambda: ["US", "IN", "GB"], max_length=12)
     distribution: Optional[dict[str, dict[str, float]]] = None
+
+    @field_validator("markets")
+    @classmethod
+    def known_market_codes(cls, value):
+        # Same rule as the advisors' form: codes in any case, unknown ones named.
+        codes = list(dict.fromkeys(str(code).strip().upper() for code in value if str(code).strip()))
+        unknown = [code for code in codes if code not in panel_lib.MARKETS]
+        if unknown:
+            raise ValueError(f"Unknown market code(s): {', '.join(unknown)}. "
+                             f"Known: {', '.join(sorted(panel_lib.MARKETS))}.")
+        return codes
 
     @field_validator("distribution")
     @classmethod
@@ -145,6 +164,15 @@ def _skeleton(project_id: str, req: SimulationRequest, material: str, label: str
 
 def _execute(record: dict, material: str, seed: int, req: SimulationRequest) -> None:
     """The run itself. `_run_in_background` puts it on a thread; tests call it directly."""
+    try:
+        _simulate(record, material, seed, req)
+    finally:
+        with _LOCK:
+            _ACTIVE.discard(record["project_id"])
+            _ACTIVE_RUNS.discard(record["simulation_id"])
+
+
+def _simulate(record: dict, material: str, seed: int, req: SimulationRequest) -> None:
     project_id = record["project_id"]
 
     def on_stage(name: str, status: str, detail: dict):
@@ -232,15 +260,42 @@ def start_simulation(project_id: str, req: SimulationRequest, membership=Depends
     elif not label:
         label = "Pasted material"
 
-    unknown = [m for m in req.markets if m not in panel_lib.MARKETS]
-    if unknown:
-        raise HTTPException(400, f"Unknown market codes: {unknown}. Known: {sorted(panel_lib.MARKETS)}")
-
     seed = req.seed if req.seed is not None else int(datetime.now().timestamp())
     record = _skeleton(project_id, req, material, label, seed)
-    simulation_store.save(record)
-    _run_in_background(record, material, seed, req)
+    with _LOCK:
+        if project_id in _ACTIVE:
+            raise HTTPException(409, "A simulation is already running for this production. "
+                                     "Wait for it to finish, then start the next one.")
+        _ACTIVE.add(project_id)
+        _ACTIVE_RUNS.add(record["simulation_id"])
+    try:
+        simulation_store.save(record)
+        _run_in_background(record, material, seed, req)
+    except Exception:
+        with _LOCK:
+            _ACTIVE.discard(project_id)
+            _ACTIVE_RUNS.discard(record["simulation_id"])
+        raise
     return {"simulation_id": record["simulation_id"], "status": "running", "stages": record["stages"]}
+
+
+def _settle_interrupted(record: dict) -> dict:
+    """A record stored as running that no thread here owns was cut off by a
+    restart: say so, and store that, instead of leaving it running forever."""
+    if record.get("status") != "running":
+        return record
+    with _LOCK:
+        owned = record["simulation_id"] in _ACTIVE_RUNS
+    if owned:
+        return record
+    record["status"] = "failed"
+    record["error"] = record.get("error") or INTERRUPTED
+    record["completed_at"] = record.get("completed_at") or _now()
+    for stage in record.get("stages") or []:
+        if stage.get("status") == "running":
+            stage["status"] = "failed"
+    simulation_store.save(record)
+    return record
 
 
 def _stored_material_meta(project_id: str) -> dict:
@@ -266,7 +321,7 @@ def _stored_material_meta(project_id: str) -> dict:
 @router.get("/simulations/{project_id}")
 def list_simulations(project_id: str, _member=Depends(require_member)):
     """History, newest first — this is what makes v1 vs v2 comparison possible."""
-    rows = simulation_store.list_for_project(project_id)
+    rows = [_settle_interrupted(r) for r in simulation_store.list_for_project(project_id)]
     return {
         "simulations": [
             {
@@ -299,7 +354,7 @@ def get_simulation(project_id: str, simulation_id: str, _member=Depends(require_
     record = simulation_store.get(project_id, simulation_id)
     if record is None:
         raise HTTPException(404, "No such simulation for this production.")
-    return record
+    return {k: v for k, v in _settle_interrupted(record).items() if k != "traceback"}
 
 
 @router.get("/simulations/{project_id}/{simulation_id}/panel")

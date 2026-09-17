@@ -6,11 +6,11 @@ the result envelope and the provenance of every model call, so a producer can
 tell a live Gemini answer from the offline fallback.
 """
 import json
-import os
 import threading
 from typing import Any, Optional
 
 from core import config
+from services import json_files
 
 _LOCK = threading.RLock()
 _supabase = None
@@ -38,12 +38,9 @@ def save(record: dict[str, Any]) -> dict[str, Any]:
         if config.has_supabase():
             _get_supabase().table(TABLE).upsert(record).execute()
             return record
-        path = _dir(record["project_id"]) / f"{record['run_id']}.json"
-        # The worker saves after every stage while the dashboard polls; write
-        # to a sibling and rename so a reader never sees a half-written file.
-        tmp = path.with_suffix(".json.tmp")
-        tmp.write_text(json.dumps(record, indent=2, default=str), encoding="utf-8")
-        os.replace(tmp, path)
+        # The worker saves after every stage while the dashboard polls; the
+        # write is atomic so a reader never sees a half-written file.
+        json_files.write_json(_dir(record["project_id"]) / f"{record['run_id']}.json", record, indent=2, default=str)
     return record
 
 
@@ -54,11 +51,8 @@ def get(project_id: str, run_id: str) -> Optional[dict[str, Any]]:
             .eq("project_id", project_id).eq("run_id", run_id).execute().data
         )
         return rows[0] if rows else None
-    path = _dir(project_id) / f"{run_id}.json"
     with _LOCK:
-        if not path.exists():
-            return None
-        return json.loads(path.read_text(encoding="utf-8"))
+        return json_files.read_json(_dir(project_id) / f"{run_id}.json")
 
 
 def list_for_project(project_id: str) -> list[dict[str, Any]]:
@@ -73,8 +67,8 @@ def list_for_project(project_id: str) -> list[dict[str, Any]]:
     with _LOCK:
         for path in _dir(project_id).glob("RUN_*.json"):
             try:
-                rows.append(json.loads(path.read_text(encoding="utf-8")))
-            except json.JSONDecodeError:
+                rows.append(json_files.read_json(path))
+            except (json.JSONDecodeError, FileNotFoundError):
                 continue
     rows.sort(key=lambda r: r.get("created_at", ""), reverse=True)
     return rows

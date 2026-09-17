@@ -57,6 +57,57 @@ COHORT_SYSTEM = (
     "one_line_reaction: string}]}"
 )
 
+# ----------------------------------------------------------- scene screening --
+# The pipeline's test screening (Phase V): the same cohorts, scored scene by scene.
+
+SCENE_SCREENING_SYSTEM = (
+    "You are modelling how distinct audience cohorts would react to each scene of a film at "
+    "a test screening, for a production's internal research. For EACH cohort supplied, score "
+    "EVERY scene listed from 1 to 10 for how well it holds that cohort's attention and lands "
+    "with them, reasoning from the cohort's stated viewing traits.\n\n"
+    "Rules:\n"
+    "- Use each scene_id exactly as given, and score only the scenes listed.\n"
+    "- Cohorts must genuinely differ where their traits would make them differ; never copy "
+    "one cohort's scores or reaction to another.\n"
+    "- Ground every reaction in what the scene titles, summaries and tags actually say.\n"
+    "- Do not describe a market or age group as monolithic, and avoid stereotypes: reason "
+    "about viewing habits and genre expectations, not identity.\n\n"
+    "Reply with JSON: {cohorts: [{cohort_id: string, "
+    "scene_scores: {<scene_id>: number 1-10}, would_recommend_rate: number 0-1, "
+    "one_line_reaction: string}]}"
+)
+
+# Offline scene verdicts: a steady base per scene moved by its tags, a lift for
+# viewers who already watch the genre, and the one reaction the demo screening
+# is built around - viewers under 25 lose patience with exposition. Stated
+# rules, so the offline demo replays identically and reads as a stand-in.
+MOCK_SCENE_BASE = 7.0
+MOCK_SCENE_TAG_SHIFT = {
+    "action": 0.8, "finale": 0.4, "night": 0.3, "rain": 0.3, "resolution": 0.3,
+    "music": 0.2, "crowd": 0.1, "dialogue": -0.3, "exposition": -0.9,
+}
+MOCK_GENRE_SHIFT = {"genre_fan": 0.4, "outside_genre": -0.6}
+MOCK_UNDER_25_EXPOSITION = -2.6
+
+
+def mock_scene_verdict(cohort: dict, scenes: list[dict]) -> dict:
+    scores = {}
+    for scene in scenes:
+        tags = set(scene.get("tags") or [])
+        score = MOCK_SCENE_BASE + sum(MOCK_SCENE_TAG_SHIFT.get(tag, 0.0) for tag in tags)
+        score += MOCK_GENRE_SHIFT.get(cohort.get("genre_affinity"), 0.0)
+        if cohort.get("age_band") == "under_25" and "exposition" in tags:
+            score += MOCK_UNDER_25_EXPOSITION
+        scores[scene["scene_id"]] = round(max(1.0, min(10.0, score)), 1)
+    fan = cohort.get("genre_affinity") == "genre_fan"
+    return {
+        "scene_scores": scores,
+        "would_recommend_rate": 0.7 if fan else 0.5,
+        "one_line_reaction": ("Exactly the kind of film this group seeks out." if fan
+                              else "Well made, if not quite this group's usual pick."),
+    }
+
+
 # ---------------------------------------------------- cultural sensitivity --
 
 SENSITIVITY_SYSTEM = (

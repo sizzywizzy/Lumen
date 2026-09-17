@@ -6,7 +6,7 @@
 // clipped along with it.
 
 const TARGETS = [
-  ".btn", ".nav-item", ".nav-tab", ".site-tab", ".tab", ".pill-tab", ".pill-toggle button",
+  ".btn", ".site-tab", ".tab", ".pill-tab", ".pill-toggle button",
   ".account-item", ".account-button", ".month-tile", ".tag-chip", ".status-pill--button",
   ".status-option", ".drop", ".dropzone", ".card-link", ".home-link",
   ".actor-card__print", ".profile-strip__frame", "button.credit__frame",

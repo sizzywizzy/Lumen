@@ -7,7 +7,7 @@ VENV ?= backend/.venv
 PIP := $(VENV)/bin/pip
 PYTHON_BIN := $(VENV)/bin/python
 
-.PHONY: all install setup test build clean dev run backend frontend docs help check-tools
+.PHONY: all install setup test demo build clean dev run backend frontend docs help check-tools
 
 all: install setup test build
 
@@ -18,10 +18,11 @@ check-tools:
 
 install: check-tools $(VENV)/bin/activate frontend/node_modules
 
-$(VENV)/bin/activate: backend/requirements.txt
+$(VENV)/bin/activate: backend/requirements.txt backend/requirements-dev.txt
 	@test -d $(VENV) || $(PYTHON) -m venv $(VENV)
 	$(PIP) install --upgrade pip
-	$(PIP) install -r backend/requirements.txt
+	$(PIP) install -r backend/requirements-dev.txt
+	@touch $(VENV)/bin/activate
 
 frontend/node_modules: frontend/package.json frontend/package-lock.json
 	$(NPM) --prefix frontend ci
@@ -32,9 +33,14 @@ setup:
 		printf '%s\n' 'Created .env from .env.example; add credentials if needed.'; \
 	fi
 
+# The suite runs offline and never touches backend/.state/ or Supabase.
 test: install
-	$(PYTHON_BIN) -m compileall -q backend
-	$(PYTHON_BIN) backend/run_demo.py --project PROJ_NEON_NIGHTS
+	cd backend && $(abspath $(PYTHON_BIN)) -m pytest
+
+# The full mock pipeline in the terminal. It saves its state the way the API
+# does (to Supabase when .env points there), so it uses a project of its own.
+demo: install
+	$(PYTHON_BIN) backend/run_demo.py --project PROJ_TERMINAL_DEMO
 
 build: install
 	$(NPM) --prefix frontend run build
@@ -74,9 +80,10 @@ help:
 		'Available targets:' \
 		'  make all         Install dependencies, set up the environment, test, and build' \
 		'  make check-tools Verify required tools (python3, node, npm) are installed' \
-		'  make install     Install Python and frontend dependencies' \
+		'  make install     Install Python (with the test runner) and frontend dependencies' \
 		'  make setup       Create .env from .env.example when .env is missing' \
-		'  make test        Compile the backend and run the full mock pipeline' \
+		'  make test        Run the backend test suite (offline, no keys needed)' \
+		'  make demo        Run the full mock pipeline in the terminal' \
 		'  make build       Build the frontend for production' \
 		'  make dev         Show commands for starting backend and frontend development servers' \
 		'  make run         Start the full backend and frontend stack with Docker Compose' \

@@ -11,7 +11,7 @@
     "director_notes": { "type": "string" },
     "script_context": {
       "type": "object",
-      "description": "genre, tone, demographic targets, IP params"
+      "description": "the brief (title, genre, tone, demographic targets, IP params), the screenplay from intake (raw_text and its metadata), and Phase III's scene breakdown (scenes: scene_id, heading, title, tags, assets, ...)"
     },
     "role_requirements": {
       "type": "object",
@@ -106,15 +106,15 @@
     },
     "budget_state": {
       "type": "object",
-      "description": "cap is the total production budget (USD) entered at intake; it drives casting caps, venue choices and territory reach",
+      "description": "cap is the total production budget (USD) entered at intake or in Settings; it drives casting caps, venue choices and territory reach. total_budget, spent and remaining are derived (cap, the sum of expenses, and the difference) and written for readers only",
       "properties": {
         "daily_burn": { "type": "number" },
         "cap": { "type": "number" },
         "alerts": { "type": "array" },
-        "expenses": { "type": "array" },
-        "total_budget": { "type": "number" },
-        "spent": { "type": "number" },
-        "remaining": { "type": "number" }
+        "expenses": { "type": "array", "description": "logged by the team; starts empty" },
+        "total_budget": { "type": "number", "description": "derived: equals cap" },
+        "spent": { "type": "number", "description": "derived: sum of expenses" },
+        "remaining": { "type": "number", "description": "derived: cap - spent" }
       }
     },
     "compliance_state": {
@@ -136,6 +136,7 @@
         "scene_titles": { "type": "object", "description": "scene_id -> title" },
         "viewer_count": { "type": "integer" },
         "verdict": { "type": "string", "enum": ["", "fresh", "rotten"] },
+        "screening_source": { "type": "string", "enum": ["", "live", "mixed", "offline"], "description": "who scored the scenes: the model, partly the model, or the stated offline rules" },
         "reviews": {
           "type": "array",
           "items": {

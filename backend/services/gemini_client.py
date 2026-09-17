@@ -1,8 +1,9 @@
 """Gemini wrapper — the ONLY place LLM calls happen.
 
 Guardrails (AGENT.md): Flash by default, Pro only for heavy reasoning, and
-structured JSON output always (never parse prose). With no GEMINI_API_KEY the
-caller gets its `mock` value back, so the whole pipeline demos offline.
+structured JSON output always (never parse prose). With no GEMINI_API_KEY (and
+no Vertex opt-in, see core/config.py) the caller gets its `mock` value back,
+so the whole pipeline demos offline.
 
 Install `google-genai` (see requirements.txt) before setting a real key.
 
@@ -47,13 +48,19 @@ def _get_client():
                     api_key=config.GEMINI_API_KEY,
                     http_options=types.HttpOptions(timeout=config.GEMINI_TIMEOUT_MS),
                 )
-            else:
-                # Direct Google Cloud ADC via Vertex AI — no explicit API key needed
+            elif config.has_vertex():
+                # Vertex AI on Google Cloud credentials, switched on explicitly
+                # with GOOGLE_GENAI_USE_VERTEXAI and GOOGLE_CLOUD_PROJECT.
                 _client = genai.Client(
                     vertexai=True,
                     project=config.GOOGLE_CLOUD_PROJECT,
                     location=config.GOOGLE_CLOUD_LOCATION,
                     http_options=types.HttpOptions(timeout=config.GEMINI_TIMEOUT_MS),
+                )
+            else:
+                raise GeminiUnavailable(
+                    "No Gemini access: set GEMINI_API_KEY, or GOOGLE_GENAI_USE_VERTEXAI=true "
+                    "with GOOGLE_CLOUD_PROJECT and gcloud credentials."
                 )
     return _client
 

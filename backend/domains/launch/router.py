@@ -1,6 +1,6 @@
 """API endpoints for Phases V & VI (launch). Mounted under /api/launch.
 
-  POST /api/launch/run/{project_id}           Phase V + VI on the stored state
+  POST /api/launch/run/{project_id}           Phase V + VI on the stored state (background)
   GET  /api/launch/poster/{project_id}        the production's poster and whether one is painting
   POST /api/launch/poster/{project_id}        paint a new poster in another style (producer/owner)
   GET  /api/launch/poster/{project_id}/image  the poster image itself
@@ -11,8 +11,8 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 
 from core.auth.deps import require_member, require_producer
 from core.auth.models import Membership
-from core.orchestrator.graph import Orchestrator
 from domains.launch import posters
+from domains.pipeline import jobs
 from services import poster_store, supabase_client
 
 router = APIRouter(prefix="/api/launch", tags=["launch"])
@@ -28,18 +28,23 @@ _IMAGE_HEADERS = {
 _IMAGE_TYPES = ("image/png", "image/jpeg", "image/webp", "image/svg+xml")
 
 
-@router.post("/run/{project_id}")
-def run_launch(project_id: str, _member=Depends(require_producer)):
-    """Run Phase V (audience sim) + Phase VI (marketing) on the stored state."""
-    state = supabase_client.load_state(project_id)
-    if state is None:
-        raise HTTPException(404, f"No state for {project_id}. POST /api/pipeline/init first.")
-    state = Orchestrator().run(state, start="phase5", end="phase6")
-    supabase_client.save_state(state)
+def _launch_summary(state) -> dict:
     return {
         "audience_report": state.audience_report.model_dump(),
         "marketing_assets": [a.model_dump() for a in state.marketing_assets],
     }
+
+
+@router.post("/run/{project_id}", status_code=202)
+def run_launch(project_id: str, membership: Membership = Depends(require_producer)):
+    """Run Phase V (audience sim) + Phase VI (marketing) on the stored state, in
+    the background. Poll /api/pipeline/status for progress."""
+    if supabase_client.load_state(project_id) is None:
+        raise HTTPException(404, f"No state for {project_id}. POST /api/pipeline/init first.")
+    try:
+        return jobs.start(project_id, "launch", started_by=membership.user_id, summary=_launch_summary)
+    except jobs.PipelineBusy:
+        raise HTTPException(409, "Lumen is already working on this production. Wait for that run to finish.") from None
 
 
 @router.get("/poster/{project_id}")
