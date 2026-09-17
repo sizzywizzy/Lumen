@@ -18,9 +18,9 @@ This is the single source of truth. If you add or change an agent, update this f
 **Guardrails (apply to every agent):**
 - `max_iterations` = 1–2 per negotiation loop. Never unbounded.
 - **Fail-fast:** non-compliant items (PR liability, over budget, hard censorship block) are purged before expensive steps.
-- **Model tiering:** the Flash tier (`GEMINI_FLASH_MODEL`) by default; the Pro tier (`GEMINI_PRO_MODEL`) only for heavy reasoning (script reads, final synthesis, recut). Both default to `gemini-3.6-flash` (`backend/core/config.py`), each followed by a fallback chain. Vertex AI stands in for a key only on explicit opt-in (`GOOGLE_GENAI_USE_VERTEXAI` plus `GOOGLE_CLOUD_PROJECT`).
+- **Model tiering:** the Flash tier (`GEMINI_FLASH_MODEL`) by default; the Pro tier (`GEMINI_PRO_MODEL`) only for heavy reasoning (script reads, final synthesis, recut). Both default to `gemini-3.6-flash` (`backend/core/config.py`), each followed by a fallback chain.
 - **Structured output:** every agent returns validated JSON (Gemini JSON mode). Never parse prose.
-- **Cost:** keep model inputs small (clipped script reads, screening packets), batch where possible, cache reusable prompts.
+- **Cost:** keep model inputs small (clipped script reads, screening packets), batch where possible, cache reusable prompts. Everything runs on free plans: Lumen sends Gemini only JSON text requests with an API key, and has no code for the paid-only features (Google Search grounding, image generation) or Vertex AI. A rate-limited call waits as long as Google asks (up to 20 s), then moves to the next model; a timed-out call (504) moves on at once.
 
 ---
 
@@ -64,6 +64,9 @@ Rules:
   "audience_report":  { "tomatometer", "audience_score", "heatmap", "weakest_scene_id", "screening_source" /* live | mixed | offline */ },
   "marketing_assets": [ { "asset_id", "type", "status", "source_scene_id" } ],
   "human_escalations":[ { "queue_item", "reason" } ],
+  "model_use":        { "<phase key>": { "live", "sample", "reason", "sample_script" } /* what the phase's
+                        last run made of its model calls, so the pages can say which parts of a plan are
+                        Lumen's sample output */ },
   "event_log":        [ /* every A2A envelope, in order */ ]
 }
 ```
@@ -84,7 +87,7 @@ Model: Gemini Pro. In: `script_context`, exec brief; reads the screenplay droppe
 Intents: emits `mandate_ready`.
 
 **`agent_casting_scout`** — *Talent Scout.*
-Model: Gemini Flash with Google Search grounding, plus Tavily when configured; an offline pool of local actors otherwise. In: `locality`, `director_notes`, `role_requirements`, the per-role cap. Out: scouted candidates for `agent_intake`. A candidate the model files under a role the script does not have goes to one of the script's roles instead, and quotes and follower counts must be numbers.
+Model: Gemini Flash (free tier) reading two Tavily searches. It may suggest only people the results name, each keeps the page that names them, and TMDb adds a headshot and known-for credits when it lists exactly one actor by that name, labelled as a name match. Searches look for actors in the locality; the roles and director's notes go only to the model, and fee estimates are not bent to fit the cap, so the finance check can rule out stars. With no key or no results, a labelled offline demo cast. In: `locality`, `director_notes`, `role_requirements`, the per-role cap. Out: scouted candidates for `agent_intake`. A candidate the model files under a role the script does not have goes to one of the script's roles instead, and quotes and follower counts must be numbers. Fees and follower counts of live finds are estimates (`quote_is_estimate`, `followers_estimated`).
 Intents: handles `scout_local_talent`; broadcasts `crawl_locality_started` and `crawl_locality_completed`.
 
 **`agent_intake`** — *Sourcing / Intake Gateway.*
@@ -161,7 +164,7 @@ Intents: emits `leaderboard_ready`; pushes top-N to `human_escalations`.
 
 **`agent_reel_cutter`** — In: `weakest/strongest` scene scores. Out: a still-sequence reel spec cut from the top-scored scene; no video generation by design. Emits `reel_ready`.
 
-**`agent_visual`** — Model: Gemini Flash, plus a Gemini image model for the poster. Out: art-direction specs for memes/thumbnails (caption, image prompt, alt text), and the production's poster. After a pipeline run on a screenplay without one, or on request from the Overview, the poster takes a style drawn at random (never the previous poster's), a concept (tagline, scene, palette) that goes through `agent_pr_risk`, and portrait art painted with no lettering, or an SVG sketch without a key. Posters run in the background (`domains/launch/posters.py`) and live in `cn_posters`, outside GlobalState. Sends `verify_brand_safety`; on rejection regenerates (≤2 tries).
+**`agent_visual`** — Model: Gemini Flash. Out: art-direction specs for memes/thumbnails (caption, image prompt, alt text), and the production's poster. After a pipeline run on a screenplay without one, or on request from the Overview, the poster takes a style drawn at random (never the previous poster's), and a concept (tagline and palette) that goes through `agent_pr_risk`; Lumen then draws the art as an SVG in the style's motif and the concept's palette, with no lettering. No model paints: image generation is not in Gemini's free tier. Without a key, or when the model fails or PR review blocks every draft, the genre's tagline and colours stand in (`fallback_reason`). Posters run in the background (`domains/launch/posters.py`) and live in `cn_posters`, outside GlobalState. Sends `verify_brand_safety`; on rejection regenerates (≤2 tries).
 
 **`agent_copywriter`** — Model: Gemini Flash. Out: platform-native copy / press release. (Often merged into the visual call to save calls.)
 

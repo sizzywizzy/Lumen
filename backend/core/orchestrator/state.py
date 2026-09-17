@@ -141,6 +141,10 @@ class GlobalState(BaseModel):
     audience_report: AudienceReport = Field(default_factory=AudienceReport)
     marketing_assets: list[MarketingAsset] = Field(default_factory=list)
     human_escalations: list[HumanEscalation] = Field(default_factory=list)
+    # What each phase's last run made of its model calls, so the pages can say
+    # which parts of a plan are Lumen's sample output rather than the model's:
+    # {"phase1": {"live": 2, "sample": 1, "reason": "no_api_key", "sample_script": true}}
+    model_use: dict[str, Any] = Field(default_factory=dict)
     event_log: list[dict[str, Any]] = Field(default_factory=list)  # A2A envelopes, in order
 
     def active_candidates(self) -> list[Candidate]:

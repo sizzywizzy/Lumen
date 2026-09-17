@@ -48,7 +48,7 @@ export default function CastingView() {
       await runCasting(scoutLocality, scoutNotes);
       setShowScoutModal(false);
     } catch (err) {
-      setStatusError(`Google Cloud Talent Scout Agent error: ${err.message || err}`);
+      setStatusError(`Talent scout error: ${err.message || err}`);
     } finally {
       setScouting(false);
     }
@@ -116,7 +116,7 @@ export default function CastingView() {
     <>
       <PageHeader
         title="Casting Leaderboard"
-        sub={`Real-time candidate evaluation for ${state?.project_id || "this project"}. Sourcing and ranking powered by Google Cloud Autonomous Talent Scout Agent.`}
+        sub={`Candidate evaluation for ${state?.project_id || "this project"}. The talent scout finds actors on the web, and Lumen's casting agents rank them.`}
         meta={
           <div className="stack stack--xs">
             {STAGE_BY_PATH["/casting"]}
@@ -155,7 +155,7 @@ export default function CastingView() {
                   setShowScoutModal((s) => !s);
                 }}
                 disabled={running || scouting || !canEdit}
-                title="Crawl and scout local actors using Google Cloud Agent"
+                title="Search the web for local actors"
               >
                 <Icon name={scouting ? "progress_activity" : "radar"} className={scouting ? "spin" : undefined} />
                 <span>{scouting ? "Scouting..." : "Scout Local Talent"}</span>
@@ -174,14 +174,14 @@ export default function CastingView() {
           <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
             <h3 className="panel-title mono-label" style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <Icon name="travel_explore" />
-              Google Cloud Talent Scout Agent — Crawler Configuration
+              Talent Scout — Search Settings
             </h3>
             <button type="button" className="btn btn--icon btn--ghost" onClick={() => setShowScoutModal(false)}>
               <Icon name="close" size={16} />
             </button>
           </div>
           <p className="body-sm muted">
-            Directs the Google Cloud casting agent to crawl local agency rosters, actor databases, and casting calls in your locality, strictly vetted to fit within your per-role budget cap and director notes.
+            The talent scout searches the web for actors in your locality, from agency rosters to local film listings, and Gemini picks the ones who fit your roles, director's notes and per-role budget cap.
           </p>
           <div className="grid grid--2" style={{ gap: 16 }}>
             <div>
@@ -229,7 +229,7 @@ export default function CastingView() {
               disabled={running || scouting || !canEdit}
             >
               <Icon name={scouting ? "progress_activity" : "search"} className={scouting ? "spin" : undefined} />
-              <span>{scouting ? "Google Cloud Agent Crawling..." : "Crawl & Scout Candidates"}</span>
+              <span>{scouting ? "Scouting…" : "Scout candidates"}</span>
             </button>
           </div>
         </Panel>
@@ -282,10 +282,10 @@ export default function CastingView() {
         {ranked.length === 0 ? (
           <EmptyState
             icon={running || scouting ? "progress_activity" : "groups"}
-            title={running || scouting ? "Google Cloud Agent is crawling talent..." : "No candidates yet"}
+            title={running || scouting ? "The talent scout is searching…" : "No candidates yet"}
           >
             {running || scouting
-              ? `The Google Cloud Agent is crawling talent agencies and local rosters in ${activeLocality} within your budget cap.`
+              ? `The talent scout is searching agency rosters and local listings in ${activeLocality} for actors within your budget cap.`
               : `Click "Scout Local Talent" or run the pipeline to crawl actors in ${activeLocality} matching your director notes.`}
           </EmptyState>
         ) : (
@@ -336,12 +336,12 @@ export default function CastingView() {
                               </div>
                               <div className="row row--tight" style={{ gap: 6, marginTop: 3, flexWrap: "wrap" }}>
                                 {c.metadata?.is_live_scouted ? (
-                                  <span className="badge" style={{ fontSize: 10, padding: "1px 6px", color: "var(--status-ok, #3fb950)", borderColor: "rgba(63, 185, 80, 0.4)" }} title="Live scouted via Google Cloud Gemini + Google Search Grounding">
-                                    🟢 Live Google Search
+                                  <span className="badge" style={{ fontSize: 10, padding: "1px 6px", color: "var(--status-ok, #3fb950)", borderColor: "rgba(63, 185, 80, 0.4)" }} title={c.metadata.scouted_via || "Found on the web"}>
+                                    🟢 Live web search
                                   </span>
                                 ) : (
-                                  <span className="badge" style={{ fontSize: 10, padding: "1px 6px", color: "var(--text-muted, #8b949e)" }} title="Generated via locality-based synthesis fallback (no GEMINI_API_KEY set)">
-                                    ⚪ Offline Locality Synthesis
+                                  <span className="badge" style={{ fontSize: 10, padding: "1px 6px", color: "var(--text-muted, #8b949e)" }} title={c.metadata?.scouted_via || "Offline demo cast"}>
+                                    ⚪ Offline demo cast
                                   </span>
                                 )}
                                 {c.metadata?.director_match && (

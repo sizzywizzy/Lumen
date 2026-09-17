@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import Icon from "../../shared/Icon.jsx";
 import { cn, money } from "../../lib/utils.js";
-import { calendarDays, dayLabel, dayOfMonth, hoursText, weekdayShort } from "../../lib/production.js";
+import { calendarDays, dayLabel, dayOfMonth, hoursText, sampleOutput, weekdayShort } from "../../lib/production.js";
 
 // Initials until the data carries a headshot (see actor() in lib/production.js).
 const Avatar = ({ person, className }) => (
@@ -220,6 +220,24 @@ export function Quotes({ reviews }) {
 }
 
 // Shown on every results page until the first script has been planned.
+// Says so when a plan is Lumen's sample output rather than the model's read of
+// the screenplay, so nobody takes the sample film's scenes and scores for their own.
+export function SampleDataNote({ state }) {
+  const sample = sampleOutput(state);
+  if (!sample) return null;
+  return (
+    <div className="banner" data-tone="warn" role="note">
+      <Icon name="info" />
+      <span className="banner__text">
+        {sample.script
+          ? `This plan is Lumen's sample film, not your screenplay: nothing read it, because ${sample.why}. `
+          : `${sample.sample} of ${sample.steps} steps in this plan use Lumen's sample output, because ${sample.why}. `}
+        {sample.fix}
+      </span>
+    </div>
+  );
+}
+
 export function NoPlanYet({ canEdit }) {
   return (
     <section className="card empty-plan">

@@ -103,3 +103,27 @@ def test_run_continues_through_every_phase_when_no_edge_trips():
 def test_run_rejects_an_invalid_phase_range(start, end):
     with pytest.raises(ValueError, match="Invalid phase range"):
         Orchestrator().run(_state(), start=start, end=end)
+
+
+# ------------------------------------------------- what each phase's calls were --
+
+
+def test_a_run_records_the_model_calls_each_phase_made(offline):
+    """The pages say which parts of a plan are Lumen's sample output, so a run
+    counts the calls the model answered and the ones that fell back."""
+    state = Orchestrator().run(_state(), start="phase1", end="phase3")
+
+    assert list(state.model_use) == ["phase1", "phase2", "phase3"]
+    assert all(use["live"] == 0 for use in state.model_use.values()), "no key, so no call was answered"
+    assert state.model_use["phase1"]["sample"] > 0 and state.model_use["phase2"]["sample"] > 0
+    assert {use["reason"] for use in state.model_use.values() if use["sample"]} == {"no_api_key"}
+
+
+def test_an_unread_screenplay_is_recorded_as_the_sample_script(offline):
+    """With no model, Phase I plans Lumen's sample film. A producer whose own
+    screenplay is stored has to be told, or the plan reads as theirs."""
+    theirs = _state(script_context={"raw_text": "INT. KITCHEN - DAY\nShe counts the tips again.\n" * 40})
+    assert Orchestrator().run(theirs, start="phase1", end="phase1").model_use["phase1"]["sample_script"] is True
+
+    demo_only = Orchestrator().run(_state(), start="phase1", end="phase1")
+    assert "sample_script" not in demo_only.model_use["phase1"], "nothing of theirs went unread"

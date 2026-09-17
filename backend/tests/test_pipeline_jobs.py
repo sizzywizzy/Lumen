@@ -209,6 +209,21 @@ def test_merge_takes_only_what_the_phases_that_ran_own(offline):
     assert run.compliance_state["US"] == "BLOCKED", "the merge copies, it does not share"
 
 
+def test_a_phase_run_reports_its_own_model_calls_and_leaves_the_rest(offline):
+    """The plan's note on sample output has to follow a phase re-run, without
+    forgetting what the phases that did not run reported."""
+    base = _planned()
+    latest, run = base.model_copy(deep=True), base.model_copy(deep=True)
+    nodes = {node.key: node for node in Orchestrator().nodes}
+    latest.model_use = {"phase1": {"live": 0, "sample": 6, "reason": "no_api_key"}, "phase4": {"live": 0, "sample": 1}}
+    run.model_use = {"phase4": {"live": 3, "sample": 0}}
+
+    merged = merge.merge_run(latest, run, [nodes["phase4"]], len(base.event_log))
+
+    assert merged.model_use["phase4"] == {"live": 3, "sample": 0}
+    assert merged.model_use["phase1"]["sample"] == 6, "Phase I did not run again"
+
+
 def test_concurrent_edits_are_applied_one_after_another(state_dir):
     supabase_client.save_state(GlobalState(project_id=PROJECT))
 

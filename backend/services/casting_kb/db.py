@@ -12,11 +12,6 @@ from core import config
 def _connection_string() -> str:
     if config.DATABASE_URL:
         return config.DATABASE_URL
-    if config.has_cloudsql():
-        return (
-            f"host={config.CLOUD_SQL_CONNECTION_NAME} user={config.DB_USER} "
-            f"password={config.DB_PASS} dbname={config.DB_NAME}"
-        )
     raise RuntimeError("DATABASE_URL is not configured")
 
 

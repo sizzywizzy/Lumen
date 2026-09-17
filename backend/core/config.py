@@ -3,14 +3,16 @@
 Every external key is optional: with no keys set, the whole pipeline runs on
 mock data so anyone can develop and demo without credentials.
 
-What is read, and what for:
-  - Gemini (GEMINI_API_KEY): all agent reasoning and the poster art. Vertex AI
-    through gcloud credentials stands in only when GOOGLE_GENAI_USE_VERTEXAI
-    and GOOGLE_CLOUD_PROJECT are set.
+What is read, and what for. Every service here has a free plan, and Lumen
+uses nothing beyond it:
+  - Gemini (GEMINI_API_KEY): all agent reasoning, as JSON from Flash models on
+    the free tier. No Google Search grounding, image generation or Vertex AI.
   - Supabase (SUPABASE_URL/KEY): accounts, pipeline state, simulations, runs.
-  - Tavily (TAVILY_API_KEY): web research for the cultural-research step.
-  - TMDb and PostgreSQL (TMDB_API_KEY, DATABASE_URL or the Cloud SQL
-    settings): the actor knowledge base only.
+  - Tavily (TAVILY_API_KEY): the talent scout's web search and the
+    cultural-research step.
+  - TMDb (TMDB_API_KEY): photos and credits for scouted actors, and the actor
+    knowledge base's import.
+  - PostgreSQL (DATABASE_URL, e.g. Supabase's own): the actor knowledge base.
 """
 import os
 from pathlib import Path
@@ -54,7 +56,7 @@ TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY", "")
 #   auto     - Supabase when URL+KEY are set and the client is installed, else local JSON
 #   supabase - require Supabase; fail loudly rather than silently using local files
 #   local    - always local JSON, even with credentials present
-# Hosted filesystems (Render, Cloud Run) do not survive a redeploy, so
+# Hosted filesystems (Render's included) do not survive a redeploy, so
 # deployments must run on "auto" (with Supabase configured) or "supabase".
 # "local" is for offline dev.
 STATE_BACKEND = os.environ.get("LUMEN_STATE_BACKEND", "auto").strip().lower()
@@ -73,13 +75,8 @@ CORS_ORIGINS = [
 # uses the socket's peer address, which is right when nothing sits in front.
 TRUSTED_PROXY_HOPS = max(0, int(os.environ.get("LUMEN_TRUSTED_PROXY_HOPS") or 0))
 
-# The actor knowledge base's PostgreSQL (services/casting_kb/db.py): DATABASE_URL,
-# else these Cloud SQL settings. Nothing else reads them; Supabase stays the
-# store for accounts and pipeline state either way.
-CLOUD_SQL_CONNECTION_NAME = os.environ.get("CLOUD_SQL_CONNECTION_NAME", "")
-DB_USER = os.environ.get("DB_USER", "")
-DB_PASS = os.environ.get("DB_PASS", "")
-DB_NAME = os.environ.get("DB_NAME", "")
+# The actor knowledge base's PostgreSQL (services/casting_kb/db.py). Nothing
+# else reads it; Supabase stays the store for accounts and pipeline state.
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 TMDB_API_KEY = os.environ.get("TMDB_API_KEY", "")
 TMDB_LANGUAGE = os.environ.get("TMDB_LANGUAGE", "en-US")
@@ -112,17 +109,6 @@ GEMINI_TIMEOUT_MS = int(os.environ.get("GEMINI_TIMEOUT_MS", "60000"))
 SCRIPT_ANALYSIS_MAX_CHARS = int(os.environ.get("SCRIPT_ANALYSIS_MAX_CHARS", "120000"))
 GEMINI_MAX_CONCURRENCY = int(os.environ.get("GEMINI_MAX_CONCURRENCY", "3"))
 
-# The production's poster (agent_visual key art). Unlike the text models above,
-# these ids come from Google's image-generation docs (September 2026) rather
-# than a live key, so both stay env-overridable. Any model in the chain must
-# accept a portrait 2:3 aspect ratio.
-GEMINI_IMAGE_MODEL = os.environ.get("GEMINI_IMAGE_MODEL", "gemini-3.1-flash-image")
-GEMINI_IMAGE_FALLBACK_MODELS = [
-    m.strip()
-    for m in os.environ.get("GEMINI_IMAGE_FALLBACK_MODELS", "gemini-2.5-flash-image").split(",")
-    if m.strip()
-]
-
 # Guardrails
 MAX_NEGOTIATION_ITERATIONS = 2  # never unbounded (AGENT.md Section 1)
 MAX_ASSET_REGENERATIONS = 2     # agent_visual retry cap
@@ -133,44 +119,17 @@ CASTING_CAP_SHARE = 0.10    # max quote for a single role, as a share of the tot
 LOCATIONS_SHARE = 0.15      # share of the total budget available for venues
 PERSONA_COUNT = 200         # synthetic viewers per screening (AGENT.md Phase V)
 
-# Vertex AI through Google Cloud credentials (ADC), in place of a Gemini key.
-# Opt-in only: the SDK's own GOOGLE_GENAI_USE_VERTEXAI switch plus a project.
-# gcloud credentials on the machine are not enough on their own, so a
-# "zero-key" run never spends anyone's Google Cloud credits by accident.
-USE_VERTEX = os.environ.get("GOOGLE_GENAI_USE_VERTEXAI", "").strip().lower() in ("1", "true", "yes", "on")
-GOOGLE_CLOUD_PROJECT = os.environ.get("GOOGLE_CLOUD_PROJECT", "").strip()
-GOOGLE_CLOUD_LOCATION = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
-VERTEX_FLASH_MODEL = os.environ.get("VERTEX_FLASH_MODEL", "gemini-2.5-flash")
-VERTEX_PRO_MODEL = os.environ.get("VERTEX_PRO_MODEL", "gemini-2.5-flash")  # strictly use Flash to save credits
-VERTEX_IMAGE_MODEL = os.environ.get("VERTEX_IMAGE_MODEL", "gemini-2.5-flash-image")
-GOOGLE_APPLICATION_CREDENTIALS = os.environ.get(
-    "GOOGLE_APPLICATION_CREDENTIALS",
-    str(Path.home() / ".config" / "gcloud" / "application_default_credentials.json"),
-)
-
-
-def has_adc() -> bool:
-    """True if Google Cloud Application Default Credentials exist locally."""
-    if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
-        return Path(os.environ["GOOGLE_APPLICATION_CREDENTIALS"]).exists()
-    default_adc = Path.home() / ".config" / "gcloud" / "application_default_credentials.json"
-    if default_adc.exists():
-        return True
-    legacy = Path.home() / ".config" / "gcloud" / "legacy_credentials"
-    return legacy.exists() and any(legacy.glob("*/adc.json"))
-
-
-def has_vertex() -> bool:
-    """True when the Vertex path is switched on, has a project, and has credentials."""
-    return USE_VERTEX and bool(GOOGLE_CLOUD_PROJECT) and has_adc()
-
 
 def has_gemini() -> bool:
-    return bool(GEMINI_API_KEY) or has_vertex()
+    return bool(GEMINI_API_KEY)
 
 
 def has_tavily() -> bool:
     return bool(TAVILY_API_KEY)
+
+
+def has_tmdb() -> bool:
+    return bool(TMDB_API_KEY)
 
 
 _supabase_warned = False
@@ -212,10 +171,6 @@ def has_supabase() -> bool:
     return True
 
 
-def has_cloudsql() -> bool:
-    return bool(CLOUD_SQL_CONNECTION_NAME and DB_USER and DB_PASS and DB_NAME)
-
-
 def has_database() -> bool:
     """Return whether the actor KB can use a PostgreSQL connection."""
-    return bool(DATABASE_URL) or has_cloudsql()
+    return bool(DATABASE_URL)

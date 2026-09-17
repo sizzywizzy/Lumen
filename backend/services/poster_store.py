@@ -2,14 +2,13 @@
 
 Supabase table `cn_posters` when configured, otherwise one JSON file per
 production under backend/.state/posters/. A production has one poster, the one
-on its Overview, and a new poster replaces it only once it has painted, so a
+on its Overview, and a new poster replaces it only once it is ready, so a
 failed attempt never leaves the production without one.
 
 Kept apart from GlobalState on purpose: a pipeline run saves back the copy of
 the state it loaded, which would drop a poster saved while it ran, and every
 state read would carry the image. The image rides in the record base64-encoded
-(a shrunk poster is a few hundred KB, the offline sketch a few KB); status
-reads skip it and only the image route loads it.
+(an SVG of a few KB); status reads skip it and only the image route loads it.
 """
 import threading
 from typing import Any, Optional

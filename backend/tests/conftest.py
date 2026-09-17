@@ -16,13 +16,14 @@ from core.auth.models import Membership, Production, Session, User
 def never_real_state_or_live_models(tmp_path_factory):
     """The floor under every test, whatever it patches or undoes: the stores
     fall back to a throwaway folder, never to backend/.state/ or Supabase, and
-    every model and search call gets its mock even when .env holds real keys.
-    Tests that need a live path patch it on for themselves."""
+    every model, search and TMDb call gets its mock even when .env holds real
+    keys. Tests that need a live path patch it on for themselves."""
     with pytest.MonkeyPatch.context() as patch:
         patch.setattr(config, "LOCAL_STATE_DIR", tmp_path_factory.mktemp("state"))
         patch.setattr(config, "has_supabase", lambda: False)
         patch.setattr(config, "has_gemini", lambda: False)
         patch.setattr(config, "has_tavily", lambda: False)
+        patch.setattr(config, "has_tmdb", lambda: False)
         yield
 
 

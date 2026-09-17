@@ -39,20 +39,17 @@ COPYWRITER_SYSTEM = (
 POSTER_SYSTEM = (
     "You art-direct the theatrical one-sheet for a film from its screenplay, in the style "
     "you are given. Write a tagline of at most ten words that gives nothing away: no twists, "
-    "deaths, secret identities or the ending. Describe one striking scene purely as art, "
-    "leaving the top fifth and the bottom quarter calm so the title and tagline can be set "
-    "over them later. Never ask for lettering, logos or credits, never depict a real or "
-    "famous person, and never name an actor. alt_text is one plain sentence describing the "
-    "art for someone who cannot see it. Respond with JSON: {tagline, scene, alt_text, "
+    "deaths, secret identities or the ending, and never name an actor. Pick three to five "
+    "colours that suit the film and the style. Respond with JSON: {tagline, "
     "palette: [three to five colours as #rrggbb]}."
 )
 
 # Every poster draws one of these at random, never the style of the poster it
-# replaces. `direction` goes to both model calls; `sketch` is the motif the
-# offline sketch draws when no image model paints. Movements and eras only,
-# never a living artist's name.
+# replaces. `direction` art-directs the concept (tagline and palette); `sketch`
+# is the motif the art is drawn in. Movements and eras only, never a living
+# artist's name.
 POSTER_STYLES = (
-    {"key": "painted", "label": "Painted one-sheet", "sketch": "ridges",
+    {"key": "classic", "label": "Classic one-sheet", "sketch": "ridges",
      "direction": "a lush hand-painted illustration in oils and gouache, dramatic rim light and a "
                   "sweeping low-angle composition, like a classic 1980s adventure one-sheet"},
     {"key": "minimal", "label": "Minimal symbol", "sketch": "disc",
