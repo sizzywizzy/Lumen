@@ -12,6 +12,20 @@ from core.auth import security
 from core.auth.models import Membership, Production, Session, User
 
 
+@pytest.fixture(scope="session", autouse=True)
+def never_real_state_or_live_models(tmp_path_factory):
+    """The floor under every test, whatever it patches or undoes: the stores
+    fall back to a throwaway folder, never to backend/.state/ or Supabase, and
+    every model and search call gets its mock even when .env holds real keys.
+    Tests that need a live path patch it on for themselves."""
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(config, "LOCAL_STATE_DIR", tmp_path_factory.mktemp("state"))
+        patch.setattr(config, "has_supabase", lambda: False)
+        patch.setattr(config, "has_gemini", lambda: False)
+        patch.setattr(config, "has_tavily", lambda: False)
+        yield
+
+
 @pytest.fixture
 def state_dir(tmp_path, monkeypatch):
     """Point every local-JSON store at a throwaway directory."""
@@ -21,16 +35,30 @@ def state_dir(tmp_path, monkeypatch):
 
 
 @pytest.fixture(autouse=True)
-def posters_paint_inline(monkeypatch):
-    """A pipeline run starts the production's poster on a background thread
-    (domains/launch/posters.py). A thread like that outlives its test, and once
-    the test's patches are undone it reads and writes the real `.state/` (or
-    Supabase), so in tests every poster paints inline and no run carries over."""
+def background_work_runs_inline(monkeypatch):
+    """Pipeline runs (domains/pipeline/jobs.py) and the production's poster
+    (domains/launch/posters.py) work on background threads. A thread like that
+    outlives its test, and once the test's patches are undone it reads and
+    writes the real `.state/` (or Supabase), so in tests both run inline, and
+    no run's bookkeeping carries over to the next test."""
     from domains.launch import posters
+    from domains.pipeline import jobs
 
     monkeypatch.setattr(posters, "_spawn", lambda target, *args: target(*args))
     monkeypatch.setattr(posters, "_ACTIVE", set())
     monkeypatch.setattr(posters, "_FAILED", {})
+    monkeypatch.setattr(jobs, "_spawn", lambda target, *args: target(*args))
+    monkeypatch.setattr(jobs, "_ACTIVE", {})
+    monkeypatch.setattr(jobs, "_LAST", {})
+
+
+@pytest.fixture(autouse=True)
+def rate_limits_start_empty():
+    """The sign-in limits count per address in memory; every test starts clean."""
+    from domains.auth import router as auth_router
+
+    auth_router.SIGN_INS.clear()
+    auth_router.SIGN_UPS.clear()
 
 
 @pytest.fixture

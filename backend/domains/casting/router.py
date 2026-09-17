@@ -4,9 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from core.auth.deps import current_user, require_member, require_producer
-from core.auth.models import CandidateStatusRequest, User
+from core.auth.models import CandidateStatusRequest, Membership, User
 from core.messaging.envelope import broadcast, log_event
-from core.orchestrator.graph import Orchestrator
+from domains.pipeline import jobs
 from services import supabase_client
 
 router = APIRouter(prefix="/api/casting", tags=["casting"])
@@ -45,30 +45,11 @@ def _recompute_casting_status(state) -> None:
 
 
 class CastingRunRequest(BaseModel):
-    locality: Optional[str] = None
-    director_notes: Optional[str] = None
+    locality: Optional[str] = Field(default=None, max_length=120)
+    director_notes: Optional[str] = Field(default=None, max_length=4000)
 
 
-@router.post("/run/{project_id}")
-def run_casting(
-    project_id: str,
-    req: Optional[CastingRunRequest] = None,
-    _member=Depends(require_producer),
-):
-    """Run Phase I (pre-casting crawler) + Phase II (auditions) on the stored state."""
-    state = supabase_client.load_state(project_id)
-    if state is None:
-        raise HTTPException(404, f"No state for {project_id}. POST /api/pipeline/init first.")
-    if req:
-        if req.locality:
-            state.locality = req.locality
-            state.script_context["locality"] = req.locality
-        if req.director_notes:
-            state.director_notes = req.director_notes
-            state.script_context["director_notes"] = req.director_notes
-    state.candidates = []
-    state = Orchestrator().run(state, start="phase1", end="phase2")
-    supabase_client.save_state(state)
+def _casting_summary(state) -> dict:
     return {
         "casting_status": state.casting_status,
         "leaderboard": _leaderboard(state),
@@ -76,8 +57,37 @@ def run_casting(
             {"id": c.id, "name": c.name, "reason": c.disqualify_reason}
             for c in state.candidates if c.status == "DISQUALIFIED"
         ],
-        "event_log": state.event_log,
     }
+
+
+@router.post("/run/{project_id}", status_code=202)
+def run_casting(
+    project_id: str,
+    req: Optional[CastingRunRequest] = None,
+    membership: Membership = Depends(require_producer),
+):
+    """Run Phase I (pre-casting crawler) + Phase II (auditions) on the stored
+    state, in the background. Poll /api/pipeline/status for progress."""
+    if supabase_client.load_state(project_id) is None:
+        raise HTTPException(404, f"No state for {project_id}. POST /api/pipeline/init first.")
+
+    def inputs(state) -> None:
+        if req and req.locality:
+            state.locality = req.locality
+            state.script_context["locality"] = req.locality
+        if req and req.director_notes:
+            state.director_notes = req.director_notes
+            state.script_context["director_notes"] = req.director_notes
+
+    def begin(state):
+        inputs(state)
+        return state
+
+    try:
+        return jobs.start(project_id, "casting", started_by=membership.user_id,
+                          begin=begin, inputs=inputs, summary=_casting_summary)
+    except jobs.PipelineBusy:
+        raise HTTPException(409, "Lumen is already working on this production. Wait for that run to finish.") from None
 
 
 # The actor knowledge base is shared across productions, so these routes are
@@ -142,47 +152,49 @@ def set_candidate_status(
     is logged as an A2A envelope so the decision shows up in the agent
     terminal alongside the automated ones.
     """
-    state = supabase_client.load_state(project_id)
-    if state is None:
-        raise HTTPException(404, f"No state for {project_id}.")
+    def decide(state):
+        candidate = next((c for c in state.candidates if c.id == candidate_id), None)
+        if candidate is None:
+            raise HTTPException(404, f"No candidate '{candidate_id}' on this production.")
 
-    candidate = next((c for c in state.candidates if c.id == candidate_id), None)
-    if candidate is None:
-        raise HTTPException(404, f"No candidate '{candidate_id}' on this production.")
+        previous = candidate.status
+        candidate.status = req.status
+        if req.status == "DISQUALIFIED":
+            candidate.disqualify_reason = req.reason or "Disqualified by the production team."
+        elif previous == "DISQUALIFIED":
+            # Reinstating clears the old reason so the risk panel stays truthful.
+            candidate.disqualify_reason = None
 
-    previous = candidate.status
-    candidate.status = req.status
-    if req.status == "DISQUALIFIED":
-        candidate.disqualify_reason = req.reason or "Disqualified by the production team."
-    elif previous == "DISQUALIFIED":
-        # Reinstating clears the old reason so the risk panel stays truthful.
-        candidate.disqualify_reason = None
+        _recompute_casting_status(state)
 
-    _recompute_casting_status(state)
+        envelope = log_event(
+            state,
+            broadcast(
+                sender="agent_director_orchestrator",
+                intent="task_status_update",
+                payload={
+                    "candidate_id": candidate.id,
+                    "name": candidate.name,
+                    "role_id": candidate.role_id,
+                    "from": previous,
+                    "to": candidate.status,
+                    "changed_by": membership.user_id,
+                    "reason": req.reason or None,
+                    "source": "human_decision",
+                },
+            ),
+        )
+        return candidate, envelope
 
-    log_event(
-        state,
-        broadcast(
-            sender="agent_director_orchestrator",
-            intent="task_status_update",
-            payload={
-                "candidate_id": candidate.id,
-                "name": candidate.name,
-                "role_id": candidate.role_id,
-                "from": previous,
-                "to": candidate.status,
-                "changed_by": membership.user_id,
-                "reason": req.reason or None,
-                "source": "human_decision",
-            },
-        ),
-    )
-    supabase_client.save_state(state)
+    try:
+        state, (candidate, envelope) = supabase_client.update_state(project_id, decide)
+    except supabase_client.StateMissing:
+        raise HTTPException(404, f"No state for {project_id}.") from None
 
     return {
         "candidate": candidate.model_dump(),
         "casting_status": state.casting_status,
-        "event_log": state.event_log,
+        "event": envelope,
     }
 
 

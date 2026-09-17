@@ -85,6 +85,29 @@
 .account-item:hover { background: var(--surface-variant); }
 .account-item .material-symbols-outlined { font-size: 20px; color: var(--on-surface-variant); }
 
+/* the Agents menu: the agent layer's screens, beside the results tabs */
+.agents { position: relative; }
+.agents-button { padding: 9px 14px; }
+.agents-button.is-active { color: var(--highlight); border-color: color-mix(in srgb, var(--highlight) 45%, transparent); }
+.agents-menu { min-width: 320px; max-width: min(360px, calc(100vw - 24px)); }
+.agents-item { align-items: flex-start; }
+.agents-item .material-symbols-outlined { margin-top: 1px; }
+.agents-item small { display: block; margin-top: 2px; font-size: 13px; line-height: 18px; color: var(--on-surface-variant); }
+.agents-item.is-current { background: var(--highlight-soft); }
+.agents-item.is-current .material-symbols-outlined { color: var(--highlight); }
+.count-badge {
+  display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px;
+  border-radius: var(--radius-pill); background: var(--accent-gradient); color: var(--on-accent);
+  font-size: 12px; line-height: 1; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+@media (max-width: 480px) {
+  .agents-menu { position: fixed; left: 12px; right: 12px; top: 72px; max-width: none; min-width: 0; }
+}
+
+/* a page-wide error under the menu, which the reader can dismiss */
+.banner__text { flex: 1; min-width: 0; }
+.banner__close { width: 28px; height: 28px; margin: -4px -8px -4px 0; color: inherit; }
+
 /* ------------------------------------------------------ page & cards --- */
 
 .page-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; padding: 4px 4px 0; }
@@ -841,6 +864,7 @@ button.credit__frame:hover { translate: 0 -2px; box-shadow: 0 12px 20px -10px va
 .progress-step.is-done .progress-step__mark { background: var(--accent-gradient); border-color: transparent; color: var(--on-accent); }
 .progress-step strong { display: block; font-size: 16px; line-height: 22px; }
 .progress-step small { display: block; font-size: 14px; line-height: 20px; color: var(--on-surface-variant); }
+.progress-step small.progress-step__now { margin-top: 6px; font-family: var(--font-screenplay); color: var(--highlight); }
 
 /* ---------------------------------------------------------- homepage --- */
 

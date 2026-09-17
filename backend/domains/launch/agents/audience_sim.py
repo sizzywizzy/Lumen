@@ -25,9 +25,9 @@ distinct attributes.
 import hashlib
 import json
 import statistics
-from typing import Any, Callable, Optional
+from typing import Callable, Optional
 
-from core import config
+from core import config, llm_output
 from core.audience import personas as panel_lib
 from core.messaging.envelope import broadcast, log_event, make_envelope, make_reply
 from core.orchestrator.state import GlobalState
@@ -84,6 +84,81 @@ def analyse_material(state: GlobalState, material: str, trace: list) -> dict:
 # ---------------------------------------------------------------- stage 3 --
 
 
+def _describe_cohort(cohort: dict) -> dict:
+    """What the model is told about a cohort."""
+    return {
+        "cohort_id": cohort["cohort_id"], "size": cohort["size"],
+        "age_band": cohort["age_band_name"], "markets": cohort["markets"][:4],
+        "market_region": cohort["market_bloc_name"],
+        "already_watches_this_genre": cohort["genre_affinity"] == "genre_fan",
+        "common_genre_tastes": cohort["common_genres"],
+        "taste_mix": cohort["taste_mix"], "pacing_tolerance_mix": cohort["pacing_mix"],
+    }
+
+
+def elicit_cohorts(
+    cohorts: list[dict],
+    *,
+    brief: str,
+    system: str,
+    offline: Callable[[dict], dict],
+    trace: list,
+    stage: str,
+    clean: Callable[[dict, dict], dict] = lambda verdict, cohort: verdict,
+) -> tuple[dict[str, dict], int, int]:
+    """Ask the model for one verdict per cohort, COHORTS_PER_CALL cohorts to a
+    call, with the calls running concurrently.
+
+    brief    what every call is told about the film, above the cohorts
+    offline  the verdict a cohort gets with no model, or when the reply fails
+             or leaves it out (then marked `_degraded`), so no persona is dropped
+    clean    checks a live verdict against the cohort before it is used
+
+    Returns (verdict by cohort id, live batches, batches).
+    """
+    batches = [cohorts[i:i + COHORTS_PER_CALL] for i in range(0, len(cohorts), COHORTS_PER_CALL)]
+
+    def run_batch(batch: list[dict]):
+        prompt = (
+            f"{brief}\n\n"
+            f"AUDIENCE COHORTS:\n{json.dumps([_describe_cohort(c) for c in batch], ensure_ascii=False)}\n\n"
+            "Give each cohort its own distinct verdict."
+        )
+        return gemini_client.generate_json_traced(
+            prompt, tier="flash", system=system,
+            mock={"cohorts": [{"cohort_id": c["cohort_id"], **offline(c)} for c in batch]},
+        )
+
+    results = gemini_client.map_concurrent(batches, run_batch)
+
+    verdicts: dict[str, dict] = {}
+    sources: list[str] = []
+    for batch, result in zip(batches, results):
+        if isinstance(result, Exception):
+            trace.append({"stage": stage, "source": "error", "error": str(result)[:200]})
+            # a failed batch still needs verdicts, or those personas vanish
+            for c in batch:
+                verdicts[c["cohort_id"]] = {**offline(c), "_degraded": True}
+            sources.append("mock")
+            continue
+        payload, meta = result
+        sources.append(meta.get("source", "unknown"))
+        rows = payload.get("cohorts") if isinstance(payload, dict) else None
+        by_id = {c.get("cohort_id"): c for c in (rows if isinstance(rows, list) else []) if isinstance(c, dict)}
+        for c in batch:
+            found = by_id.get(c["cohort_id"])
+            verdicts[c["cohort_id"]] = clean(found, c) if found else {**offline(c), "_degraded": True}
+
+    live = sources.count("gemini")
+    trace.append({
+        "stage": stage, "batches": len(batches),
+        "source": "gemini" if batches and live == len(batches) else ("mixed" if live else "mock"),
+        "live_batches": live,
+        "model": next((r[1].get("model") for r in results if not isinstance(r, Exception)), None),
+    })
+    return verdicts, live, len(batches)
+
+
 def simulate_cohorts(
     state: GlobalState, analysis: dict, cohorts: list[dict], trace: list
 ) -> dict[str, dict]:
@@ -103,67 +178,135 @@ def simulate_cohorts(
         "material_quality": analysis.get("material_quality"),
     }, ensure_ascii=False)
 
-    batches = [cohorts[i:i + COHORTS_PER_CALL] for i in range(0, len(cohorts), COHORTS_PER_CALL)]
-
     request = log_event(state, make_envelope(
         "agent_aggregation", "agent_viewer", "screen_film",
-        {"cohorts": len(cohorts), "batches": len(batches), "panel_size": sum(c["size"] for c in cohorts)},
+        {"cohorts": len(cohorts), "batches": -(-len(cohorts) // COHORTS_PER_CALL),
+         "panel_size": sum(c["size"] for c in cohorts)},
     ))
-
-    def run_batch(batch: list[dict]):
-        described = [
-            {
-                "cohort_id": c["cohort_id"], "size": c["size"],
-                "age_band": c["age_band_name"], "markets": c["markets"][:4],
-                "market_region": c["market_bloc_name"],
-                "already_watches_this_genre": c["genre_affinity"] == "genre_fan",
-                "common_genre_tastes": c["common_genres"],
-                "taste_mix": c["taste_mix"], "pacing_tolerance_mix": c["pacing_mix"],
-            }
-            for c in batch
-        ]
-        prompt = (
-            f"FILM MATERIAL ANALYSIS:\n{material_summary}\n\n"
-            f"SCORE ONLY THESE DIMENSIONS: {dimensions}\n\n"
-            f"AUDIENCE COHORTS:\n{json.dumps(described, ensure_ascii=False)}\n\n"
-            "Give each cohort its own distinct verdict."
-        )
-        return gemini_client.generate_json_traced(
-            prompt, tier="flash", system=P.COHORT_SYSTEM,
-            mock={"cohorts": [{"cohort_id": c["cohort_id"], **P.MOCK_COHORT_VERDICT} for c in batch]},
-        )
-
-    results = gemini_client.map_concurrent(batches, run_batch)
-
-    verdicts: dict[str, dict] = {}
-    sources: list[str] = []
-    for batch, result in zip(batches, results):
-        if isinstance(result, Exception):
-            trace.append({"stage": "simulate_cohorts", "source": "error", "error": str(result)[:200]})
-            # a failed batch still needs verdicts, or those personas vanish
-            for c in batch:
-                verdicts[c["cohort_id"]] = {**P.MOCK_COHORT_VERDICT, "_degraded": True}
-                sources.append("mock")
-            continue
-        payload, meta = result
-        sources.append(meta.get("source", "unknown"))
-        rows = payload.get("cohorts") if isinstance(payload, dict) else None
-        by_id = {c.get("cohort_id"): c for c in (rows if isinstance(rows, list) else []) if isinstance(c, dict)}
-        for c in batch:
-            verdicts[c["cohort_id"]] = by_id.get(c["cohort_id"], {**P.MOCK_COHORT_VERDICT, "_degraded": True})
-
-    live = sources.count("gemini")
-    trace.append({
-        "stage": "simulate_cohorts", "batches": len(batches),
-        "source": "gemini" if live == len(batches) else ("mixed" if live else "mock"),
-        "live_batches": live,
-        "model": next((r[1].get("model") for r in results if not isinstance(r, Exception)), None),
-    })
-
+    verdicts, live, batches = elicit_cohorts(
+        cohorts,
+        brief=f"FILM MATERIAL ANALYSIS:\n{material_summary}\n\nSCORE ONLY THESE DIMENSIONS: {dimensions}",
+        system=P.COHORT_SYSTEM,
+        offline=lambda cohort: dict(P.MOCK_COHORT_VERDICT),
+        trace=trace, stage="simulate_cohorts",
+    )
     log_event(state, make_reply(request, "agent_viewer", "screen_film", {
-        "cohorts_scored": len(verdicts), "batches": len(batches), "live_batches": live,
+        "cohorts_scored": len(verdicts), "batches": batches, "live_batches": live,
     }))
     return verdicts
+
+
+# --------------------------------------------------- scene-by-scene screening --
+# Phase V of the pipeline screens the cut scene by scene with the same panel
+# and cohorts. The model scores every scene once per cohort; each viewer's
+# scene scores are then derived from their cohort's, moved by the traits that
+# vary inside it, like `_derive_individuals` does for the dimensions.
+
+TALKY_TAGS = {"dialogue", "exposition"}
+ACTION_TAGS = {"action", "finale", "chase", "fight"}
+# Scene tags that touch a content-sensitivity axis (core/audience/personas.py).
+SENSITIVE_TAGS = {
+    "violence": "violence", "gore": "violence",
+    "sexual_content": "sexual_content", "sex": "sexual_content", "nudity": "sexual_content",
+    "strong_language": "strong_language", "profanity": "strong_language",
+    "religious_reference": "religious_political", "political_reference": "religious_political",
+}
+PACING_ON_TALKY = {"low": -0.6, "medium": 0.0, "high": 0.3}
+STORY_ON_TALKY = {"character-driven": 0.3, "plot-driven": -0.2, "balanced": 0.0}
+STORY_ON_ACTION = {"plot-driven": 0.4, "character-driven": -0.2, "balanced": 0.0}
+HARSHNESS = {"high": -0.25, "medium": 0.0, "low": 0.2}  # frequent viewers grade harder
+AVERSE_PENALTY = 0.8
+
+
+def screening_scenes(scenes: list[dict]) -> list[dict]:
+    """The part of each scene a screening prompt needs."""
+    return [
+        {"scene_id": s["scene_id"], "title": s.get("title", ""), "summary": s.get("summary", ""),
+         "tags": list(s.get("tags") or [])}
+        for s in scenes
+    ]
+
+
+def screen_scenes(
+    film: dict, scenes: list[dict], cohorts: list[dict], trace: list
+) -> tuple[dict[str, dict], int, int]:
+    """Every cohort's score for every scene. Returns (verdicts, live batches, batches)."""
+    listed = screening_scenes(scenes)
+    ids = [s["scene_id"] for s in listed]
+
+    def clean(verdict: dict, cohort: dict) -> dict:
+        # A live verdict keeps the scores it gave; a scene it skipped or scored
+        # with something that is not a number takes the offline score.
+        offline = P.mock_scene_verdict(cohort, listed)
+        given = verdict.get("scene_scores") if isinstance(verdict.get("scene_scores"), dict) else {}
+        scores, filled = {}, 0
+        for scene_id in ids:
+            value = llm_output.number(given.get(scene_id), float("nan"))
+            if value != value:  # nan: missing or not a number
+                value, filled = offline["scene_scores"][scene_id], filled + 1
+            scores[scene_id] = round(_clamp(value), 2)
+        out = {
+            "scene_scores": scores,
+            "would_recommend_rate": llm_output.number(
+                verdict.get("would_recommend_rate"), offline["would_recommend_rate"], 0, 1),
+            "one_line_reaction": llm_output.text(verdict.get("one_line_reaction"), offline["one_line_reaction"], 200),
+        }
+        if filled:
+            out["_degraded"] = True
+        return out
+
+    return elicit_cohorts(
+        cohorts,
+        brief=(f"FILM:\n{json.dumps(film, ensure_ascii=False)}\n\n"
+               f"SCENES, IN ORDER:\n{json.dumps(listed, ensure_ascii=False)}"),
+        system=P.SCENE_SCREENING_SYSTEM,
+        offline=lambda cohort: P.mock_scene_verdict(cohort, listed),
+        clean=clean, trace=trace, stage="screen_scenes",
+    )
+
+
+def derive_scene_responses(
+    personas_list: list[dict], cohorts: list[dict], verdicts: dict[str, dict],
+    scenes: list[dict], seed: int,
+) -> list[dict]:
+    """One viewer's scene scores, overall and recommendation per persona."""
+    cohort_of = {pid: c for c in cohorts for pid in c["member_ids"]}
+    responses = []
+    for persona in personas_list:
+        pid = persona["persona_id"]
+        cohort = cohort_of[pid]
+        verdict = verdicts.get(cohort["cohort_id"]) or {}
+        base = verdict.get("scene_scores") or {}
+        mood = _jitter(pid, "mood", seed, 0.9) + HARSHNESS.get(persona["viewing_frequency"], 0.0)
+        scores: dict[str, float] = {}
+        for scene in scenes:
+            scene_id = scene["scene_id"]
+            tags = set(scene.get("tags") or [])
+            value = float(base.get(scene_id, 6.5)) + mood
+            if tags & TALKY_TAGS:
+                value += PACING_ON_TALKY.get(persona["pacing_tolerance"], 0.0)
+                value += STORY_ON_TALKY.get(persona["story_preference"], 0.0)
+            if tags & ACTION_TAGS:
+                value += STORY_ON_ACTION.get(persona["story_preference"], 0.0)
+            for tag in tags:
+                axis = SENSITIVE_TAGS.get(tag)
+                if axis and persona["content_sensitivity"].get(axis) == "averse":
+                    value -= AVERSE_PENALTY
+            value += _jitter(pid, f"scene:{scene_id}", seed, 0.5)
+            scores[scene_id] = round(_clamp(value), 2)
+        overall = round(statistics.fmean(scores.values()), 2) if scores else 0.0
+        rate = float(verdict.get("would_recommend_rate", 0.5) or 0.5)
+        draw = _jitter(pid, "recommend", seed, 0.5) + 0.5
+        responses.append({
+            "persona_id": pid,
+            "cohort_id": cohort["cohort_id"],
+            "scene_scores": scores,
+            "overall_score": overall,
+            "would_recommend": draw < _clamp(rate + (overall - 6.0) / 8.0, 0.02, 0.98),
+            "sentiment": "positive" if overall >= 6.5 else ("mixed" if overall >= 5.5 else "negative"),
+            "drop_off_scene": min(scores, key=scores.get) if scores else "",
+        })
+    return responses
 
 
 # ---------------------------------------------------------------- stage 4 --

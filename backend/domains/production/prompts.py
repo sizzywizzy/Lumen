@@ -10,7 +10,7 @@ BREAKDOWN_SYSTEM = (
     "int_ext is INT or EXT. location_type MUST be "
     "one of the AVAILABLE VENUE TYPES given (pick the closest). characters_needed uses only the "
     "ROLE IDS given. estimated_time_hours is 1-8. tags are lowercase content flags such as night, "
-    "crowd, dialogue, alcohol_reference, violence, music. Keep to MAX SCENES by merging minor "
+    "crowd, dialogue, exposition, alcohol_reference, violence, music. Keep to MAX SCENES by merging minor "
     "scenes. Use only the text."
 )
 

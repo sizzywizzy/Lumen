@@ -44,7 +44,7 @@ Shared plumbing for all four:
 | Runner | `backend/domains/skills/agents.py` (`RUNNERS[name]`) |
 | API | `POST /api/skills/<name>/run/<project_id>` (producer or owner), `GET /api/skills/runs/<project_id>` (any member) |
 | Persistence | `backend/services/skill_store.py`: `backend/.state/skills/<project_id>/RUN_*.json`, or Supabase `cn_skill_runs` (`backend/schema_skills.sql`) |
-| Frontend | AI Advisors page, `frontend/src/features/advisors/AdvisorsPage.jsx`, plus shortcut buttons on the Casting, Schedule and Marketing pages |
+| Frontend | AI advisors page (Agents menu → AI advisors), `frontend/src/features/advisors/AdvisorsPage.jsx`, plus shortcut buttons on the Casting board, Production desk and Launch desk |
 | Common failures | `SkillInputError` for a production with no usable state or material (reported as a plain message on the run); one run per skill per production at a time (HTTP 409); a run left `running` by a server restart is reported as failed on the next listing |
 | A2A | The advisor broadcasts `task_status_update` at start and finish; any phase agents it invokes log their own envelopes. No new intents. |
 
@@ -85,7 +85,7 @@ Shared plumbing for all four:
 | Tools | Audience panel builder (B6), staged simulator stages analyse, build_panel, simulate_cohorts, derive_individuals, aggregate, pr_recommendations (B1 for the model calls). The market scan is skipped here and belongs to cultural-research. |
 | Constraints | The brief must say "the simulated panel", never predict box office, copy scores exactly, and treat segments as taste cohorts. A logline-only material sets confidence to low. About ten model calls when live; one to two minutes. |
 | Failure conditions | No material at all raises `SkillInputError` with the instruction to upload a script. Individual cohort batches that fail are surfaced in the trace, not fatal. |
-| Interactions | Emits the Phase V traffic (`screen_film`, `simulation_verdict_update`, `request_audience_insights`, `campaign_plan_ready`) through `agent_persona_foundry`, `agent_viewer`, `agent_aggregation` and `agent_campaign_strategist`. Independent of the Audience Simulation tab on the Marketing page, which keeps its own run history. |
+| Interactions | Emits the Phase V traffic (`screen_film`, `simulation_verdict_update`, `request_audience_insights`, `campaign_plan_ready`) through `agent_persona_foundry`, `agent_viewer`, `agent_aggregation` and `agent_campaign_strategist`. Independent of the Audience Simulation tab on the Launch desk (`/marketing`), which keeps its own run history, and of the pipeline's Phase V screening, which reuses the same panel builder and cohort calls (B6) on the scene breakdown. |
 
 ### cultural-research
 
@@ -164,15 +164,15 @@ Shared plumbing for all four:
 | Code | `backend/core/audience/personas.py` (`build_panel`, `build_cohorts`, `MARKETS`) |
 | Purpose | Seeded synthetic personas from a configurable distribution, grouped into cohorts; also the list of release markets the UI offers. |
 | Used by | `agent_persona_foundry`, `agent_viewer`, `agent_aggregation`; the audience analyst and cultural researcher (market list). |
-| Constraints | Deterministic per seed so runs can be compared after a script revision. |
+| Constraints | Deterministic per seed so runs can be compared after a script revision. Personas carry taste, viewing habits, a market and an age group only: no gender, ethnicity, religion or income. |
 
 ### B7. Mock databases
 
 | | |
 |---|---|
 | Code | `backend/services/mock_db.py` over `backend/mock_data/*.json` |
-| Purpose | Script breakdown, candidates, venues, actor availability, censorship rules, clearances and persona seeds for the zero-key demo. |
-| Used by | `agent_profiler`, `agent_intake`, `agent_breakdown`, `agent_location`, `agent_scheduler_shoot`, `agent_rights_clearance`, `agent_localization`, `agent_persona_foundry`. |
+| Purpose | Script breakdown (with each scene's tags and licensed assets), candidates, venues, actor availability, censorship rules and clearances for the zero-key demo. |
+| Used by | `agent_profiler`, `agent_intake`, `agent_breakdown`, `agent_location`, `agent_scheduler_shoot`, `agent_rights_clearance`, `agent_localization`. |
 | Constraints | Read-only, cached per process. |
 
 ### B8. Screenplay intake
@@ -182,7 +182,7 @@ Shared plumbing for all four:
 | Code | `backend/services/script_intake.py`, `POST /api/production/script/<project_id>` |
 | Purpose | Extract text from .txt, .fountain, .fdx or .pdf into `script_context.raw_text`. |
 | Used by | Audience analyst, cultural researcher, the Phase V simulator. |
-| Dependencies | `pypdf` for PDFs only. `SCRIPT_ANALYSIS_MAX_CHARS` (default 120,000) bounds how much of the text each model read receives. A pipeline run keeps the uploaded text; only a new upload replaces it. |
+| Dependencies | `pypdf` for PDFs; `defusedxml` for .fdx, which refuses any DTD. `SCRIPT_ANALYSIS_MAX_CHARS` (default 120,000) bounds how much of the text each model read receives. A pipeline run keeps the uploaded text; only a new upload replaces it. |
 | Failure | `ScriptExtractionError` becomes HTTP 422 at upload time. |
 
 ### B9. Actor knowledge base
@@ -234,8 +234,8 @@ Shared plumbing for all four:
 | `agent_localization` | B3; also the sender of the advisors' market scan |
 | `agent_qc` | stub: fixed PASS verdict |
 | `agent_telemetry` | stub: fixed pre-launch metrics |
-| `agent_persona_foundry` | B6, B7 |
-| `agent_viewer` | B1 (Flash, batched) or seeded scores in the pipeline demo |
+| `agent_persona_foundry` | B6 |
+| `agent_viewer` | B6 cohorts; B1 (Flash, five cohorts per call) scoring every scene, or the stated offline rules without a key |
 | `agent_aggregation` | aggregation in code, B1 (Pro) for the recut diagnosis request |
 | `agent_critic` | B1 (Flash) |
 | `agent_recut_advisor` | B1 (Pro) |

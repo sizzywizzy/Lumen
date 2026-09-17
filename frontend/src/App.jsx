@@ -12,7 +12,8 @@ import CastPage from "./features/results/CastPage.jsx";
 import AudiencePage from "./features/results/AudiencePage.jsx";
 import TeamPage from "./features/team/TeamPage.jsx";
 import SettingsPage from "./features/settings/SettingsPage.jsx";
-// Earlier tools: still reachable by address, but no longer in the menu.
+// The agent layer, linked from the Agents menu (shared/AgentsMenu.jsx). The
+// older intake form (/intake) is reachable by address only; /new replaced it.
 import IntakePage from "./features/intake/IntakePage.jsx";
 import CastingView from "./features/casting/CastingView.jsx";
 import ProdView from "./features/production/ProdView.jsx";

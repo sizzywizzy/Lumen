@@ -43,3 +43,7 @@ services:
       # Blank allows any origin.
       - key: LUMEN_CORS_ORIGINS
         sync: false
+      # Render's proxy writes the caller's address into X-Forwarded-For; the
+      # sign-in rate limit counts attempts per that address.
+      - key: LUMEN_TRUSTED_PROXY_HOPS
+        value: "1"

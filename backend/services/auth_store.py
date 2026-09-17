@@ -8,13 +8,13 @@ Only derived secrets are ever written: password digests and SHA-256 token
 fingerprints. Raw session/invite tokens exist only in the HTTP response that
 mints them.
 """
-import json
 import threading
 from typing import Any, Optional
 
 from core import config
 from core.auth import security
 from core.auth.models import Invite, Membership, Production, Session, User
+from services import json_files
 
 _LOCK = threading.RLock()
 _supabase = None
@@ -27,6 +27,15 @@ _TABLES = {
     "cn_invites": Invite,
     "cn_sessions": Session,
 }
+
+
+class AlreadyExists(ValueError):
+    """An insert met a row that is already there: a taken email or production id."""
+
+
+def _is_unique_violation(exc: Exception) -> bool:
+    """PostgREST reports the Postgres SQLSTATE; 23505 is unique_violation."""
+    return getattr(exc, "code", None) == "23505" or "23505" in str(exc) or "duplicate key" in str(exc)
 
 
 def _auth_dir():
@@ -50,17 +59,16 @@ def _read(table: str) -> list[dict[str, Any]]:
     database (see `_select`) rather than download the table."""
     if config.has_supabase():
         raise RuntimeError(f"_read({table!r}) is for the local JSON store; use _select on Supabase.")
-    path = _auth_dir() / f"{table}.json"
-    if not path.exists():
-        return []
-    return json.loads(path.read_text(encoding="utf-8"))
+    with _LOCK:  # a write renames over the file; never read half-way through one
+        return json_files.read_json(_auth_dir() / f"{table}.json", [])
 
 
 def _write(table: str, rows: list[dict[str, Any]]) -> None:
     if config.has_supabase():
         # Supabase rows are upserted individually by the callers below.
         return
-    (_auth_dir() / f"{table}.json").write_text(json.dumps(rows, indent=2), encoding="utf-8")
+    with _LOCK:
+        json_files.write_json(_auth_dir() / f"{table}.json", rows, indent=2)
 
 
 def _upsert(table: str, row: dict[str, Any], key: str) -> None:
@@ -126,6 +134,47 @@ def save_user(user: User) -> User:
     return user
 
 
+def create_user(user: User) -> User:
+    """Insert a new account; AlreadyExists when the email is taken.
+
+    An insert, not an upsert: two sign-ups with one email landing at the same
+    moment used to hit the unique constraint as a 500 on Supabase and write a
+    second row for the same email on local JSON.
+    """
+    with _LOCK:
+        if config.has_supabase():
+            try:
+                _get_supabase().table("cn_users").insert(user.model_dump()).execute()
+            except Exception as exc:  # noqa: BLE001 — only the unique violation is ours to translate
+                if _is_unique_violation(exc):
+                    raise AlreadyExists(user.email) from exc
+                raise
+            return user
+        rows = _read("cn_users")
+        if any(row.get("email") == user.email or row.get("id") == user.id for row in rows):
+            raise AlreadyExists(user.email)
+        _write("cn_users", [*rows, user.model_dump()])
+    return user
+
+
+def delete_account(user_id: str) -> None:
+    """Remove an account and everything that hangs off it: the productions it
+    owns (with their members and invites), its memberships and its sessions.
+    On Supabase the foreign keys cascade from the user row."""
+    with _LOCK:
+        if config.has_supabase():
+            _get_supabase().table("cn_users").delete().eq("id", user_id).execute()
+            return
+        owned = {row["id"] for row in _read("cn_productions") if row.get("owner_id") == user_id}
+        _write("cn_productions", [r for r in _read("cn_productions") if r.get("id") not in owned])
+        _write("cn_memberships", [r for r in _read("cn_memberships")
+                                  if r.get("user_id") != user_id and r.get("project_id") not in owned])
+        _write("cn_invites", [r for r in _read("cn_invites")
+                              if r.get("created_by") != user_id and r.get("project_id") not in owned])
+        _write("cn_sessions", [r for r in _read("cn_sessions") if r.get("user_id") != user_id])
+        _write("cn_users", [r for r in _read("cn_users") if r.get("id") != user_id])
+
+
 # --------------------------------------------------------------- productions --
 
 
@@ -139,14 +188,33 @@ def save_production(production: Production) -> Production:
     return production
 
 
-def unique_project_id(base: str) -> str:
-    """Keep a readable project_id, disambiguating only on collision."""
-    candidate = base
-    suffix = 2
-    while get_production(candidate) is not None:
-        candidate = f"{base}_{suffix}"
-        suffix += 1
-    return candidate
+MAX_ID_SUFFIX = 1000
+
+
+def create_production(production: Production) -> Production:
+    """Insert a production under the first free id in PROJ_X, PROJ_X_2, ...
+
+    The id is claimed by the insert itself, so two sign-ups for productions
+    with the same name cannot both pick PROJ_X and have the second overwrite
+    the first. Returns the production as stored, with the id it got.
+    """
+    for suffix in range(1, MAX_ID_SUFFIX):
+        row = production.model_copy(update={"id": production.id if suffix == 1 else f"{production.id}_{suffix}"})
+        with _LOCK:
+            if config.has_supabase():
+                try:
+                    _get_supabase().table("cn_productions").insert(row.model_dump()).execute()
+                except Exception as exc:  # noqa: BLE001 — a taken id moves on to the next suffix
+                    if _is_unique_violation(exc):
+                        continue
+                    raise
+                return row
+            rows = _read("cn_productions")
+            if any(existing.get("id") == row.id for existing in rows):
+                continue
+            _write("cn_productions", [*rows, row.model_dump()])
+            return row
+    raise AlreadyExists(production.id)
 
 
 # --------------------------------------------------------------- memberships --

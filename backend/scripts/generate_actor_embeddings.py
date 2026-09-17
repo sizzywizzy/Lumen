@@ -1,7 +1,16 @@
-"""Generate embeddings for all actors already loaded into PostgreSQL."""
-import argparse
+"""Generate embeddings for all actors already loaded into PostgreSQL.
 
-from services.casting_kb.embeddings import generate_actor_embeddings
+    cd backend
+    python scripts/generate_actor_embeddings.py [--limit N]
+"""
+import argparse
+import sys
+from pathlib import Path
+
+# Runnable as `python scripts/generate_actor_embeddings.py` from backend/.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from services.casting_kb.embeddings import generate_actor_embeddings  # noqa: E402
 
 
 def main() -> None:

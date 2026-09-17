@@ -6,7 +6,8 @@ export default function PageHeader({ title, sub, meta, actions, size = "xl" }) {
       <div>
         <h2 className={size === "lg" ? "headline-lg" : "headline-xl"}>{title}</h2>
         {sub && <p className="sub body-md">{sub}</p>}
-        {meta && <p className="mono-data muted" style={{ marginTop: 8 }}>{meta}</p>}
+        {/* a div, not a p: some pages pass blocks (badges, rows) as the meta line */}
+        {meta && <div className="mono-data muted" style={{ marginTop: 8 }}>{meta}</div>}
       </div>
       {actions && <div className="page-header-actions">{actions}</div>}
     </header>

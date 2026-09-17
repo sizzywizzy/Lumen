@@ -3,25 +3,29 @@
     cd backend
     uvicorn main:app --reload --port 8000
 
-Mounts one router per team workspace plus shared pipeline/state/event endpoints
-(the Live Agent Terminal polls /api/events).
+Mounts one router per team workspace plus the shared pipeline, state and event
+endpoints. Pipeline runs work in the background (poll /api/pipeline/status),
+and the Live Agent Terminal pages through /api/events.
 """
 from typing import Optional
-from fastapi import Depends, FastAPI, HTTPException
+
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, model_validator
 
 from core import config
-from core.auth.deps import current_user, membership_for, require_member, require_producer
+from core.auth.deps import current_user, membership_for, require_member
 from core.auth.models import User, role_at_least
 from core.orchestrator.graph import Orchestrator
 from core.orchestrator.state import BudgetState, GlobalState
+from core.responses import cached_json, public_state
 from core.shoot_window import IsoDate, settings_problem, window_problem
 from domains.audience.router import router as audience_router
 from domains.auth.router import router as auth_router
 from domains.casting.router import router as casting_router
 from domains.launch import posters
 from domains.launch.router import router as launch_router
+from domains.pipeline import jobs
 from domains.production.router import router as production_router
 from domains.skills.router import router as skills_router
 from services import auth_store, script_intake, supabase_client
@@ -33,6 +37,7 @@ app.add_middleware(
     allow_origins=config.CORS_ORIGINS,  # "*" unless LUMEN_CORS_ORIGINS names the deployed frontend
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["ETag"],
 )
 
 app.include_router(auth_router)
@@ -42,13 +47,15 @@ app.include_router(production_router)
 app.include_router(launch_router)
 app.include_router(skills_router)
 
+EVENT_PAGE_MAX = 500  # envelopes per /api/events page
+
 
 class InitRequest(BaseModel):
     """Intake inputs. Anything left out keeps the production's saved value."""
     project_id: str = "PROJ_NEON_NIGHTS"
     budget_usd: Optional[float] = Field(default=None, gt=0)  # total production budget from the intake form
-    locality: Optional[str] = None
-    director_notes: Optional[str] = None
+    locality: Optional[str] = Field(default=None, max_length=120)
+    director_notes: Optional[str] = Field(default=None, max_length=4000)
     start_date: IsoDate = None  # first shoot day, YYYY-MM-DD
     end_date: IsoDate = None  # planned wrap, YYYY-MM-DD
 
@@ -58,6 +65,23 @@ class InitRequest(BaseModel):
         if problem:
             raise ValueError(problem)
         return self
+
+
+def _apply_inputs(req: InitRequest, state: GlobalState) -> None:
+    """Write the inputs the request actually sent onto `state`."""
+    if req.locality:
+        state.locality = req.locality
+        state.script_context["locality"] = req.locality
+    if req.director_notes is not None:
+        state.director_notes = req.director_notes
+        state.script_context["director_notes"] = req.director_notes
+    if req.budget_usd:
+        state.budget_state.cap = req.budget_usd
+    # Stored as ISO strings: the Supabase path saves JSON, which has no date type.
+    if req.start_date:
+        state.schedule.shoot_settings["start_date"] = req.start_date.isoformat()
+    if req.end_date:
+        state.schedule.shoot_settings["end_date"] = req.end_date.isoformat()
 
 
 def _new_state(req: InitRequest, stored: Optional[GlobalState]) -> GlobalState:
@@ -80,17 +104,27 @@ def _new_state(req: InitRequest, stored: Optional[GlobalState]) -> GlobalState:
         )
         state.schedule.shoot_settings = dict(stored.schedule.shoot_settings or {})
         state.schedule.director_constraints = dict(stored.schedule.director_constraints or {})
-        for key in ("expenses", "total_budget", "spent", "remaining"):
-            setattr(state.budget_state, key, getattr(stored.budget_state, key))
-    # Stored as ISO strings: the Supabase path saves with model_dump(), which leaves dates unencoded.
-    if req.start_date:
-        state.schedule.shoot_settings["start_date"] = req.start_date.isoformat()
-    if req.end_date:
-        state.schedule.shoot_settings["end_date"] = req.end_date.isoformat()
+        state.budget_state.expenses = list(stored.budget_state.expenses)
+    _apply_inputs(req, state)
     problem = settings_problem(state.schedule.shoot_settings)
     if problem:  # e.g. a new wrap date earlier than the saved first shoot day
         raise HTTPException(422, problem)
     return state
+
+
+def _require_producer(user: User, project_id: str) -> None:
+    if not role_at_least(membership_for(user, project_id).role, "producer"):
+        raise HTTPException(403, "Your role on this production is read-only.")
+
+
+def _pipeline_summary(state: GlobalState) -> dict:
+    return {
+        "project_id": state.project_id,
+        "casting_status": state.casting_status,
+        "tomatometer": state.audience_report.tomatometer,
+        "events": len(state.event_log),
+        "human_escalations": [e.model_dump() for e in state.human_escalations],
+    }
 
 
 @app.get("/api/health")
@@ -101,11 +135,12 @@ def health():
 @app.post("/api/pipeline/init")
 def init_pipeline(req: InitRequest, user: User = Depends(current_user)):
     """Create (or reset) a project's GlobalState. Producer or owner only."""
-    membership = membership_for(user, req.project_id)
-    if not role_at_least(membership.role, "producer"):
-        raise HTTPException(403, "Your role on this production is read-only.")
-    state = _new_state(req, supabase_client.load_state(req.project_id))
-    supabase_client.save_state(state)
+    _require_producer(user, req.project_id)
+    if jobs.busy(req.project_id):
+        raise HTTPException(409, "Lumen is still planning this production. Wait for that run to finish.")
+    with supabase_client.project_lock(req.project_id):
+        state = _new_state(req, supabase_client.load_state(req.project_id))
+        supabase_client.save_state(state)
     settings = state.schedule.shoot_settings
     return {
         "project_id": state.project_id, "budget_usd": state.budget_state.cap, "locality": state.locality,
@@ -114,31 +149,38 @@ def init_pipeline(req: InitRequest, user: User = Depends(current_user)):
     }
 
 
-@app.post("/api/pipeline/run")
+@app.post("/api/pipeline/run", status_code=202)
 def run_pipeline(req: InitRequest, user: User = Depends(current_user)):
-    """Full demo: fresh state through all six phases. Producer or owner only."""
-    membership = membership_for(user, req.project_id)
-    if not role_at_least(membership.role, "producer"):
-        raise HTTPException(403, "Your role on this production is read-only.")
-    # A run resets the pipeline's output, not the material: the screenplay and
-    # the intake inputs carry over, so a run after a page reload plans the same production.
-    state = _new_state(req, supabase_client.load_state(req.project_id))
-    state = Orchestrator().run(state)
-    supabase_client.save_state(state)
-    # The screenplay's poster paints in the background once the plan is saved,
-    # so its concept reads the title and genre Phase I just wrote. Re-running
-    # the same screenplay keeps its poster; the Overview asks for new ones.
-    try:
+    """Plan the whole production: a fresh state through all six phases, on a
+    background thread. Producer or owner only. Poll /api/pipeline/status.
+
+    A run resets the pipeline's output, not the material: the screenplay and
+    the intake inputs carry over, so a run after a page reload plans the same
+    production. Once the plan is saved, the screenplay's poster paints in the
+    background (re-running the same screenplay keeps its poster).
+    """
+    _require_producer(user, req.project_id)
+    _new_state(req, supabase_client.load_state(req.project_id))  # a bad window fails now, not minutes later
+
+    def after(state: GlobalState) -> None:
         posters.start_if_missing(state, user.id)
-    except Exception as exc:  # noqa: BLE001 — e.g. cn_posters not created yet; the plan itself is saved
-        print(f"[lumen] poster not started for {state.project_id}: {exc}", flush=True)
-    return {
-        "project_id": state.project_id,
-        "casting_status": state.casting_status,
-        "tomatometer": state.audience_report.tomatometer,
-        "events": len(state.event_log),
-        "human_escalations": [e.model_dump() for e in state.human_escalations],
-    }
+
+    try:
+        return jobs.start(
+            req.project_id, "pipeline", started_by=user.id,
+            begin=lambda stored: _new_state(req, stored),
+            inputs=lambda state: _apply_inputs(req, state),
+            after=after,
+            summary=_pipeline_summary,
+        )
+    except jobs.PipelineBusy:
+        raise HTTPException(409, "Lumen is already planning this production. Wait for that run to finish.") from None
+
+
+@app.get("/api/pipeline/status/{project_id}")
+def pipeline_status(project_id: str, _member=Depends(require_member)):
+    """The pipeline run in flight (phase by phase), else the last one to finish."""
+    return jobs.status(project_id)
 
 
 @app.get("/api/projects")
@@ -153,17 +195,29 @@ def list_projects(user: User = Depends(current_user)):
 
 
 @app.get("/api/state/{project_id}")
-def get_state(project_id: str, _member=Depends(require_member)):
+def get_state(project_id: str, request: Request, _member=Depends(require_member)):
+    """The production's state without the screenplay text, carrying only the
+    latest envelopes (/api/events has the rest). Answers 304 when unchanged."""
     state = supabase_client.load_state(project_id)
     if state is None:
         raise HTTPException(404, f"No state for {project_id}")
-    return state.model_dump()
+    return cached_json(request, public_state(state))
 
 
 @app.get("/api/events/{project_id}")
-def get_events(project_id: str, since: int = 0, _member=Depends(require_member)):
-    """Live Agent Terminal feed: A2A envelopes from index `since` onward."""
+def get_events(
+    project_id: str,
+    request: Request,
+    since: int = Query(0, ge=0),
+    limit: int = Query(EVENT_PAGE_MAX, ge=1, le=EVENT_PAGE_MAX),
+    _member=Depends(require_member),
+):
+    """Live Agent Terminal feed: A2A envelopes from index `since`, a page at a time."""
     state = supabase_client.load_state(project_id)
     if state is None:
         raise HTTPException(404, f"No state for {project_id}")
-    return {"total": len(state.event_log), "events": state.event_log[since:]}
+    return cached_json(request, {
+        "total": len(state.event_log),
+        "offset": since,
+        "events": state.event_log[since: since + limit],
+    })

@@ -129,7 +129,7 @@ def test_a_pipeline_run_paints_one_poster_per_screenplay(state_dir, offline, sig
     client = TestClient(app)
 
     def run():
-        assert client.post("/api/pipeline/run", json={"project_id": PROJECT}, headers=_auth(token)).status_code == 200
+        assert client.post("/api/pipeline/run", json={"project_id": PROJECT}, headers=_auth(token)).status_code == 202
         return client.get(f"/api/launch/poster/{PROJECT}", headers=_auth(token)).json()
 
     def drop(text):
@@ -204,6 +204,8 @@ def test_a_poster_problem_never_fails_the_pipeline_run(state_dir, offline, signe
         raise RuntimeError('relation "cn_posters" does not exist')
 
     monkeypatch.setattr(posters.poster_store, "get", missing_table)
-    response = TestClient(app).post("/api/pipeline/run", json={"project_id": PROJECT}, headers=_auth(token))
-    assert response.status_code == 200
+    client = TestClient(app)
+    response = client.post("/api/pipeline/run", json={"project_id": PROJECT}, headers=_auth(token))
+    assert response.status_code == 202
+    assert client.get(f"/api/pipeline/status/{PROJECT}", headers=_auth(token)).json()["status"] == "complete"
     assert supabase_client.load_state(PROJECT).candidates

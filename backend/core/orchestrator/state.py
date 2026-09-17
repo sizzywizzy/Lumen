@@ -5,7 +5,7 @@ here, change the contract file too, and get team agreement first.
 """
 from typing import Any, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field, model_validator
 
 CastingStatus = Literal["SOURCING", "SCREENING", "LOCKED"]
 CandidateStatus = Literal["SOURCING", "SCREENING", "LOCKED", "DISQUALIFIED", "FLAGGED_ACTION_REQUIRED"]
@@ -49,18 +49,45 @@ class Schedule(BaseModel):
     reshoots: list[dict[str, Any]] = Field(default_factory=list)
 
 
+# Placeholder ledger rows every production used to be created with. Nobody
+# spent this money, so a saved state that still starts with them loses them.
+_SEEDED_EXPENSES = [
+    {"category": "Cast", "description": "Cast deposits", "amount": 18000},
+    {"category": "Equipment", "description": "Camera package", "amount": 7200},
+    {"category": "Crew", "description": "Production crew payroll", "amount": 9500},
+]
+
+
 class BudgetState(BaseModel):
+    """One budget: `cap`, the total entered at intake or in Settings. The cost
+    ledger's total, spent and remaining are worked out from it and from the
+    expenses the team logs, never stored as numbers of their own."""
     daily_burn: float = 0.0
     cap: float = 250_000.0  # total production budget (USD) from intake — drives casting caps, venues, reach
     alerts: list[str] = Field(default_factory=list)
-    expenses: list[dict[str, Any]] = Field(default_factory=lambda: [
-        {"category": "Cast", "description": "Cast deposits", "amount": 18000},
-        {"category": "Equipment", "description": "Camera package", "amount": 7200},
-        {"category": "Crew", "description": "Production crew payroll", "amount": 9500},
-    ])
-    total_budget: float = 100000.0
-    spent: float = 34700.0
-    remaining: float = 65300.0
+    expenses: list[dict[str, Any]] = Field(default_factory=list)  # logged on the production page
+
+    @model_validator(mode="before")
+    @classmethod
+    def _drop_seeded_ledger(cls, data: Any) -> Any:
+        if isinstance(data, dict) and (data.get("expenses") or [])[:3] == _SEEDED_EXPENSES:
+            data = {**data, "expenses": data["expenses"][3:]}
+        return data
+
+    @computed_field
+    @property
+    def total_budget(self) -> float:
+        return self.cap
+
+    @computed_field
+    @property
+    def spent(self) -> float:
+        return round(sum(float(item.get("amount") or 0) for item in self.expenses), 2)
+
+    @computed_field
+    @property
+    def remaining(self) -> float:
+        return round(self.cap - self.spent, 2)
 
 
 class AudienceReview(BaseModel):
@@ -80,6 +107,8 @@ class AudienceReport(BaseModel):
     viewer_count: int = 0
     verdict: Literal["", "fresh", "rotten"] = ""
     reviews: list[AudienceReview] = Field(default_factory=list)
+    # Who scored the scenes: "live" (the model), "mixed", or "offline" (the stated rules).
+    screening_source: Literal["", "live", "mixed", "offline"] = ""
 
 
 class MarketingAsset(BaseModel):

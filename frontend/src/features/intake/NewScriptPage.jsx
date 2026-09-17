@@ -4,7 +4,7 @@ import Icon from "../../shared/Icon.jsx";
 import { useAuth } from "../../shared/AuthContext.jsx";
 import { useProject } from "../../shared/ProjectContext.jsx";
 import { cn } from "../../lib/utils.js";
-import { hasResults, productionTitle } from "../../lib/production.js";
+import { hasResults, phaseWords, productionTitle } from "../../lib/production.js";
 import { Card } from "../results/parts.jsx";
 
 const ACCEPTED = /\.(pdf|fdx|fountain|txt|text|md|markdown)$/i;
@@ -41,6 +41,7 @@ export default function NewScriptPage() {
   const [locality, setLocality] = useState(state?.locality || "Los Angeles, CA");
   const [notes, setNotes] = useState("");
   const [step, setStep] = useState(null);
+  const [run, setRun] = useState(null); // the server's progress while planning
   const [error, setError] = useState("");
 
   if (!canEdit) {
@@ -77,7 +78,10 @@ export default function NewScriptPage() {
     if (start && wrap && wrap < start) return setError("The wrap date needs to be on or after the first shoot day.");
     setError("");
     try {
-      await startRun({ file, budget: amount, start, wrap, locality: locality.trim(), notes: notes.trim() }, setStep);
+      await startRun({ file, budget: amount, start, wrap, locality: locality.trim(), notes: notes.trim() }, (next, progress) => {
+        setStep(next);
+        setRun(progress || null);
+      });
       setStep("ready");
       setTimeout(() => navigate("/overview"), 900);
     } catch (err) {
@@ -88,6 +92,9 @@ export default function NewScriptPage() {
 
   if (step) {
     const at = STEP_ORDER.indexOf(step);
+    const phases = run?.phases || [];
+    const current = phases.find((p) => p.status === "running");
+    const finished = phases.filter((p) => p.status === "complete").length;
     return (
       <>
         <div className="page-top">
@@ -110,6 +117,11 @@ export default function NewScriptPage() {
                   <div>
                     <strong>{title}</strong>
                     <small>{detail}</small>
+                    {active && step === "planning" && phases.length > 0 && (
+                      <small className="progress-step__now">
+                        {current ? `${phaseWords(current.key)}…` : "Getting started…"} ({finished} of {phases.length} done)
+                      </small>
+                    )}
                   </div>
                 </li>
               );

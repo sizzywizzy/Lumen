@@ -10,6 +10,7 @@ import {
 import { PencilNote } from "../../shared/Artifacts.jsx";
 import { ActorTile, Card, CardLink, DayBars, Legend, NoPlanYet, Stat, ViewerBar } from "./parts.jsx";
 import ProductionPoster from "./ProductionPoster.jsx";
+import SignOffQueue from "./SignOffQueue.jsx";
 
 function MoneyRow({ icon, title, sub, amount, caption, positive = false }) {
   return (
@@ -76,6 +77,8 @@ export default function OverviewPage() {
       </div>
 
       <div className="dash-grid">
+        <SignOffQueue state={state} className="col-12 card--signoff" />
+
         <Card className="col-8 card--slate" title="Shoot schedule" action={<CardLink to="/schedule">Full schedule</CardLink>}>
           <div className="stats" style={{ margin: "18px 0 26px" }}>
             <Stat value={stats.scenes} label="Scenes" />

@@ -192,7 +192,8 @@ def _score_candidate(state: GlobalState, candidate: Candidate) -> None:
     quote = float(candidate.metadata.get("quote_usd", 0))
     role_cap = state.budget_state.cap * config.CASTING_CAP_SHARE
     over_budget = quote > role_cap
-    candidate.scores["budget"] = 0.0 if over_budget else round(100.0 * (1 - quote / role_cap), 1)
+    # A zero budget leaves no room for any fee (the API refuses one; the CLI used to allow it).
+    candidate.scores["budget"] = 0.0 if over_budget or role_cap <= 0 else round(100.0 * (1 - quote / role_cap), 1)
     log_event(state, make_reply(request, "agent_finance", "budget_scored",
                                 {"candidate_id": candidate.id, "budget": candidate.scores["budget"],
                                  "quote_usd": quote, "role_cap_usd": role_cap}))

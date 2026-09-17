@@ -5,6 +5,7 @@ Never invent a message shape. Build every inter-agent message with
 Live Agent Terminal can replay the whole conversation.
 """
 import itertools
+import time
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -12,7 +13,12 @@ from core.orchestrator.state import GlobalState
 
 ORCHESTRATOR = "agent_director_orchestrator"
 
-_seq = itertools.count(1)
+# The sequence starts at the process's start time in microseconds rather than
+# at 1. Event logs outlive the process, and a counter that restarted at 1 after
+# every deploy reused ids already in the stored log, which crossed the
+# `in_reply_to` links and the Agent Log's keys. Starting from the clock keeps
+# ids numeric (contracts/a2a_envelope.json) and increasing across restarts.
+_seq = itertools.count(time.time_ns() // 1_000)
 
 # Intent vocabulary (AGENT.md Section 5). Envelope creation validates against it.
 REQUEST_REPLY_INTENTS = {

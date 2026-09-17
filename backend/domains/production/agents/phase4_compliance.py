@@ -1,11 +1,42 @@
 """Phase IV — Compliance, Localization & Launch Prep.
 
 agent_localization <-> agent_rights_clearance per territory, then agent_qc and
-agent_telemetry. Demo beat: UAE blocks on SCN_004's alcohol reference.
+agent_telemetry. The elements checked come from the scene breakdown (Phase
+III): content tags and the licensed assets a scene lists. Demo beat: UAE
+blocks on SCN_004's alcohol reference.
 """
+from core import llm_output
+from core import scenes as scene_names
 from core.messaging.envelope import broadcast, log_event, make_envelope, make_reply
 from core.orchestrator.state import GlobalState
 from services import mock_db
+
+TERRITORY_NAMES = {"US": "the US", "UAE": "the UAE", "UK": "the UK", "FR": "France", "IN": "India", "JP": "Japan"}
+REMEDIES = {
+    "replace_audio_track_clean_version": "replace the audio with a clean version",
+    "secure_regional_license": "secure a licence that covers the territory",
+}
+
+
+def block_reason(territory: str, flagged: list[dict], titles: dict[str, str]) -> str:
+    """Why a territory is blocked, in a sentence, with what would clear it."""
+    problems, remedies = [], []
+    for item in flagged:
+        if item.get("asset_id") and not item.get("scene_id"):
+            problems.append(f"the licence for {item['asset_id']} does not cover it")
+        else:
+            scene = titles.get(item.get("scene_id"), "") or item.get("scene_id") or "a scene"
+            tags = " and ".join(t.replace("_", " ") for t in item.get("tags") or []) or "content"
+            problems.append(f'"{scene}" is flagged for {tags}, which its rules do not allow')
+        code = item.get("required_remediation", "")
+        remedy = REMEDIES.get(code) or llm_output.words(code.upper()) if code else ""
+        if remedy and remedy not in remedies:
+            remedies.append(remedy)
+    name = TERRITORY_NAMES.get(territory, territory)
+    sentence = f"Release in {name} is blocked: " + "; ".join(problems) + "."
+    if remedies:
+        sentence += " To clear it, " + " and ".join(remedies) + "."
+    return sentence
 
 
 def _rights_clearance(state: GlobalState, request: dict) -> dict:
@@ -45,11 +76,20 @@ def _rights_clearance(state: GlobalState, request: dict) -> dict:
     return verdict
 
 
+def _elements(scenes: list[dict]) -> list[dict]:
+    """What each territory checks: every scene's content tags, and every
+    licensed asset (a music cue) the scene breakdown lists for a scene."""
+    elements = [{"type": "dialogue", "tags": s["tags"], "scene_id": s["scene_id"]}
+                for s in scenes if s.get("tags")]
+    elements += [{"type": "music", "tags": [], "scene_id": s["scene_id"], "asset_id": asset_id}
+                 for s in scenes for asset_id in (s.get("assets") or [])]
+    return elements
+
+
 def _localization(state: GlobalState) -> None:
     scenes = state.script_context.get("scenes") or mock_db.load("script")["scenes"]
-    tagged = [{"type": "dialogue", "tags": s["tags"], "scene_id": s["scene_id"]}
-              for s in scenes if s["tags"]]
-    tagged.append({"type": "music", "tags": [], "scene_id": "SCN_004", "asset_id": "TRK_992_INDIE_ROCK"})
+    tagged = _elements(scenes)
+    titles = scene_names.titles(scenes)
     # Every territory with a rule set is a target market.
     territories = list(mock_db.load("censorship_rules"))
 
@@ -62,8 +102,7 @@ def _localization(state: GlobalState) -> None:
         verdict = _rights_clearance(state, request)
         if verdict["status"] == "FLAGGED":
             state.compliance_state[territory] = "BLOCKED"
-            state.escalate(f"compliance:{territory}",
-                           f"Hard censorship block in {territory}: {verdict['flagged']}")
+            state.escalate(f"compliance:{territory}", block_reason(territory, verdict["flagged"], titles))
         elif verdict["status"] == "REQUIRES_CUTS":
             state.compliance_state[territory] = "AWAITING_QC"
         else:

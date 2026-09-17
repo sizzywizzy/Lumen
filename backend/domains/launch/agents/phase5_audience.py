@@ -1,135 +1,175 @@
 """Phase V — Audience Simulation & Predictive Reviews.
 
-agent_persona_foundry -> agent_viewer (batched) -> agent_aggregation
+agent_persona_foundry -> agent_viewer (cohorts, batched) -> agent_aggregation
 -> (anomaly) agent_recut_advisor -> agent_critic.
-Viewer verdicts are deterministic pseudo-random (hash-seeded) so the demo
-replays identically; swap for real Gemini calls per batch later.
+
+The screening uses the Audience Analyst's machinery rather than its own: a
+seeded panel with no sensitive attributes (core/audience/personas.py), grouped
+into cohorts that the model scores scene by scene in batched calls
+(domains/launch/agents/audience_sim.py). Each viewer's scene scores are
+derived from their cohort's, moved by their own traits. Without a model the
+cohort scores come from stated offline rules, so the demo replays identically.
 """
 import hashlib
+import statistics
+from typing import Callable
 
 from core import config, llm_output
 from core import scenes as scene_names
+from core.audience import personas as panel_lib
 from core.messaging.envelope import broadcast, log_event, make_envelope, make_reply
 from core.orchestrator.state import AudienceReview, GlobalState
 from domains.launch import prompts
+from domains.launch.agents import audience_sim
 from services import gemini_client, mock_db
 
-VIEWER_BATCH_SIZE = 10
-ANOMALY_SEGMENT = {"age_bracket": "18-24", "gender": "M"}
-ANOMALY_SCENE = "SCN_004"  # act-two exposition scene
 FRESH_THRESHOLD = 60.0  # a tomatometer at or above this reads as "fresh"
+LIKED_SCORE = 6.0       # a viewer whose overall is at least this counts toward the tomatometer
 CRITIC_REVIEWS = 3
+ANOMALY_RATIO = 0.8     # a segment this far below everyone on the weakest scene gets a recut request
+
+# Groups of viewers the aggregator compares on the weakest scene, each as
+# (dimension, how to name a viewer's group). Taste, viewing habits, age band
+# and region only: the panel models no sensitive attributes.
+SEGMENTS: tuple[tuple[str, Callable[[dict], str]], ...] = (
+    ("age_band", lambda p: {
+        "under_25": "viewers under 25", "25_34": "viewers aged 25 to 34",
+        "35_49": "viewers aged 35 to 49", "50_plus": "viewers aged 50 and over",
+    }[panel_lib.AGE_BANDS.get(p["age_group"], "25_34")]),
+    ("market_region", lambda p: "viewers in " + panel_lib.BLOC_NAMES.get(
+        panel_lib.MARKET_BLOCS.get(p["market"], ""), p["market_name"])),
+    ("genre_affinity", lambda p: "genre fans" if p["matches_film_genre"] else "viewers outside the genre"),
+    ("pacing_tolerance", lambda p: f"viewers with {p['pacing_tolerance']} patience for slow pacing"),
+    ("viewing_frequency", lambda p: {
+        "low": "occasional filmgoers", "medium": "regular filmgoers", "high": "frequent filmgoers",
+    }[p["viewing_frequency"]]),
+)
 
 
 def verdict_for(tomatometer: float) -> str:
     return "fresh" if tomatometer >= FRESH_THRESHOLD else "rotten"
 
 
-def _foundry(state: GlobalState) -> list[dict]:
-    """Expand the seed personas into a full Persona_DB."""
-    seeds = mock_db.load("personas")
-    personas = []
-    for i in range(config.PERSONA_COUNT):
-        seed = seeds[i % len(seeds)]
-        personas.append({**seed, "persona_id": f"PER_{i:03d}"})
-    log_event(state, broadcast("agent_persona_foundry", "personas_ready", {
-        "count": len(personas),
-    }))
-    return personas
-
-
-def _seeded_score(persona_id: str, scene_id: str) -> float:
-    """Deterministic 4.0-9.5 stand-in for a Gemini viewer verdict."""
-    digest = hashlib.md5(f"{persona_id}:{scene_id}".encode()).digest()
-    return round(4.0 + (digest[0] / 255) * 5.5, 1)
-
-
 def _scenes(state: GlobalState) -> list[dict]:
-    return state.script_context.get("scenes") or mock_db.load("script")["scenes"]
+    return [scene_names.describe(s) for s in (state.script_context.get("scenes") or mock_db.load("script")["scenes"])]
 
 
-def _viewers(state: GlobalState, personas: list[dict]) -> list[dict]:
-    scenes = [s["scene_id"] for s in _scenes(state)]
-    verdicts = []
-    for start in range(0, len(personas), VIEWER_BATCH_SIZE):
-        batch = personas[start:start + VIEWER_BATCH_SIZE]
-        request = log_event(state, make_envelope(
-            "agent_aggregation", "agent_viewer", "screen_film",
-            {"title_id": state.project_id, "batch": [p["persona_id"] for p in batch]},
-        ))
-        for persona in batch:
-            scene_scores = {sc: _seeded_score(persona["persona_id"], sc) for sc in scenes}
-            # The anomaly: young male viewers check out during the act-two exposition.
-            if (persona["age_bracket"] == ANOMALY_SEGMENT["age_bracket"] and persona["gender"] == ANOMALY_SEGMENT["gender"]
-                    and ANOMALY_SCENE in scene_scores):
-                scene_scores[ANOMALY_SCENE] = round(scene_scores[ANOMALY_SCENE] * 0.45, 1)
-            overall = round(sum(scene_scores.values()) / len(scene_scores), 2)
-            verdicts.append({
-                "persona_id": persona["persona_id"], "title_id": state.project_id,
-                "scene_scores": scene_scores, "overall_score": overall,
-                "sentiment": "positive" if overall >= 6.5 else ("mixed" if overall >= 5.5 else "negative"),
-                "would_recommend": overall >= 6.5,
-                "drop_off_scene": min(scene_scores, key=scene_scores.get),
-                "demographic": {"age_bracket": persona["age_bracket"], "gender": persona["gender"], "region": persona["region"]},
-            })
-        # One reply summarizes the batch (keeps the event log readable).
-        log_event(state, make_reply(request, "agent_viewer", "screen_film", {
-            "batch_size": len(batch),
-            "mean_overall": round(sum(v["overall_score"] for v in verdicts[-len(batch):]) / len(batch), 2),
-        }))
-    return verdicts
+def _seed(state: GlobalState) -> int:
+    """The same screenplay on the same production always gets the same panel."""
+    key = f"{state.project_id}:{(state.script_context or {}).get('fingerprint') or 'demo'}"
+    return int(hashlib.sha256(key.encode()).hexdigest()[:8], 16)
 
 
-def _aggregation(state: GlobalState, verdicts: list[dict]) -> None:
-    scenes = list(verdicts[0]["scene_scores"])
-    heatmap = {sc: round(sum(v["scene_scores"][sc] for v in verdicts) / len(verdicts), 2) for sc in scenes}
+def _foundry(state: GlobalState, seed: int) -> tuple[list[dict], list[dict]]:
+    """agent_persona_foundry: a seeded panel and the cohorts it screens in."""
+    genre = str((state.script_context or {}).get("genre") or "")
+    panel, distribution = panel_lib.build_panel(size=config.PERSONA_COUNT, seed=seed, film_genres=[genre])
+    cohorts = panel_lib.build_cohorts(panel)
+    log_event(state, broadcast("agent_persona_foundry", "personas_ready", {
+        "count": len(panel), "cohorts": len(cohorts), "seed": seed,
+        "distribution_fingerprint": panel_lib.distribution_fingerprint(distribution),
+    }))
+    return panel, cohorts
+
+
+def _viewers(state: GlobalState, scenes: list[dict], cohorts: list[dict], panel: list[dict],
+             seed: int) -> tuple[list[dict], dict[str, dict], str]:
+    """agent_viewer: every cohort scores every scene; each viewer's scores follow."""
+    context = state.script_context or {}
+    film = {key: context.get(key) for key in ("title", "genre", "tone", "logline")}
+    request = log_event(state, make_envelope(
+        "agent_aggregation", "agent_viewer", "screen_film",
+        {"title_id": state.project_id, "scenes": len(scenes), "cohorts": len(cohorts), "panel_size": len(panel)},
+    ))
+    trace: list[dict] = []
+    verdicts, live, batches = audience_sim.screen_scenes(film, scenes, cohorts, trace)
+    responses = audience_sim.derive_scene_responses(panel, cohorts, verdicts, scenes, seed)
+    degraded = sum(1 for v in verdicts.values() if v.get("_degraded"))
+    source = "offline" if not live else ("live" if live == batches and not degraded else "mixed")
+    log_event(state, make_reply(request, "agent_viewer", "screen_film", {
+        "cohorts_scored": len(verdicts), "batches": batches, "live_batches": live, "source": source,
+        "mean_overall": round(statistics.fmean(r["overall_score"] for r in responses), 2) if responses else 0.0,
+    }))
+    return responses, verdicts, source
+
+
+def _anomaly(panel: list[dict], responses: list[dict], scene_id: str, population: float) -> dict | None:
+    """The group of viewers furthest below everyone else on `scene_id`, if any
+    group is far enough below to be worth a recut."""
+    people = {p["persona_id"]: p for p in panel}
+    floor = max(8, round(0.05 * len(responses)))
+    worst = None
+    for dimension, name in SEGMENTS:
+        groups: dict[str, list[float]] = {}
+        for response in responses:
+            groups.setdefault(name(people[response["persona_id"]]), []).append(response["scene_scores"][scene_id])
+        for label, scores in groups.items():
+            if len(scores) < floor or population <= 0:
+                continue
+            mean = statistics.fmean(scores)
+            if worst is None or mean / population < worst["ratio"]:
+                worst = {"dimension": dimension, "label": label, "viewers": len(scores),
+                         "segment_score": round(mean, 2), "ratio": mean / population}
+    return worst if worst and worst["ratio"] < ANOMALY_RATIO else None
+
+
+def _aggregation(state: GlobalState, scenes: list[dict], panel: list[dict], responses: list[dict], source: str) -> None:
+    by_id = {s["scene_id"]: s for s in scenes}
+    heatmap = {sid: round(statistics.fmean(r["scene_scores"][sid] for r in responses), 2) for sid in by_id}
     weakest = min(heatmap, key=heatmap.get)
-    titles = scene_names.titles(_scenes(state))
+    titles = scene_names.titles(scenes)
     report = state.audience_report
-    report.tomatometer = round(100 * sum(1 for v in verdicts if v["overall_score"] >= 6.0) / len(verdicts), 1)
-    report.audience_score = round(10 * sum(v["overall_score"] for v in verdicts) / len(verdicts), 1)
+    report.tomatometer = round(100 * sum(1 for r in responses if r["overall_score"] >= LIKED_SCORE) / len(responses), 1)
+    report.audience_score = round(10 * statistics.fmean(r["overall_score"] for r in responses), 1)
     report.heatmap = heatmap
     report.weakest_scene_id = weakest
-    report.viewer_count = len(verdicts)
+    report.viewer_count = len(responses)
     report.verdict = verdict_for(report.tomatometer)
-    report.scene_titles = {sc: titles.get(sc, sc) for sc in heatmap}
+    report.scene_titles = {sid: titles.get(sid, sid) for sid in heatmap}
     report.weakest_scene_title = titles.get(weakest, "")
+    report.screening_source = source
 
-    # Anomaly detection: is one demographic segment cratering on one scene?
-    segment = [v for v in verdicts
-               if v["demographic"]["age_bracket"] == ANOMALY_SEGMENT["age_bracket"]
-               and v["demographic"]["gender"] == ANOMALY_SEGMENT["gender"]]
+    # Anomaly detection: is one group of viewers cratering on the weakest scene?
+    segment = _anomaly(panel, responses, weakest, heatmap[weakest])
     if segment:
-        seg_score = sum(v["scene_scores"][weakest] for v in segment) / len(segment)
-        if seg_score < heatmap[weakest] * 0.8:
-            request = log_event(state, make_envelope(
-                "agent_aggregation", "agent_recut_advisor", "diagnose_engagement_anomaly",
-                {"segment": ANOMALY_SEGMENT, "scene_id": weakest,
-                 "segment_score": round(seg_score, 2), "population_score": heatmap[weakest]},
-            ))
-            fallback = prompts.MOCK_RECUT_DIAGNOSIS
-            raw = llm_output.mapping(gemini_client.generate_json(
-                f"Segment {ANOMALY_SEGMENT} scores {seg_score:.1f} on {weakest} vs population {heatmap[weakest]}.",
-                tier="pro", system=prompts.RECUT_SYSTEM, mock=fallback,
-            ), fallback)
-            # Field by field, so a diagnosis missing a key or with a lift that
-            # is not a mapping still yields a readable recut request.
-            lift = llm_output.mapping(raw.get("predicted_lift"), fallback["predicted_lift"])
-            diagnosis = {
-                "root_cause": llm_output.text(raw.get("root_cause"), fallback["root_cause"], 80),
-                "action": llm_output.text(raw.get("action"), fallback["action"], 80),
-                "predicted_lift": {
-                    "segment_score": llm_output.text(lift.get("segment_score"), fallback["predicted_lift"]["segment_score"], 20),
-                    "tomatometer": llm_output.text(lift.get("tomatometer"), fallback["predicted_lift"]["tomatometer"], 20),
-                },
-            }
-            log_event(state, make_reply(request, "agent_recut_advisor", "diagnosis_result", diagnosis))
-            state.escalate(f"recut:{weakest}",
-                           f"{diagnosis['root_cause']} -> {diagnosis['action']} (predicted tomatometer {diagnosis['predicted_lift']['tomatometer']})")
+        payload = {k: segment[k] for k in ("dimension", "label", "viewers", "segment_score")}
+        request = log_event(state, make_envelope(
+            "agent_aggregation", "agent_recut_advisor", "diagnose_engagement_anomaly",
+            {"segment": payload, "scene_id": weakest, "scene_title": report.weakest_scene_title,
+             "population_score": heatmap[weakest]},
+        ))
+        scene = by_id[weakest]
+        fallback = prompts.MOCK_RECUT_DIAGNOSIS
+        raw = llm_output.mapping(gemini_client.generate_json(
+            f"Segment: {segment['label']} ({segment['viewers']} of {len(responses)} viewers) score "
+            f"{segment['segment_score']:.1f} on \"{report.weakest_scene_title}\" ({weakest}) against "
+            f"{heatmap[weakest]:.1f} for the whole panel.\nScene: {scene.get('summary', '')}\n"
+            f"Tags: {', '.join(scene.get('tags') or []) or 'none'}",
+            tier="pro", system=prompts.RECUT_SYSTEM, mock=fallback,
+        ), fallback)
+        # Field by field, so a diagnosis missing a key or with a lift that
+        # is not a mapping still yields a readable recut request.
+        lift = llm_output.mapping(raw.get("predicted_lift"), fallback["predicted_lift"])
+        diagnosis = {
+            "root_cause": llm_output.text(raw.get("root_cause"), fallback["root_cause"], 80),
+            "action": llm_output.text(raw.get("action"), fallback["action"], 80),
+            "predicted_lift": {
+                "segment_score": llm_output.text(lift.get("segment_score"), fallback["predicted_lift"]["segment_score"], 20),
+                "tomatometer": llm_output.text(lift.get("tomatometer"), fallback["predicted_lift"]["tomatometer"], 20),
+            },
+        }
+        log_event(state, make_reply(request, "agent_recut_advisor", "diagnosis_result", diagnosis))
+        state.escalate(
+            f"recut:{weakest}",
+            f'{segment["label"][:1].upper()}{segment["label"][1:]} drift during "{report.weakest_scene_title}" '
+            f"({llm_output.words(diagnosis['root_cause'])}). Suggested fix: {llm_output.words(diagnosis['action'])} "
+            f"(predicted tomatometer {diagnosis['predicted_lift']['tomatometer']}).",
+        )
 
     log_event(state, broadcast("agent_aggregation", "simulation_verdict_update", {
         "tomatometer": report.tomatometer, "audience_score": report.audience_score, "verdict": report.verdict,
-        "weakest_scene_id": weakest, "weakest_scene_title": report.weakest_scene_title, "viewers": len(verdicts),
+        "weakest_scene_id": weakest, "weakest_scene_title": report.weakest_scene_title,
+        "viewers": len(responses), "source": source,
     }))
 
 
@@ -143,29 +183,36 @@ def _cast(state: GlobalState) -> list[dict]:
     ]
 
 
-def _viewer_label(verdict: dict) -> str:
-    age = str(verdict.get("demographic", {}).get("age_bracket") or "").replace("-", " to ")
-    return f"A viewer aged {age}" if age else "A test viewer"
+def _viewer_label(persona: dict) -> str:
+    age = str(persona.get("age_group") or "")
+    age = "65 and over" if age == "65+" else age.replace("-", " to ")
+    where = persona.get("market_name")
+    if not age:
+        return "A test viewer"
+    return f"A viewer aged {age}" + (f" in {where}" if where else "")
 
 
-def _viewer_reviews(state: GlobalState, verdicts: list[dict], cast: list[dict]) -> list[AudienceReview]:
-    """Two comments built from the simulated verdicts: the happiest viewer and the least happy."""
-    if not verdicts:
+def _viewer_reviews(state: GlobalState, panel: list[dict], responses: list[dict], cast: list[dict]) -> list[AudienceReview]:
+    """Two comments built from the simulated responses: the happiest viewer and the least happy."""
+    if not responses:
         return []
+    people = {p["persona_id"]: p for p in panel}
     titles = state.audience_report.scene_titles
     lead = next((c["character"] for c in cast if c["type"] == "lead"), cast[0]["character"] if cast else "The lead")
-    best = max(verdicts, key=lambda v: v["overall_score"])
-    worst = min(verdicts, key=lambda v: v["overall_score"])
+    best = max(responses, key=lambda r: r["overall_score"])
+    worst = min(responses, key=lambda r: r["overall_score"])
     favourite = max(best["scene_scores"], key=best["scene_scores"].get)
     return [
-        AudienceReview(source=_viewer_label(best), kind="viewer", score=f"{best['overall_score']:.1f} out of 10",
+        AudienceReview(source=_viewer_label(people[best["persona_id"]]), kind="viewer",
+                       score=f"{best['overall_score']:.1f} out of 10",
                        quote=f'{lead} carries the whole film, and "{titles.get(favourite, "the finale")}" is the scene I keep thinking about.'),
-        AudienceReview(source=_viewer_label(worst), kind="viewer", score=f"{worst['overall_score']:.1f} out of 10",
+        AudienceReview(source=_viewer_label(people[worst["persona_id"]]), kind="viewer",
+                       score=f"{worst['overall_score']:.1f} out of 10",
                        quote=f'"{titles.get(worst["drop_off_scene"], "One scene")}" dragged for me, and I never really got back into it.'),
     ]
 
 
-def _critic(state: GlobalState, verdicts: list[dict]) -> None:
+def _critic(state: GlobalState, panel: list[dict], responses: list[dict]) -> None:
     report = state.audience_report
     cast = _cast(state)
     mock = prompts.mock_critic_reviews(cast, report.weakest_scene_title)
@@ -186,15 +233,17 @@ def _critic(state: GlobalState, verdicts: list[dict]) -> None:
     if not critics:
         critics = [AudienceReview(source=r["outlet"], quote=r["quote"], score=r["score"]) for r in mock["reviews"]]
     # Assigned, not appended, so re-running the phase never duplicates reviews.
-    report.reviews = critics + _viewer_reviews(state, verdicts, cast)
+    report.reviews = critics + _viewer_reviews(state, panel, responses, cast)
     log_event(state, broadcast("agent_critic", "reviews_ready", {"reviews": [r.model_dump() for r in report.reviews]}))
 
 
 def run_phase5_audience(state: GlobalState) -> GlobalState:
     # The recut request belongs to this screening; an earlier run's is dropped.
     state.clear_escalations("recut:")
-    personas = _foundry(state)
-    verdicts = _viewers(state, personas)
-    _aggregation(state, verdicts)
-    _critic(state, verdicts)
+    scenes = _scenes(state)
+    seed = _seed(state)
+    panel, cohorts = _foundry(state, seed)
+    responses, _verdicts, source = _viewers(state, scenes, cohorts, panel, seed)
+    _aggregation(state, scenes, panel, responses, source)
+    _critic(state, panel, responses)
     return state

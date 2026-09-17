@@ -35,8 +35,10 @@ def _say(day: str) -> str:
     return f"{d:%a}, {d:%b} {d.day}"
 
 
-def _valid_scenes(scenes, venue_types: set[str], role_ids: set[str]) -> list[dict]:
-    """Keep only scenes a venue can host and the cast can be called for."""
+def _valid_scenes(scenes, venue_types: set[str], role_ids: set[str], asset_ids: set[str]) -> list[dict]:
+    """Keep only scenes a venue can host and the cast can be called for. A
+    scene's licensed assets (music cues) are kept only when the clearance
+    database knows them, so a model cannot invent a licence to block on."""
     out, seen = [], set()
     for scene in scenes if isinstance(scenes, list) else []:
         if not isinstance(scene, dict):
@@ -57,6 +59,7 @@ def _valid_scenes(scenes, venue_types: set[str], role_ids: set[str]) -> list[dic
                       if str(c).strip().upper() in role_ids]
         tags = [re.sub(r"[^a-z0-9]+", "_", str(t).strip().lower()).strip("_")
                 for t in (scene.get("tags") or []) if str(t).strip()][:8]
+        assets = [str(a).strip().upper() for a in (scene.get("assets") or []) if isinstance(a, str)]
         out.append({
             "scene_id": scene_id,
             "heading": str(scene.get("heading") or ""),
@@ -67,6 +70,7 @@ def _valid_scenes(scenes, venue_types: set[str], role_ids: set[str]) -> list[dic
             "characters_needed": characters,
             "estimated_time_hours": round(max(1.0, min(10.0, hours)), 1),
             "tags": [t for t in tags if t],
+            "assets": [a for a in dict.fromkeys(assets) if a in asset_ids],
         })
         seen.add(scene_id)
         if len(out) >= MAX_SCENES:
@@ -90,7 +94,8 @@ def _breakdown(state: GlobalState) -> list[dict]:
             tier="pro", system=prompts.BREAKDOWN_SYSTEM, mock={"scenes": demo, "source": "demo"},
         )
         if isinstance(read, dict) and read.get("source") != "demo":
-            extracted = _valid_scenes(read.get("scenes"), set(venue_types), set(role_ids))
+            cleared = {item["asset_id"] for item in mock_db.load("clearance")}
+            extracted = _valid_scenes(read.get("scenes"), set(venue_types), set(role_ids), cleared)
             if extracted:
                 scenes, source = extracted, "script"
     # Copies with plain names filled in (mock_db.load is cached, so never mutate it).

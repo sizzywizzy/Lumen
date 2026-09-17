@@ -28,41 +28,46 @@ It is a true **Multi-Agent System (MAS)**: agents ask each other questions, get 
 
 ## See it
 
-> **Captures pending.** Save the files at the paths below and uncomment the
-> embeds — no other edit needed. Delete this note once they're in.
 > No hosted demo link yet: add one here once the [Deploy](#deploy) steps are
 > done. Until then, run it locally with [Getting Started](#getting-started)
-> (works with an empty `.env`).
+> (works with an empty `.env`). The captures below come from that offline
+> demo.
 
-| Slot | Save as | Should show |
-|---|---|---|
-| Screenshot 1 | `assets/screenshots/01-intake.png` | **New script** (`/new`) — screenplay dropped, budget and shooting dates filled in |
-| Screenshot 2 | `assets/screenshots/02-pipeline.png` | The results after a run — the **Overview** or the day-by-day **Schedule** |
-| Screenshot 3 | `assets/screenshots/03-terminal.png` | Live Agent Terminal (`/logs`) scrolling the A2A envelopes |
-| GIF | `assets/screenshots/pipeline.gif` | ~10s of `run_demo.py` streaming all six phases (see recipe below) |
+**New script** (`/new`): the screenplay, the budget and the shooting dates.
 
-<!-- Uncomment once the files above exist:
 ![New script — screenplay, budget and shooting dates](assets/screenshots/01-intake.png)
-![The results of a run](assets/screenshots/02-pipeline.png)
-![Live Agent Terminal streaming A2A envelopes](assets/screenshots/03-terminal.png)
+
+**The Overview after a run**, with the requests the agents left for a person
+at the top.
+
+![The results of a run: sign-off queue, schedule, budget, cast and test screening](assets/screenshots/02-pipeline.png)
+
+**The Live Agent Terminal** (`/logs`), filtered to one candidate: a scoring
+request, and the agents that answer it.
+
+![Live Agent Terminal filtered to one candidate's A2A thread](assets/screenshots/03-terminal.png)
+
+**The six phases in the terminal** (`run_demo.py`, no keys):
+
 ![The six-phase pipeline running end to end](assets/screenshots/pipeline.gif)
--->
 
 <details>
-<summary>Recording the pipeline GIF</summary>
+<summary>Recording the pipeline GIF again</summary>
 
-The terminal run is the clearest proof it's a real MAS — 150 A2A messages
-across six phases, no keys required:
+The terminal run is the clearest proof it's a real MAS — about 110 A2A
+messages across six phases, no keys required:
 
 ```bash
 cd backend
-python -u run_demo.py --project PROJ_NEON_NIGHTS --budget 250000 --verbose
+python -u run_demo.py --project PROJ_TERMINAL_DEMO --budget 250000
 ```
 
 Record that with any terminal recorder (`asciinema rec` + `agg`, `vhs`, or a
 screen capture) and save the result as `assets/screenshots/pipeline.gif`.
-Keep it under ~10s and start at `[PHASE1]` so the phase banners are the first
-thing on screen.
+Keep it to about ten seconds and start at the prompt, so the phase banners are
+the first thing to scroll by. Add `--verbose` to print every envelope in full.
+The demo saves its state the way the API does (to Supabase when `.env` points
+there), so it uses a project of its own.
 </details>
 
 ---
@@ -79,7 +84,7 @@ Turning a screenplay into a finished, marketed film is a two-week-per-step manua
 | **II** | Audition Analysis & Scorecard | Grades performances into a composite leaderboard (no tape decoding: auditions are judged from the role brief and the tape reference) |
 | **III** | Script → Schedule | Breaks down scenes, matches venues, builds the stripboard + burn-rate budget |
 | **IV** | Compliance, Localization & Launch Prep | Clears rights, localizes/censors per territory, runs QC |
-| **V** | Audience Simulation & Predictive Reviews | 200 synthetic viewers screen the cut → Tomatometer + fix suggestions (verdicts are hash-seeded; the Audience Analyst advisor is the Gemini-backed simulator) |
+| **V** | Audience Simulation & Predictive Reviews | 200 synthetic viewers screen the cut scene by scene → Tomatometer, the scene where a group of viewers drifts, and a recut suggestion (Gemini scores each audience cohort; same simulator as the Audience Analyst) |
 | **VI** | Marketing, PR & Autonomous Social Launch | Plans reels/memes/posters + copy, PR-gates each one, schedules the rollout (campaign assets are art-direction specs, not rendered media), and paints the production's poster from the script |
 
 Full spec and agent contracts: see [`AGENT.md`](./AGENT.md). Shared schemas live in [`contracts/`](./contracts); advisor procedures in [`skills.md`](./skills.md).
@@ -104,7 +109,9 @@ Full spec and agent contracts: see [`AGENT.md`](./AGENT.md). Shared schemas live
 
 - **Orchestration:** an explicit state machine in `backend/core/orchestrator/graph.py`, written from scratch rather than on a framework: every phase is a node, a conditional edge after a phase can halt the run with a human escalation, each phase owns and resets its own output so a re-run replaces rather than stacks, and all of it is unit-tested without a model call.
 - **Every agent** communicates via the standard A2A envelope (`sender`, `recipient`, `intent`, `payload`).
-- **A "Live Agent Terminal"** in the UI (`/logs`) lists every one of these JSON messages, filterable by agent and payload — the proof it's a real MAS. Since the site redesign it has no menu entry (see [`TODO.md`](./TODO.md)).
+- **A "Live Agent Terminal"** in the UI (Agents → Agent log, `/logs`) lists every one of these JSON messages, filterable by agent and payload — the proof it's a real MAS.
+- **Humans sign off at the top:** whatever an agent cannot settle (a cast pick, a blocked territory, a recut) goes to the sign-off queue on the Overview, each item linked to the screen where it is decided.
+- **Background runs:** a pipeline run answers `202` and the page polls its progress. When it finishes, only the fields its phases own are merged onto the stored state (`core/orchestrator/merge.py`), so nothing a teammate saved meanwhile is lost.
 
 ---
 
@@ -134,10 +141,8 @@ video or music generation and no rendered campaign assets (`agent_visual` and
 the one image Lumen paints is the production's poster), no tape decoding
 or transcription (`agent_media_proc` passes the tape reference through), and
 no LangGraph or Google Cloud Agent Builder (the orchestrator is an explicit
-state machine, see Architecture). Still open is live viewers inside the
-pipeline's Phase V: `agent_viewer` verdicts are hash-seeded today, while the
-Audience Analyst advisor already runs the Gemini-backed simulator. Open bugs
-and the feature backlog are tracked in [`TODO.md`](./TODO.md).
+state machine, see Architecture). Open bugs and the feature backlog are
+tracked in [`TODO.md`](./TODO.md).
 
 ---
 
@@ -167,37 +172,40 @@ lumen/
 │   ├── core/                    # THE BRAIN — shared by every domain
 │   │   ├── config.py            # env vars, model tiers, guardrail constants
 │   │   ├── llm_output.py        # coerces model replies; a bad field falls back to the mock
+│   │   ├── responses.py         # slim state reads with ETags
 │   │   ├── scenes.py            # plain-language scene headings, titles and summaries
 │   │   ├── shoot_window.py      # shooting-window checks shared by intake and the scheduler
 │   │   ├── orchestrator/
-│   │   │   ├── graph.py         # phase DAG + fail-fast edges
+│   │   │   ├── graph.py         # phase DAG + fail-fast edges + what each phase owns
+│   │   │   ├── merge.py         # a finished run merged onto the stored state
 │   │   │   └── state.py         # GlobalState Pydantic models
 │   │   ├── messaging/envelope.py  # A2A envelope helper (shared by ALL agents)
 │   │   ├── audience/            # synthetic-viewer simulation engine
-│   │   ├── auth/                # sessions, invites, memberships
+│   │   ├── auth/                # sessions, invites, memberships, sign-in rate limits
 │   │   └── skills/              # SKILL.md loader + runner
 │   ├── services/                # gemini_client, tavily_client, supabase_client,
 │   │                            #   auth_store, simulation_store, skill_store,
 │   │                            #   poster_store, script_intake, mock_db, casting_kb/
-│   ├── mock_data/               # script, candidates, venues, censorship rules, personas
+│   ├── mock_data/               # script, candidates, venues, censorship rules, clearances
 │   └── domains/                 # THE SANDBOXES — one per product area
 │       ├── casting/             # Phases I & II: router, agents/, prompts
 │       ├── production/          # Phases III & IV
 │       ├── launch/              # Phases V & VI
+│       ├── pipeline/            # background pipeline runs (202 + poll)
 │       └── audience/ auth/ skills/   # cross-cutting routers
 ├── frontend/
 │   ├── vercel.json              # Vercel: every route falls back to index.html
 │   ├── Dockerfile, nginx.conf   # static image for the older Cloud Run path
 │   └── src/
-│       ├── App.jsx              # routes: public site, results pages, older tools
+│       ├── App.jsx              # routes: public site, results pages, the agent layer
 │       ├── features/
 │       │   ├── site/            # public homepage, drawn from the built-in sample production
 │       │   ├── intake/          # New script (/new): upload, budget, shooting dates → full run
 │       │   ├── results/         # Overview · Schedule · Cast · Audience (the menu)
 │       │   ├── auth/ team/ settings/
 │       │   └── casting/ production/ launch/ advisors/ logs/
-│       │                        #   older tools: routed by address, not in the menu
-│       ├── shared/              # site layout, LiveAgentTerminal + AgentLog, UI parts
+│       │                        #   the agent layer, under the Agents menu
+│       ├── shared/              # site layout, Agents menu, LiveAgentTerminal + AgentLog, UI parts
 │       ├── theme/               # light/dark token provider
 │       └── lib/                 # api.js (VITE_API_URL), production.js (results selectors),
 │                                #   sample.js, utils.js
@@ -205,7 +213,7 @@ lumen/
 ├── .dockerignore                # keeps .state/, .env and caches out of the image
 ├── render.yaml                  # Render Blueprint for the API
 ├── docker-compose.yml
-├── Makefile                     # install, build, dev servers, API docs
+├── Makefile                     # install, test, demo, build, dev servers, API docs
 ├── GCP_DEPLOYMENT.md            # older Cloud Run path with cloudbuild.yaml and
 │                                #   deploy-*.sh; out of date (see TODO.md)
 └── .env.example
@@ -236,6 +244,10 @@ TMDB_API_KEY=...           # Phase I actor KB only
 GEMINI_PRO_MODEL=...       # optional: model for the heavy-reasoning steps; defaults to the flash model
 GEMINI_IMAGE_MODEL=...     # optional: model that paints the poster; defaults to gemini-3.1-flash-image
 ```
+
+Vertex AI can stand in for `GEMINI_API_KEY`, but only when you switch it on:
+set `GOOGLE_GENAI_USE_VERTEXAI=true` and `GOOGLE_CLOUD_PROJECT` (gcloud
+credentials alone are never used). `.env.example` lists every setting.
 
 > Never commit `.env`. Once deployed, the API reads the same variables from
 > Render's environment settings instead; see [Deploy](#deploy).
@@ -272,16 +284,18 @@ pytest
 ```
 
 Runs offline against the mock fallbacks and covers the A2A envelope rules,
-the orchestrator's fail-fast edges and phase re-runs, seeded persona
-generation and distribution validation, the scheduler's cast and venue
-constraints, password hashing, the auth 401/403/404 guards and the sign-in the
-actor-KB routes require, the Supabase query filters, the background workers'
-state merge, model-tier selection, the plain-language results (scene titles,
-schedule changes, reviews), and how each phase copes with a malformed model
-reply.
-No keys and no database: every test that touches a store gets its own tmp
-directory, so your `backend/.state/` is never read or written, and Gemini is
-forced to its mock even on a machine that has a key.
+the orchestrator's fail-fast edges and phase re-runs, background pipeline runs
+and how they merge onto the stored state, seeded persona generation and the
+Phase V screening, distribution validation, the scheduler's cast and venue
+constraints, compliance checks, the budget, password hashing, sign-in rate
+limits, the auth 401/403/404 guards and the sign-in the actor-KB routes
+require, sign-up races, the Supabase query filters, crash-safe local files,
+slim state reads and ETags, model-tier selection, the plain-language results
+(scene titles, schedule changes, reviews), and how each phase copes with a
+malformed model reply. `make test` runs the same suite.
+No keys and no database: every test works in a throwaway folder, so your
+`backend/.state/` is never read or written, and Gemini, Tavily and Supabase
+are switched off even when `.env` holds real keys.
 GitHub Actions runs this plus the frontend build on every push
 (`.github/workflows/ci.yml`).
 
@@ -319,8 +333,8 @@ infer sensitive attributes from photos or names.
 
 `skills/<name>/SKILL.md` files (casting, scheduling, audience-simulation,
 cultural-research) are procedures the advisor agents follow: the Markdown body
-is the agent's system instruction. Open **AI Advisors** at `/advisors` (it has
-no menu entry since the site redesign) and press **Run** on a card, or call
+is the agent's system instruction. Open **Agents → AI advisors** (`/advisors`)
+and press **Run** on a card, or call
 `POST /api/skills/<name>/run/<project_id>`. Runs work offline on a
 deterministic fallback and go live once `GEMINI_API_KEY` is set. See
 `skills.md` for the full catalogue, `skills/README.md` for the file format,
@@ -354,8 +368,9 @@ Supabase.
 Vercel can host FastAPI, but only as request-scoped functions, and this
 backend keeps working after the request ends:
 
-- An audience simulation or advisor run answers `202` straight away, then runs
-  on a background thread for minutes while the dashboard polls it. A Vercel
+- A pipeline run, an audience simulation or an advisor run answers `202`
+  straight away, then runs on a background thread for minutes while the
+  dashboard polls it. A Vercel
   function can be frozen as soon as its response is sent, and runs for at most
   300 seconds on the Hobby plan.
 - Runs in flight are tracked in the memory of the process that started them,
@@ -432,17 +447,21 @@ add those too if you use them.
 - **Free Render instances sleep** after 15 minutes without traffic, and the
   first request after that takes about a minute. Paid instances stay awake.
 - **Run exactly one API instance.** Background runs live in that one process,
-  and so does the per-production lock that keeps their saves from overwriting
-  each other (`numInstances: 1` in `render.yaml`).
-- **A redeploy stops runs in flight.** An interrupted advisor run is marked
-  failed; an interrupted audience simulation stays `running` in the history, so
-  start a new one (an open item in [`TODO.md`](./TODO.md)).
+  and so do the per-production lock that keeps saves from overwriting each
+  other and the sign-in rate limits (`numInstances: 1` in `render.yaml`).
+- **A redeploy stops runs in flight.** An interrupted advisor run or audience
+  simulation is marked failed. An interrupted pipeline run leaves the stored
+  plan as it was, and the page says the run was interrupted. Start it again.
+- **Sign-in attempts are rate-limited per client address.** `render.yaml` sets
+  `LUMEN_TRUSTED_PROXY_HOPS=1` so the limit reads the address Render's proxy
+  reports; see [`TODO.md`](./TODO.md) for the check to do after the first
+  deploy.
 
 ---
 
 ## Budget-driven scale
 
-There are no tiers or modes. The total budget from the New script page lands in `GlobalState.budget_state.cap` and every downstream limit is derived from it (shares live in `backend/core/config.py`):
+There are no tiers or modes. The total budget from the New script page lands in `GlobalState.budget_state.cap` (Settings can change it later), and every downstream limit is derived from it (shares live in `backend/core/config.py`). The cost ledger on the production desk reads the same number, less the expenses the team logs:
 
 - **Casting** — a single role may cost at most 10% of the budget; pricier quotes are purged by the fail-fast wallet check.
 - **Locations** — venues are picked cheapest-first among the days the whole cast can make, and a scene no day suits is still booked but sent to the sign-off queue; 15% of the budget spread over the shoot days is the daily burn allowance, and a venue day is paid once however many scenes share it.
@@ -458,14 +477,15 @@ so these are exactly what you'll see; with a key, Lumen reads your own script.
 
 1. **Drop the script** on **New script** (`/new`) with a $250k budget and a shooting window, and press **Plan my production**. All six phases run, then the Overview opens and the poster paints beside the title. Click it for full size, and **Paint another style** for a new take (an offline sketch until `GEMINI_API_KEY` is set).
 2. **Phase I/II — Cast** (`/cast`): an over-budget applicant is ruled out with the reason spelled out; each role shows its top pick and runners-up.
-3. **Phase III — Schedule** (`/schedule`): **Changes Lumen made** lists the venue conflict the Scheduler and Location Agent negotiated, and the two scenes no day suits the whole cast. Those are booked anyway and sent to the sign-off queue, which no page shows yet.
-4. **Phase V — Audience** (`/audience`): 200 synthetic viewers produce the Tomatometer, scene-by-scene scores and reviews, and the Overview names the scene where viewers drifted.
+3. **Phase III — Schedule** (`/schedule`): **Changes Lumen made** lists the venue conflict the Scheduler and Location Agent negotiated, and the two scenes no day suits the whole cast. Those are booked anyway and sent to the sign-off queue at the top of the Overview.
+4. **Phase V — Audience** (`/audience`): 200 synthetic viewers produce the Tomatometer, scene-by-scene scores and reviews. The Overview names the scene where viewers under 25 drifted, and the Recut Advisor's fix waits in the sign-off queue.
 
-The rest of the demo lives on the older screens, which lost their menu entries in the site redesign, so open them by address:
+The rest of the demo lives on the agent screens, under the **Agents** menu:
 
-5. **Phase IV** (`/production`): the UAE cut hits a compliance block, and the UAE card in the compliance matrix shows blocked.
-6. **Phase VI** (`/marketing`): a meme is drafted, rejected by PR Risk for a spoiler, redrafted clean, and scheduled — cut from Phase V's top scene.
-7. **Close** (`/logs`): the Live Agent Terminal shows the whole A2A conversation, including the Recut Advisor's +6 lift prediction — *150 messages, no human in the loop until the sign-off queue.*
+5. **Phase IV — Production desk** (`/production`): the UAE cut hits a compliance block, and the UAE card in the compliance matrix shows blocked.
+6. **Phase VI — Launch desk** (`/marketing`): a meme is drafted, rejected by PR Risk for a spoiler, redrafted clean, and scheduled — cut from Phase V's top scene.
+7. **Sign-off** (the Overview's queue, then the **Casting board** at `/casting`): confirm or change the cast picks the agents left for a person.
+8. **Close — Agent log** (`/logs`): the Live Agent Terminal shows the whole A2A conversation, including the Recut Advisor's +6 lift prediction — *about 110 messages, no human in the loop until the sign-off queue.*
 
 ---
 

@@ -132,10 +132,16 @@ export const api = {
   // caps, locality, director notes, shooting dates as YYYY-MM-DD).
   initPipeline: (project_id, budget_usd, locality, director_notes, start_date, end_date) =>
     post("/api/pipeline/init", pipelineBody(project_id, budget_usd, locality, director_notes, start_date, end_date)),
+  // Runs work in the background: this returns the run's record at once, and
+  // pipelineStatus reports each phase until it is "complete" or "failed".
   runPipeline: (project_id, budget_usd, locality, director_notes, start_date, end_date) =>
     post("/api/pipeline/run", pipelineBody(project_id, budget_usd, locality, director_notes, start_date, end_date)),
+  pipelineStatus: (projectId) => request(`/api/pipeline/status/${projectId}`),
+  // The state carries only the latest envelopes (event_offset says where they
+  // start); the full log is read a page at a time.
   getState: (projectId) => request(`/api/state/${projectId}`),
-  getEvents: (projectId, since = 0) => request(`/api/events/${projectId}?since=${since}`),
+  getEvents: (projectId, since = 0, limit = 500) =>
+    request(`/api/events/${projectId}?since=${since}&limit=${limit}`),
 
   // ---- casting ------------------------------------------------------------
   // Move a candidate along the funnel. Producer/owner only; writes to the
@@ -145,7 +151,8 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify({ status, reason }),
     }),
-  // Run or re-run the Google Cloud casting crawler agent with optional custom locality and notes
+  // Re-run the talent scout and auditions (background, like runPipeline) with
+  // an optional new locality and notes.
   runCasting: (projectId, payload = {}) => post(`/api/casting/run/${projectId}`, payload),
 
   // ---- audience simulation (Phase V) --------------------------------------
