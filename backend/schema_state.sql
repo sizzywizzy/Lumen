@@ -3,8 +3,9 @@
 -- Only needed when SUPABASE_URL + SUPABASE_KEY are configured. With no
 -- credentials the same records are kept as JSON under backend/.state/.
 -- Written by services/supabase_client.py (global_state),
--- services/simulation_store.py (cn_simulations, cn_simulations_panel) and
--- services/poster_store.py (cn_posters).
+-- services/simulation_store.py (cn_simulations, cn_simulations_panel),
+-- services/poster_store.py (cn_posters) and
+-- services/pipeline_store.py (cn_pipeline_runs).
 
 -- One GlobalState document per production: every phase's output, the A2A
 -- event log the Live Agent Terminal polls, and the screenplay from intake.
@@ -64,6 +65,28 @@ create table if not exists cn_posters (
     image_base64       text not null
 );
 
+-- One row per pipeline run (the whole plan, or one phase group), upserted at
+-- every phase change. The run itself lives in the API process's memory; this
+-- is what is left of it after a restart, so the dashboard can still say how
+-- the production's last run ended. Every key domains/pipeline/jobs.py writes
+-- onto a record has a column here.
+create table if not exists cn_pipeline_runs (
+    job_id      text primary key,       -- JOB_<hex>
+    project_id  text not null,          -- == GlobalState.project_id
+    scope       text not null check (scope in ('pipeline', 'casting', 'production', 'launch')),
+    status      text not null check (status in ('running', 'complete', 'failed')),
+    started_at  text not null,
+    finished_at text,
+    started_by  text,                   -- cn_users.id of the member who started it
+    phases      jsonb not null default '[]'::jsonb,  -- key, title, status per phase
+    log_start   integer,                -- where this run's envelopes begin in the event log
+    events      integer,                -- how long the event log was once it was merged
+    summary     jsonb,                  -- what the finished run reports to the page
+    error       text
+);
+
+create index if not exists cn_pipeline_runs_project_idx on cn_pipeline_runs (project_id, started_at desc);
+
 -- The API reaches Supabase with the secret key and enforces membership itself
 -- (see core/auth/deps.py), so these tables must never be exposed to anon
 -- clients. Deny-all RLS makes that explicit.
@@ -71,3 +94,4 @@ alter table global_state         enable row level security;
 alter table cn_simulations       enable row level security;
 alter table cn_simulations_panel enable row level security;
 alter table cn_posters           enable row level security;
+alter table cn_pipeline_runs     enable row level security;

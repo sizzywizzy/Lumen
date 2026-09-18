@@ -12,9 +12,7 @@ import CastPage from "./features/results/CastPage.jsx";
 import AudiencePage from "./features/results/AudiencePage.jsx";
 import TeamPage from "./features/team/TeamPage.jsx";
 import SettingsPage from "./features/settings/SettingsPage.jsx";
-// The agent layer, linked from the Agents menu (shared/AgentsMenu.jsx). The
-// older intake form (/intake) is reachable by address only; /new replaced it.
-import IntakePage from "./features/intake/IntakePage.jsx";
+// The agent layer, linked from the Agents menu (shared/AgentsMenu.jsx).
 import CastingView from "./features/casting/CastingView.jsx";
 import ProdView from "./features/production/ProdView.jsx";
 import LaunchView from "./features/launch/LaunchView.jsx";
@@ -46,7 +44,6 @@ export default function App() {
           <Route path="team" element={<TeamPage />} />
           <Route path="settings" element={<SettingsPage />} />
 
-          <Route path="intake" element={<IntakePage />} />
           <Route path="casting" element={<CastingView />} />
           <Route path="production" element={<ProdView />} />
           <Route path="marketing" element={<LaunchView />} />

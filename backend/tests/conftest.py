@@ -50,7 +50,6 @@ def background_work_runs_inline(monkeypatch):
     monkeypatch.setattr(posters, "_FAILED", {})
     monkeypatch.setattr(jobs, "_spawn", lambda target, *args: target(*args))
     monkeypatch.setattr(jobs, "_ACTIVE", {})
-    monkeypatch.setattr(jobs, "_LAST", {})
 
 
 @pytest.fixture(autouse=True)

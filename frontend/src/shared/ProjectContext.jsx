@@ -264,14 +264,6 @@ export function ProjectProvider({ children }) {
     [projectId, canEdit, runJob]
   );
 
-  // Called by the intake screen once the project has been seeded.
-  const startProject = useCallback((_nextProjectId, nextIntake) => {
-    setIntake(nextIntake || null);
-    setBudget(nextIntake?.budget ?? null);
-    if (nextIntake?.locality) setLocality(nextIntake.locality);
-    if (nextIntake?.notes) setDirectorNotes(nextIntake.notes);
-  }, []);
-
   // Applies a candidate-status change returned by the casting endpoint without
   // a full refetch, so the board updates the moment the request lands.
   const applyCandidateUpdate = useCallback((candidate, castingStatus, event) => {
@@ -303,7 +295,6 @@ export function ProjectProvider({ children }) {
       directorNotes,
       setDirectorNotes,
       intake,
-      startProject,
       state,
       setState,
       events: feed.events,
@@ -327,7 +318,6 @@ export function ProjectProvider({ children }) {
       locality,
       directorNotes,
       intake,
-      startProject,
       state,
       feed,
       running,

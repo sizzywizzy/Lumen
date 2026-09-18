@@ -66,3 +66,63 @@ alter table cn_sessions    enable row level security;
 
 -- Housekeeping: drop sessions that have aged out.
 --   delete from cn_sessions where expires_at < to_char(now() at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"');
+
+-- ---------------------------------------------------------------------------
+-- Sign-up, as one transaction.
+--
+-- A producer's first sign-up writes four rows: the account, the production,
+-- the owner membership and the production's first GlobalState. As four
+-- separate statements they can fail half-way, so the API deleted the account
+-- again when a later one failed — all-or-nothing on failure, but not one
+-- transaction. PostgREST runs a function in a single transaction, so with
+-- this one either the whole sign-up is there or none of it is.
+--
+-- The production id is claimed by the insert itself: PROJ_X, then PROJ_X_2,
+-- PROJ_X_3, … until one is free, so two sign-ups naming the same production
+-- cannot both take PROJ_X. A production id that already has a state row (an
+-- adopted demo project) keeps it.
+--
+-- Returns {"project_id": "<the id it got>"}. A taken email raises
+-- unique_violation (23505), which the API answers as 409. `global_state`
+-- comes from schema_state.sql; run both files, in either order.
+create or replace function cn_register_producer(
+    p_user       jsonb,   -- id, email, name, password_hash, created_at
+    p_project_id text,    -- the id to try first
+    p_name       text,    -- the production's display name
+    p_created_at text,
+    p_state      jsonb    -- the production's first GlobalState
+) returns jsonb
+language plpgsql
+as $$
+declare
+    v_id     text;
+    v_suffix integer := 1;
+begin
+    insert into cn_users (id, email, name, password_hash, created_at)
+    values (p_user ->> 'id', p_user ->> 'email', p_user ->> 'name',
+            p_user ->> 'password_hash', p_user ->> 'created_at');
+
+    loop
+        v_id := case when v_suffix = 1 then p_project_id else p_project_id || '_' || v_suffix end;
+        begin
+            insert into cn_productions (id, name, owner_id, created_at)
+            values (v_id, p_name, p_user ->> 'id', p_created_at);
+            exit;
+        exception when unique_violation then
+            v_suffix := v_suffix + 1;
+            if v_suffix >= 1000 then
+                raise exception 'No free production id for %', p_project_id;
+            end if;
+        end;
+    end loop;
+
+    insert into cn_memberships (user_id, project_id, role, created_at)
+    values (p_user ->> 'id', v_id, 'owner', p_created_at);
+
+    insert into global_state (project_id, state)
+    values (v_id, jsonb_set(p_state, '{project_id}', to_jsonb(v_id)))
+    on conflict (project_id) do nothing;
+
+    return jsonb_build_object('project_id', v_id);
+end;
+$$;

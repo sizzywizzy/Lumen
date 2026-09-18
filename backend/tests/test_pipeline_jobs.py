@@ -237,3 +237,89 @@ def test_concurrent_edits_are_applied_one_after_another(state_dir):
     for thread in threads:
         thread.join()
     assert supabase_client.load_state(PROJECT).budget_state.spent == 24
+
+
+# ------------------------------------------------- a run outlives the process --
+
+
+def _restart():
+    """What a server restart leaves behind: the stored records, and a process
+    that is running nothing."""
+    jobs._ACTIVE.clear()
+
+
+def test_the_last_run_is_still_there_after_a_restart(state_dir, offline, signed_in, make_production):
+    user, token = signed_in()
+    make_production(user)
+    client = _client()
+    started = client.post("/api/pipeline/run", json={"project_id": PROJECT}, headers=_auth(token)).json()
+
+    _restart()
+
+    status = client.get(f"/api/pipeline/status/{PROJECT}", headers=_auth(token)).json()
+    assert status["job_id"] == started["job_id"]
+    assert status["status"] == "complete"
+    assert status["summary"]["casting_status"] == "LOCKED"
+
+
+def test_a_run_cut_short_by_a_restart_is_reported_as_failed(state_dir, offline, signed_in, make_production,
+                                                            monkeypatch):
+    user, token = signed_in()
+    make_production(user)
+    supabase_client.save_state(GlobalState(project_id=PROJECT))
+    # A run that gets as far as starting its first phase and is then killed.
+    monkeypatch.setattr(jobs, "_spawn", lambda target, job, *rest: jobs._phase_status(job, "phase1", "running"))
+    client = _client()
+    started = client.post("/api/pipeline/run", json={"project_id": PROJECT}, headers=_auth(token)).json()
+    assert started["status"] == "running"
+
+    _restart()
+
+    status = client.get(f"/api/pipeline/status/{PROJECT}", headers=_auth(token)).json()
+    assert status["job_id"] == started["job_id"], "the record survives; only the run was lost"
+    assert status["status"] == "failed" and status["error"] == jobs.INTERRUPTED
+    assert [p["status"] for p in status["phases"]] == ["failed"] + ["pending"] * 5
+    assert client.get(f"/api/pipeline/status/{PROJECT}", headers=_auth(token)).json()["status"] == "failed"
+    assert client.post("/api/pipeline/run", json={"project_id": PROJECT},
+                       headers=_auth(token)).status_code == 202, "the production is free to plan again"
+
+
+def test_a_records_keys_all_have_a_column_to_land_in(state_dir, offline, signed_in, make_production):
+    """PostgREST rejects a write naming a column the table lacks, so a key added
+    to a run record without a matching column breaks every Supabase deploy."""
+    import re
+
+    from core import config
+    from services import pipeline_store
+
+    user, token = signed_in()
+    make_production(user)
+    _client().post("/api/pipeline/run", json={"project_id": PROJECT}, headers=_auth(token))
+    record = pipeline_store.latest(PROJECT)
+
+    sql = (config.BACKEND_DIR / "schema_state.sql").read_text(encoding="utf-8")
+    body = re.search(r"create table if not exists cn_pipeline_runs \((.*?)\n\);", sql, re.S).group(1)
+    columns = {line.strip().split()[0] for line in body.splitlines()
+               if line.strip() and not line.strip().startswith("--")}
+
+    assert set(record) <= columns, f"no column for {sorted(set(record) - columns)} in cn_pipeline_runs"
+
+
+def test_a_store_that_cannot_be_written_does_not_stop_the_run(state_dir, offline, signed_in, make_production,
+                                                              monkeypatch, capsys):
+    """A database where schema_state.sql has not been run again has no
+    cn_pipeline_runs table. That costs the history, not the plan."""
+    from services import pipeline_store
+
+    user, token = signed_in()
+    make_production(user)
+    monkeypatch.setattr(pipeline_store, "_complained", set())
+    monkeypatch.setattr(pipeline_store, "save", lambda record: pipeline_store._shrug(
+        "save", RuntimeError("relation cn_pipeline_runs does not exist")) or record)
+
+    started = _client().post("/api/pipeline/run", json={"project_id": PROJECT}, headers=_auth(token))
+
+    assert started.status_code == 202
+    assert started.json()["job_id"], "the caller still gets a run to poll for"
+    assert supabase_client.load_state(PROJECT).casting_status == "LOCKED", "the plan was still saved"
+    assert "re-run backend/schema_state.sql" in capsys.readouterr().out
