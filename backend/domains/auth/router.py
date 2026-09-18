@@ -28,7 +28,7 @@ from core.auth.models import (
     role_at_least,
 )
 from core.orchestrator.state import GlobalState
-from services import auth_store, supabase_client
+from services import auth_store
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -37,6 +37,8 @@ SIGN_INS = ratelimit.SlidingWindow(limit=20, window=10 * 60)
 SIGN_UPS = ratelimit.SlidingWindow(limit=10, window=60 * 60)
 
 EMAIL_TAKEN = "An account with that email already exists. Sign in instead."
+EMAIL_TAKEN_JOIN = "An account with that email already exists. Sign in, then open the invite link again."
+USED_UP = "This invite has already been used."
 
 
 @lru_cache(maxsize=1)
@@ -87,9 +89,9 @@ def _session_payload(user: User, token: str) -> dict:
 def register(req: RegisterRequest, request: Request):
     """Step 1 — create the production account. The creator becomes its owner.
 
-    The account, the production, the membership and the production's first
-    state are written together: if any later write fails, the account is
-    removed again, so a sign-up never leaves an account with no production.
+    The account, the production, the owner membership and the production's
+    first state are written as one transaction (see `register_producer`), so a
+    sign-up never leaves an account with no production behind.
     """
     ratelimit.enforce(SIGN_UPS, request)
     if auth_store.get_user_by_email(req.email):
@@ -103,27 +105,14 @@ def register(req: RegisterRequest, request: Request):
         password_hash=security.hash_password(req.password),
         created_at=now,
     )
+    production = Production(
+        id=security.project_id_from_name(req.production_name),
+        name=req.production_name.strip(), owner_id=user.id, created_at=now,
+    )
     try:
-        auth_store.create_user(user)
+        auth_store.register_producer(user, production, GlobalState(project_id=production.id).model_dump(mode="json"))
     except auth_store.AlreadyExists:
         raise HTTPException(409, EMAIL_TAKEN) from None
-
-    try:
-        production = auth_store.create_production(Production(
-            id=security.project_id_from_name(req.production_name),
-            name=req.production_name.strip(), owner_id=user.id, created_at=now,
-        ))
-        auth_store.save_membership(
-            Membership(user_id=user.id, project_id=production.id, role="owner", created_at=now)
-        )
-        # Seed the GlobalState this production's dashboard reads, unless one is
-        # already stored for this id (so an existing demo project is adopted).
-        with supabase_client.project_lock(production.id):
-            if supabase_client.load_state(production.id) is None:
-                supabase_client.save_state(GlobalState(project_id=production.id))
-    except Exception:
-        auth_store.delete_account(user.id)
-        raise
 
     return _session_payload(user, _mint_session(user))
 
@@ -264,37 +253,49 @@ def join(req: JoinRequest, request: Request, user: Optional[User] = Depends(opti
     if security.is_expired(invite.expires_at):
         raise HTTPException(410, "This invite has expired. Ask the producer for a new one.")
     if invite.uses >= invite.max_uses:
-        raise HTTPException(410, "This invite has already been used.")
+        raise HTTPException(410, USED_UP)
 
     now = security.iso(security.now())
 
-    if user is None:
+    # Opening the same link twice from an account that is already on the
+    # production changes nothing and costs no use.
+    if user is not None and auth_store.get_membership(user.id, invite.project_id) is not None:
+        return _session_payload(user, _mint_session(user))
+
+    new_account = user is None
+    if new_account:
         if not (req.email and req.password and req.name):
             raise HTTPException(400, "Provide a name, email and password to create your account.")
         ratelimit.enforce(SIGN_UPS, request)
-        taken = "An account with that email already exists. Sign in, then open the invite link again."
         if auth_store.get_user_by_email(req.email):
-            raise HTTPException(409, taken)
+            raise HTTPException(409, EMAIL_TAKEN_JOIN)
         _check_password_strength(req.password)
-        user = User(
-            id=security.new_id("usr"),
-            email=req.email,
-            name=req.name.strip(),
-            password_hash=security.hash_password(req.password),
-            created_at=now,
-        )
-        try:
-            auth_store.create_user(user)
-        except auth_store.AlreadyExists:
-            raise HTTPException(409, taken) from None
 
-    if auth_store.get_membership(user.id, invite.project_id) is None:
+    # Claim the use before creating anything. The check above is only for a
+    # clear error message: two people redeeming the last use at the same moment
+    # both pass it, and exactly one of them claims the use here.
+    if auth_store.consume_invite_use(invite.id) is None:
+        raise HTTPException(410, USED_UP)
+
+    try:
+        if new_account:
+            user = User(
+                id=security.new_id("usr"),
+                email=req.email,
+                name=req.name.strip(),
+                password_hash=security.hash_password(req.password),
+                created_at=now,
+            )
+            try:
+                auth_store.create_user(user)
+            except auth_store.AlreadyExists:
+                raise HTTPException(409, EMAIL_TAKEN_JOIN) from None
         auth_store.save_membership(
             Membership(user_id=user.id, project_id=invite.project_id, role=invite.role, created_at=now)
         )
-        # Only a redemption that actually added a member consumes a use.
-        invite.uses += 1
-        auth_store.save_invite(invite)
+    except Exception:
+        auth_store.release_invite_use(invite.id)  # nobody joined, so nobody spent a place
+        raise
 
     return _session_payload(user, _mint_session(user))
 

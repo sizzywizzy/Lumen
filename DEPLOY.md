@@ -44,7 +44,12 @@ Fly.io) as long as they keep one instance running with CPU between requests.
    Supabase on almost every request.
 2. In the **SQL Editor**, run `backend/schema_auth.sql`,
    `backend/schema_skills.sql` and `backend/schema_state.sql`. All three are
-   safe to re-run.
+   safe to re-run, and an existing database needs them run again after a
+   deploy that changed them: sign-up wants the `cn_register_producer` function
+   from `schema_auth.sql`, and pipeline runs want the `cn_pipeline_runs` table
+   from `schema_state.sql`. Sign-up still works without the function — it
+   falls back to writing the rows one at a time — but it is not one
+   transaction until the file has been run.
 3. From the project's API settings, copy the **Project URL** and a **secret
    key** (`sb_secret_…`, or the legacy `service_role` key). The publishable
    (anon) key won't work: every table has row-level security switched on with no

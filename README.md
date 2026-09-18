@@ -263,8 +263,12 @@ A few more commands; `make help` lists a shortcut for each:
 ```bash
 python backend/run_demo.py --project PROJ_TERMINAL_DEMO      # a full run in the terminal
 docker compose up --build                                    # both servers in containers
-cd backend && pip install -r requirements-dev.txt && pytest  # the offline test suite CI runs
+make test                                                    # both offline suites, as CI runs them
 ```
+
+`make test` is `pytest` in `backend/` and `npm test` in `frontend/`. Neither
+needs a key: the agents fall back to their sample output and the stores to
+local JSON.
 
 ## Deploy
 
@@ -285,7 +289,8 @@ backend/
 └── tests/         offline pytest suite
 frontend/src/
 ├── features/      homepage, new script, results, agent desks, advisors, team
-└── shared/, lib/  layout, Agents menu, Live Agent Terminal, API client
+├── shared/, lib/  layout, Agents menu, Live Agent Terminal, API client
+└── *.test.jsx     vitest suite beside what it covers
 contracts/         JSON schemas for the A2A envelope and GlobalState
 skills/            SKILL.md procedures the AI advisors follow
 ```

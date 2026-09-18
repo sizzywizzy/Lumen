@@ -1,43 +1,11 @@
 # TODO
 
-What is still open, roughly in priority order. Last checked against the
-working tree on 17 September 2026, when all 253 backend tests passed offline
-and the frontend built cleanly.
+What is still open. Last checked against the working tree on 19 September
+2026, when all 298 backend tests and all 33 frontend tests passed offline and
+the frontend built cleanly.
 
-Everything else from the September 2026 audit is done, including:
-
-- Scout role ids checked against the script's roles.
-- Message ids that stay unique across restarts.
-- One budget (the cap) behind the ledger and Settings.
-- Phase IV checks only the assets the breakdown lists.
-- Phase V screens with the Gemini cohort simulator on a panel with no
-  sensitive attributes.
-- One audience simulation at a time, with restarted runs reported as failed.
-- Every save under the production's lock, and background runs merged onto
-  the stored state.
-- Slim state reads with ETags, and a paged event log.
-- Pipeline runs that answer 202 and are polled.
-- No paid services in the code: Google Search grounding, image generation,
-  Vertex AI, Cloud SQL and the Cloud Run deploy files are gone.
-- Crash-safe local JSON files.
-- Sign-in rate limits.
-- `defusedxml` for `.fdx` uploads.
-- The small fixes.
-- The agent layer back in the menu, with the sign-off queue on the Overview.
-- README captures.
-- `AGENT.md` synced with the code.
-- A setup that costs nothing: the scout reads Tavily results with Gemini's
-  free tier and adds TMDb photos, and the poster is art Lumen draws itself.
-- Rate-limited Gemini calls wait as long as Google asks, then try the next
-  model; timed-out calls move on at once.
-- A plan says when it is Lumen's sample output, and when a stored screenplay
-  went unread, instead of passing the sample film off as the producer's.
-
-## Needs a decision
-
-- [ ] **Drop the old intake form?** `/intake` (`frontend/src/features/intake/IntakePage.jsx`)
-  is reachable only by address; `/new` replaced it and is the page the menu
-  links. Every other older screen is now in the Agents menu.
+Everything left needs an account, a key or a deploy — nothing in the code is
+waiting on a decision.
 
 ## Needs your accounts
 
@@ -58,41 +26,52 @@ Everything else from the September 2026 audit is done, including:
   `.env` holds a Gemini key, redo them with a real screenplay so the cast,
   scenes and reviews are the model's.
 
-## Bugs
+## Done
 
-- [ ] **An invite can be redeemed past its `max_uses`.**
-  `backend/domains/auth/router.py` (`join`) checks `uses` and saves
-  `uses + 1` in two steps, so two people redeeming the last use at the same
-  moment both get in. Count the use with a conditional update (Supabase:
-  `update ... where uses < max_uses`), under the auth store's lock on local
-  JSON.
-- [ ] **A server restart loses the pipeline run's record.** Run status lives
-  in memory (`backend/domains/pipeline/jobs.py`). A restart mid-run leaves
-  the stored state untouched, and the page says the run was interrupted, but
-  there is no history of runs. Store the record, as advisor runs are
-  (`cn_skill_runs`), if a history is wanted.
+The September 2026 audit is cleared. Since the last entry:
 
-## Features and tasks
+- The old intake form is gone. `/new` had replaced it; `/intake` was reachable
+  by address only, so the page, its route, the context call only it made and
+  its styles were removed.
+- An invite hands out exactly `max_uses` places. The count is claimed in one
+  step before an account or a membership is written, and handed back if the
+  redemption then fails, so two people redeeming the last place at the same
+  moment no longer both get in.
+- A pipeline run's record outlives the process. It is written to
+  `backend/services/pipeline_store.py` at every phase change, so a run cut
+  short by a restart is reported as failed instead of vanishing. A store that
+  cannot be written costs the record, never the run.
+- Sign-up is one transaction. `cn_register_producer` (in
+  `backend/schema_auth.sql`) commits the account, the production, the owner
+  membership and the production's first state together. A database without the
+  function falls back to the four writes with the account removed again on
+  failure.
+- The frontend has tests: `npm test` covers the background-run polling, the
+  words the sign-off queue puts on screen and the paged log reader. CI runs
+  them before the build.
+- The two documentation chores are checks now, in
+  `backend/tests/test_contracts_in_step.py`: one fails when a phase writes a
+  `GlobalState` field its `owns` list does not declare (a background run would
+  drop it) or raises an escalation it does not declare, the other when an
+  advisor's run controls, `skills.md` and AGENT.md Section 8 disagree.
 
-- [ ] **Registration as one database transaction.** Sign-up now inserts the
-  account and the production, claiming the email and the id, and deletes the
-  account again if a later write fails. That is all-or-nothing on failure,
-  but it is not one transaction. A Postgres function called through
-  PostgREST (`rpc`) would make it one; it needs a schema change.
-- [ ] **Frontend tests.** CI only builds the frontend. The background-run
-  polling (`frontend/src/shared/ProjectContext.jsx`), the sign-off queue
-  wording (`signOffs` in `frontend/src/lib/production.js`) and the paged
-  Logs page have no automated checks.
+Before that: async runs polled at 202, saves merged under the production's
+lock, slim state reads with ETags and a paged event log, one budget behind the
+ledger, Phase V on a panel with no sensitive attributes, crash-safe local JSON,
+sign-in rate limits, `defusedxml` for `.fdx` uploads, the agent layer back in
+the menu with the sign-off queue on the Overview, a plan that says when it is
+Lumen's sample output, and a setup that costs nothing — Tavily plus Gemini's
+free tier for the scout, TMDb photos, and a poster Lumen draws itself.
 
-### Not planned
+## Not planned
 
 Each of these is cut on purpose: it costs money or prep time and adds nothing
 to the system's logic.
 
 - Video, music and rendered campaign assets in Phase VI (Veo, Lyria).
   `agent_visual` and `agent_reel_cutter` produce art-direction specs that go
-  through the PR gate; the production's poster is art Lumen draws itself (image generation is
-  not in Gemini's free tier).
+  through the PR gate; the production's poster is art Lumen draws itself (image
+  generation is not in Gemini's free tier).
 - Tape decoding and transcription in Phase II (FFmpeg, Whisper).
   `agent_media_proc` passes the tape reference through.
 - A LangGraph or Google Cloud Agent Builder rewrite of the orchestrator. The
@@ -101,11 +80,7 @@ to the system's logic.
   production, leaving one, role changes, ownership transfer, self-service
   password reset, expense editing. The invite flow that exists is complete
   and tested, and that is where it stops.
+- A pipeline run history in the API or the dashboard. The records are kept, but
+  nothing reads more than the production's last run, so there is no endpoint
+  for them.
 - Cloud Storage for media.
-
-### Documentation
-
-- [ ] Keep `skills.md` and `AGENT.md` Section 8 in step when advisor inputs change.
-- [ ] Keep the "owns" lists in `backend/core/orchestrator/graph.py` in step
-  with what each phase writes. A background run copies exactly those fields
-  onto the stored state, so a field a phase writes but does not list is lost.

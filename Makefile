@@ -7,7 +7,7 @@ VENV ?= backend/.venv
 PIP := $(VENV)/bin/pip
 PYTHON_BIN := $(VENV)/bin/python
 
-.PHONY: all install setup test demo build clean dev run backend frontend docs help check-tools
+.PHONY: all install setup test test-backend test-frontend demo build clean dev run backend frontend docs help check-tools
 
 all: install setup test build
 
@@ -33,9 +33,14 @@ setup:
 		printf '%s\n' 'Created .env from .env.example; add credentials if needed.'; \
 	fi
 
-# The suite runs offline and never touches backend/.state/ or Supabase.
-test: install
+# Both suites. They run offline and never touch backend/.state/ or Supabase.
+test: test-backend test-frontend
+
+test-backend: install
 	cd backend && $(abspath $(PYTHON_BIN)) -m pytest
+
+test-frontend: install
+	$(NPM) --prefix frontend test
 
 # The full mock pipeline in the terminal. It saves its state the way the API
 # does (to Supabase when .env points there), so it uses a project of its own.
@@ -82,7 +87,9 @@ help:
 		'  make check-tools Verify required tools (python3, node, npm) are installed' \
 		'  make install     Install Python (with the test runner) and frontend dependencies' \
 		'  make setup       Create .env from .env.example when .env is missing' \
-		'  make test        Run the backend test suite (offline, no keys needed)' \
+		'  make test        Run both test suites (offline, no keys needed)' \
+		'  make test-backend  Run the backend suite only (pytest)' \
+		'  make test-frontend Run the frontend suite only (vitest)' \
 		'  make demo        Run the full mock pipeline in the terminal' \
 		'  make build       Build the frontend for production' \
 		'  make dev         Show commands for starting backend and frontend development servers' \

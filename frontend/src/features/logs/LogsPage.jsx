@@ -8,8 +8,9 @@ import { cn } from "../../lib/utils.js";
 
 const PAGE = 500; // the most envelopes /api/events returns at once
 
-// Every envelope before `upTo`, read a page at a time.
-async function readLog(projectId, upTo) {
+// Every envelope before `upTo`, read a page at a time. Exported so the paging
+// can be checked without rendering thousands of rows (LogsPage.test.jsx).
+export async function readLog(projectId, upTo) {
   const out = [];
   while (out.length < upTo) {
     const page = await api.getEvents(projectId, out.length, Math.min(PAGE, upTo - out.length));
