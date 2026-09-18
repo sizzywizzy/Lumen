@@ -199,9 +199,9 @@ Shared plumbing for all four:
 
 | | |
 |---|---|
-| Code | `backend/services/skill_store.py` (advisor runs), `backend/services/simulation_store.py` (audience simulations) |
+| Code | `backend/services/skill_store.py` (advisor runs), `backend/services/simulation_store.py` (audience simulations), `backend/services/pipeline_store.py` (pipeline runs) |
 | Purpose | Immutable-once-complete run records with stage progress and provenance. |
-| Constraints | Local saves are atomic (write then rename) because the dashboard polls while the worker writes. |
+| Constraints | Local saves are atomic (write then rename) because the dashboard polls while the worker writes. A record left `running` by a restart is reported as failed the next time it is read. |
 
 ### B11. PR gate
 

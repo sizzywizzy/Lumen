@@ -12,4 +12,13 @@ export default defineConfig({
       },
     },
   },
+  // `npm test`. Only the parts with logic worth checking are covered: the
+  // background-run polling, the words the sign-off queue puts on screen and
+  // the paged log reader. Styling and layout are not tested.
+  test: {
+    environment: "jsdom",
+    setupFiles: ["./src/test/setup.js"],
+    include: ["src/**/*.test.{js,jsx}"],
+    restoreMocks: true,
+  },
 });

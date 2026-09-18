@@ -106,3 +106,81 @@ def test_list_queries_filter_too(supabase):
 def test_whole_table_reads_are_local_only(supabase):
     with pytest.raises(RuntimeError):
         auth_store._read("cn_sessions")
+
+
+# ----------------------------------------------- sign-up as one transaction --
+
+
+class _Rpc:
+    """`rpc(name, params)` on the fake client, recording what it was called with."""
+
+    def __init__(self, raises=None, project_id="PROJ_NEON_NIGHTS"):
+        self.calls, self._raises, self._project_id = [], raises, project_id
+
+    def rpc(self, name, params):
+        self.calls.append((name, params))
+        if self._raises:
+            raise self._raises
+        return self
+
+    def execute(self):
+        return _Result({"project_id": self._project_id})
+
+
+def _producer():
+    from core.auth.models import Production, User
+
+    user = User(id="usr_new", email="ava@neonnights.film", name="Ava",
+                password_hash="digest", created_at=NOW)
+    production = Production(id="PROJ_NEON_NIGHTS", name="Neon Nights", owner_id=user.id, created_at=NOW)
+    return user, production
+
+
+def test_a_sign_up_is_one_call_to_one_function(monkeypatch):
+    """The account, production, membership and first state commit together."""
+    client = _Rpc(project_id="PROJ_NEON_NIGHTS_2")
+    monkeypatch.setattr(config, "has_supabase", lambda: True)
+    monkeypatch.setattr(auth_store, "_get_supabase", lambda: client)
+    user, production = _producer()
+
+    stored = auth_store.register_producer(user, production, {"project_id": "PROJ_NEON_NIGHTS"})
+
+    name, params = client.calls[0]
+    assert name == auth_store.REGISTER_FUNCTION
+    assert params["p_user"]["email"] == "ava@neonnights.film"
+    assert params["p_project_id"] == "PROJ_NEON_NIGHTS" and params["p_name"] == "Neon Nights"
+    assert stored.id == "PROJ_NEON_NIGHTS_2", "the function picked the free id and said which"
+
+
+def test_a_taken_email_inside_the_function_reads_as_already_exists(monkeypatch):
+    taken = RuntimeError('duplicate key value violates unique constraint "cn_users_email_key" (23505)')
+    monkeypatch.setattr(config, "has_supabase", lambda: True)
+    monkeypatch.setattr(auth_store, "_get_supabase", lambda: _Rpc(raises=taken))
+    user, production = _producer()
+
+    with pytest.raises(auth_store.AlreadyExists):
+        auth_store.register_producer(user, production, {})
+
+
+def test_a_database_without_the_function_still_signs_people_up(monkeypatch):
+    """A deploy whose schema_auth.sql predates the function falls back to the
+    four writes with the account removed again on failure, rather than 500."""
+    missing = RuntimeError("PGRST202: Could not find the function public.cn_register_producer")
+    monkeypatch.setattr(config, "has_supabase", lambda: True)
+    monkeypatch.setattr(auth_store, "_get_supabase", lambda: _Rpc(raises=missing))
+    user, production = _producer()
+    fallback = []
+    monkeypatch.setattr(auth_store, "_register_step_by_step",
+                        lambda u, p, s: fallback.append(u.id) or p)
+
+    assert auth_store.register_producer(user, production, {}).id == "PROJ_NEON_NIGHTS"
+    assert fallback == ["usr_new"]
+
+
+def test_any_other_database_error_is_not_swallowed(monkeypatch):
+    monkeypatch.setattr(config, "has_supabase", lambda: True)
+    monkeypatch.setattr(auth_store, "_get_supabase", lambda: _Rpc(raises=RuntimeError("connection refused")))
+    user, production = _producer()
+
+    with pytest.raises(RuntimeError, match="connection refused"):
+        auth_store.register_producer(user, production, {})

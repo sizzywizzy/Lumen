@@ -3,9 +3,14 @@
 A live run makes dozens of model calls and can take minutes, so every route
 that starts one (the full pipeline, casting, production, launch) answers 202
 and the dashboard polls `status`, the way advisor runs, simulations and
-posters already work. Progress and outcome are kept in this process's memory:
-the API runs as one process (render.yaml), and a restart simply ends the run
-and leaves the stored state as it was.
+posters already work.
+
+The run in flight is held in this process's memory and written to
+services/pipeline_store.py at every phase change. A restart ends the run and
+leaves the stored state as it was, but the record survives: the API runs as
+one process (render.yaml), so a stored run still marked `running` that this
+process is not running was interrupted, and `status` reports it as failed
+rather than losing it.
 
 A finished run is merged onto the state stored at that moment, under the
 production's lock (core/orchestrator/merge.py), so nothing a person saved
@@ -23,7 +28,7 @@ from core.auth.security import new_id
 from core.orchestrator import merge
 from core.orchestrator.graph import Orchestrator
 from core.orchestrator.state import GlobalState
-from services import script_intake, supabase_client
+from services import pipeline_store, script_intake, supabase_client
 
 # Which phases each kind of run covers.
 SCOPES: dict[str, tuple[str, str]] = {
@@ -35,9 +40,10 @@ SCOPES: dict[str, tuple[str, str]] = {
 
 StateFn = Callable[[GlobalState], Any]
 
-_ACTIVE: dict[str, dict[str, Any]] = {}  # project_id -> the run in flight
-_LAST: dict[str, dict[str, Any]] = {}    # project_id -> the last finished run
+_ACTIVE: dict[str, dict[str, Any]] = {}  # project_id -> the run in flight here
 _LOCK = threading.Lock()
+
+INTERRUPTED = "Lumen restarted while this plan was running. Please run it again."
 
 
 class PipelineBusy(RuntimeError):
@@ -55,6 +61,8 @@ def _spawn(target, *args) -> None:
 def _update(job: dict, **changes: Any) -> None:
     with _LOCK:
         job.update(changes)
+        snapshot = copy.deepcopy(job)
+    pipeline_store.save(snapshot)
 
 
 def _phase_status(job: dict, key: str, status: str) -> None:
@@ -62,6 +70,8 @@ def _phase_status(job: dict, key: str, status: str) -> None:
         for phase in job["phases"]:
             if phase["key"] == key:
                 phase["status"] = status
+        snapshot = copy.deepcopy(job)
+    pipeline_store.save(snapshot)
 
 
 def _worker(job: dict, begin: StateFn, inputs: Optional[StateFn], after: Optional[StateFn],
@@ -111,7 +121,8 @@ def _worker(job: dict, begin: StateFn, inputs: Optional[StateFn], after: Optiona
                     phase["status"] = "failed"
             job["finished_at"] = _now()
             _ACTIVE.pop(project_id, None)
-            _LAST[project_id] = job
+            snapshot = copy.deepcopy(job)
+        pipeline_store.save(snapshot)
     if merged is not None and after is not None and job["status"] == "complete":
         try:
             after(merged)
@@ -159,15 +170,38 @@ def start(
         if project_id in _ACTIVE:
             raise PipelineBusy(project_id)
         _ACTIVE[project_id] = job
+    pipeline_store.save(copy.deepcopy(job))
     _spawn(_worker, job, begin or (lambda stored: stored), inputs, after, summary)
-    return status(project_id)
+    # This record, not `status(project_id)`: the caller started this run and
+    # has to be able to poll for it by id, even if it has already finished or
+    # the store cannot keep it.
+    with _LOCK:
+        return copy.deepcopy(job)
 
 
 def status(project_id: str) -> dict[str, Any]:
-    """The run in flight, else the last one to finish, else {"status": "idle"}."""
+    """The run in flight, else the last one to finish, else {"status": "idle"}.
+
+    A stored run still marked `running` that this process is not running was
+    cut short by a restart. It is reported — and written back — as failed, so
+    the page says what became of it instead of polling a run nobody is doing.
+    """
     with _LOCK:
-        job = _ACTIVE.get(project_id) or _LAST.get(project_id)
-        return copy.deepcopy(job) if job else {"project_id": project_id, "status": "idle"}
+        job = _ACTIVE.get(project_id)
+        if job:
+            return copy.deepcopy(job)
+    stored = pipeline_store.latest(project_id)
+    if stored is None:
+        return {"project_id": project_id, "status": "idle"}
+    if stored.get("status") == "running":
+        stored["status"] = "failed"
+        stored["error"] = INTERRUPTED
+        stored["finished_at"] = stored.get("finished_at") or _now()
+        for phase in stored.get("phases", []):
+            if phase.get("status") == "running":
+                phase["status"] = "failed"
+        pipeline_store.save(stored)
+    return stored
 
 
 def busy(project_id: str) -> bool:

@@ -540,17 +540,6 @@ a { color: inherit; text-decoration: none; }
   position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
   pointer-events: none; color: var(--on-surface-variant); font-size: 20px;
 }
-.input-group {
-  display: flex; align-items: center;
-  border: 1px solid var(--ghost-border); border-radius: var(--radius-lg);
-  background: var(--surface-container-lowest);
-  transition: border-color .15s, box-shadow .15s;
-}
-.input-group:focus-within { border-color: var(--highlight); box-shadow: 0 0 0 3px var(--primary-soft); }
-.input-group .input, .input-group .select, .input-group .textarea { border: 0; background: transparent; }
-.input-group .input:focus, .input-group .select:focus, .input-group .textarea:focus { box-shadow: none; }
-.input-group .divider { width: 1px; align-self: stretch; background: var(--outline-variant); }
-.input-group .sep { color: var(--on-surface-variant); padding: 0 2px; }
 .search-wrap { position: relative; }
 .search-wrap > .material-symbols-outlined {
   position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
@@ -904,19 +893,6 @@ table.data tbody tr:hover .avatar-round { border-color: var(--highlight); }
 }
 .queue-item:first-of-type { border-top: 0; }
 .queue-item .material-symbols-outlined { color: var(--status-warning); font-size: 18px; }
-
-.dropzone {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 8px; text-align: center; padding: 40px 24px; min-height: 256px; cursor: pointer;
-  border: 2px dashed var(--ghost-border); border-radius: var(--radius-xl);
-  background: var(--surface-container-low);
-  transition: background-color .15s, border-color .15s;
-}
-.dropzone:hover { background: var(--surface-container); border-color: var(--outline); }
-.dropzone.dragging, .dropzone.filled { border-color: var(--highlight); border-style: solid; }
-.dropzone .cloud { font-size: 40px; color: var(--on-surface-variant); margin-bottom: 8px; }
-.dropzone.filled .cloud { color: var(--status-success); }
-.dropzone .filename { overflow-wrap: anywhere; }
 
 .tint-wash { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(135deg, var(--primary-soft), transparent 60%); }
 

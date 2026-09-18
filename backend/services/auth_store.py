@@ -217,6 +217,79 @@ def create_production(production: Production) -> Production:
     raise AlreadyExists(production.id)
 
 
+REGISTER_FUNCTION = "cn_register_producer"
+
+
+def _function_missing(exc: Exception) -> bool:
+    """PostgREST could not find the function: this database predates it."""
+    detail = f"{getattr(exc, 'code', '')} {exc}"
+    return "PGRST202" in detail or "Could not find the function" in detail
+
+
+def register_producer(user: User, production: Production, state: dict[str, Any]) -> Production:
+    """Create an account, its production, its owner membership and the
+    production's first state — all of them or none of them.
+
+    On Supabase that is one Postgres function (`cn_register_producer`, in
+    schema_auth.sql) called through PostgREST, which runs it in a single
+    transaction. A database that has not had the new schema file run yet has
+    no such function, so the four writes are made one by one instead and the
+    account is deleted again if a later one fails.
+
+    Local JSON has no transactions at all: everything that can be checked is
+    checked first, the writes happen under the store's lock, and the account
+    is removed again if one of them fails.
+
+    Raises AlreadyExists when the email is taken. Returns the production as
+    stored, with the id it got.
+    """
+    if config.has_supabase():
+        try:
+            answer = _get_supabase().rpc(REGISTER_FUNCTION, {
+                "p_user": user.model_dump(),
+                "p_project_id": production.id,
+                "p_name": production.name,
+                "p_created_at": production.created_at,
+                "p_state": state,
+            }).execute()
+        except Exception as exc:  # noqa: BLE001 — a taken email and a missing function are ours to handle
+            if _is_unique_violation(exc):
+                raise AlreadyExists(user.email) from exc
+            if not _function_missing(exc):
+                raise
+            print(f"[lumen] {REGISTER_FUNCTION} is missing — run backend/schema_auth.sql to make "
+                  f"sign-up one transaction. Falling back to step-by-step writes.", flush=True)
+            return _register_step_by_step(user, production, state)
+        project_id = (answer.data or {}).get("project_id", production.id)
+        return production.model_copy(update={"id": project_id})
+
+    with _LOCK:
+        return _register_step_by_step(user, production, state)
+
+
+def _register_step_by_step(user: User, production: Production, state: dict[str, Any]) -> Production:
+    """The four writes on their own, with the account removed again if a later
+    one fails. Used on local JSON, and on a database without the function."""
+    from core.orchestrator.state import GlobalState  # imported here: only this path needs the state store
+    from services import supabase_client
+
+    create_user(user)
+    try:
+        stored = create_production(production)
+        save_membership(
+            Membership(user_id=user.id, project_id=stored.id, role="owner", created_at=production.created_at)
+        )
+        # Unless a state is already stored for this id, in which case the
+        # production adopts it (an existing demo project).
+        with supabase_client.project_lock(stored.id):
+            if supabase_client.load_state(stored.id) is None:
+                supabase_client.save_state(GlobalState.model_validate({**state, "project_id": stored.id}))
+        return stored
+    except Exception:
+        delete_account(user.id)
+        raise
+
+
 # --------------------------------------------------------------- memberships --
 
 
@@ -279,6 +352,87 @@ def save_invite(invite: Invite) -> Invite:
 def get_invite(invite_id: str) -> Optional[Invite]:
     row = _find("cn_invites", id=invite_id)
     return Invite.model_validate(row) if row else None
+
+
+INVITE_CLAIM_ATTEMPTS = 5
+
+
+def _claimable(invite: Invite) -> bool:
+    """Whether the invite still has a use to give out right now."""
+    return not invite.revoked and invite.uses < invite.max_uses and not security.is_expired(invite.expires_at)
+
+
+def _swap_invite_uses(invite_id: str, expected: int, value: int) -> Optional[Invite]:
+    """Set `uses` to `value`, but only while it is still `expected`.
+
+    PostgREST answers with the rows it changed, so an empty answer means
+    another redemption moved the count first and the caller should look again.
+    """
+    updated = (
+        _get_supabase().table("cn_invites")
+        .update({"uses": value})
+        .eq("id", invite_id).eq("uses", expected).execute().data
+    )
+    return Invite.model_validate(updated[0]) if updated else None
+
+
+def consume_invite_use(invite_id: str) -> Optional[Invite]:
+    """Claim one use of an invite, or None when there is none left to claim.
+
+    Reading `uses` and writing `uses + 1` as two steps let two people redeem
+    the last use of an invite at the same moment and both get in. Here the
+    check and the increment are a single step: on Supabase the update carries
+    the count it read, so a redemption that lost the race changes no row and
+    tries again against the new count; on local JSON the whole
+    read-modify-write happens under the store's lock.
+    """
+    if not config.has_supabase():
+        with _LOCK:
+            rows = _read("cn_invites")
+            for i, row in enumerate(rows):
+                if row.get("id") != invite_id:
+                    continue
+                invite = Invite.model_validate(row)
+                if not _claimable(invite):
+                    return None
+                invite.uses += 1
+                rows[i] = invite.model_dump()
+                _write("cn_invites", rows)
+                return invite
+            return None
+
+    for _ in range(INVITE_CLAIM_ATTEMPTS):
+        row = _find("cn_invites", id=invite_id)
+        if row is None:
+            return None
+        invite = Invite.model_validate(row)
+        if not _claimable(invite):
+            return None
+        claimed = _swap_invite_uses(invite_id, invite.uses, invite.uses + 1)
+        if claimed:
+            return claimed
+    return None
+
+
+def release_invite_use(invite_id: str) -> None:
+    """Give back a use claimed for a redemption that then failed, so a sign-up
+    that could not be completed does not spend someone else's place."""
+    if not config.has_supabase():
+        with _LOCK:
+            rows = _read("cn_invites")
+            for i, row in enumerate(rows):
+                if row.get("id") == invite_id and int(row.get("uses") or 0) > 0:
+                    rows[i] = {**row, "uses": int(row["uses"]) - 1}
+                    _write("cn_invites", rows)
+                    return
+        return
+
+    for _ in range(INVITE_CLAIM_ATTEMPTS):
+        row = _find("cn_invites", id=invite_id)
+        if row is None or int(row.get("uses") or 0) <= 0:
+            return
+        if _swap_invite_uses(invite_id, int(row["uses"]), int(row["uses"]) - 1):
+            return
 
 
 def get_invite_by_token(token: str) -> Optional[Invite]:
