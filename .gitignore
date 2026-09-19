@@ -19,3 +19,9 @@ frontend/dist/
 
 # Pytest
 .pytest_cache/
+
+# Evaluation run artifacts. The film sample (eval/films.json) and the report
+# are committed — they are the evidence. These two are working files a re-run
+# rewrites, and they are what makes a quota-stopped run resumable.
+backend/eval/predictions.json
+backend/eval/leakage.json

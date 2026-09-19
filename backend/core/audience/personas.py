@@ -142,7 +142,8 @@ def normalise_genres(raw: Optional[list[str]]) -> list[str]:
         # a few common labels that do not contain their base word
         for alias, genre in (("noir", "crime"), ("suspense", "thriller"),
                              ("comedic", "comedy"), ("doc", "documentary"),
-                             ("animated", "animation"), ("scifi", "sci-fi")):
+                             ("animated", "animation"), ("scifi", "sci-fi"),
+                             ("science fiction", "sci-fi")):
             if alias in text and genre not in found:
                 found.append(genre)
     return found

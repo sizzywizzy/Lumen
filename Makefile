@@ -7,7 +7,7 @@ VENV ?= backend/.venv
 PIP := $(VENV)/bin/pip
 PYTHON_BIN := $(VENV)/bin/python
 
-.PHONY: all install setup test test-backend test-frontend demo build clean dev run backend frontend docs help check-tools
+.PHONY: all install setup test test-backend test-frontend demo build clean dev run backend frontend docs help check-tools eval eval-report
 
 all: install setup test build
 
@@ -46,6 +46,17 @@ test-frontend: install
 # does (to Supabase when .env points there), so it uses a project of its own.
 demo: install
 	$(PYTHON_BIN) backend/run_demo.py --project PROJ_TERMINAL_DEMO
+
+# Score the audience simulator against real post-cutoff films (backend/eval).
+# Needs GEMINI_API_KEY. Resumable: a run stopped by a free-tier quota is
+# continued by repeating the command — films already scored live are skipped.
+eval: install
+	cd backend && $(abspath $(PYTHON_BIN)) -m eval.run predict --predictor single_call --predictor lumen
+	cd backend && $(abspath $(PYTHON_BIN)) -m eval.run report
+
+# Recompute the metrics from predictions already on disk. No model calls.
+eval-report: install
+	cd backend && $(abspath $(PYTHON_BIN)) -m eval.run report
 
 build: install
 	$(NPM) --prefix frontend run build
@@ -91,6 +102,8 @@ help:
 		'  make test-backend  Run the backend suite only (pytest)' \
 		'  make test-frontend Run the frontend suite only (vitest)' \
 		'  make demo        Run the full mock pipeline in the terminal' \
+		'  make eval        Score the audience simulator against real films (needs a Gemini key)' \
+		'  make eval-report Recompute the evaluation metrics from saved predictions' \
 		'  make build       Build the frontend for production' \
 		'  make dev         Show commands for starting backend and frontend development servers' \
 		'  make run         Start the full backend and frontend stack with Docker Compose' \

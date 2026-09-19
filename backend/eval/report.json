@@ -1,0 +1,42 @@
+{
+  "generated_at": "2026-09-19T14:54:13Z",
+  "snapshot": {
+    "fetched_at": "2026-09-19T14:39:10Z",
+    "query": {
+      "primary_release_date.gte": "2026-06-01",
+      "primary_release_date.lte": "2026-09-19",
+      "vote_count.gte": 100,
+      "with_original_language": "en",
+      "sort_by": "vote_count.desc"
+    },
+    "eligibility": {
+      "min_overview_chars": 180,
+      "min_runtime_min": 70,
+      "excluded_genres": [
+        "Documentary"
+      ]
+    },
+    "ground_truth": "TMDb vote_average x 10 (public audience rating, 0-100)"
+  },
+  "films_in_snapshot": 31,
+  "films_graded": 0,
+  "films_attempted": {
+    "lumen": 31,
+    "single_call": 31
+  },
+  "live_share": 0.0,
+  "withheld": true,
+  "models_used": {
+    "lumen": [],
+    "single_call": []
+  },
+  "dropped_for_leakage": [],
+  "failure_reasons": {
+    "fell back to offline sample output": 31,
+    "ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check y": 31
+  },
+  "constant_baseline_value": 0.0,
+  "results": {},
+  "contrasts": {},
+  "tomatometer_ordering": null
+}

@@ -1,0 +1,487 @@
+{
+  "fetched_at": "2026-09-19T14:39:10Z",
+  "source": "TMDb /discover/movie + /movie/{id}",
+  "ground_truth": "TMDb vote_average x 10 (public audience rating, 0-100)",
+  "query": {
+    "primary_release_date.gte": "2026-06-01",
+    "primary_release_date.lte": "2026-09-19",
+    "vote_count.gte": 100,
+    "with_original_language": "en",
+    "sort_by": "vote_count.desc"
+  },
+  "eligibility": {
+    "min_overview_chars": 180,
+    "min_runtime_min": 70,
+    "excluded_genres": [
+      "Documentary"
+    ]
+  },
+  "candidates_seen": 51,
+  "skipped_ineligible": 20,
+  "films": [
+    {
+      "tmdb_id": 1368337,
+      "title": "The Odyssey",
+      "release_date": "2026-07-15",
+      "runtime_min": 173,
+      "genres": [
+        "Adventure",
+        "Action",
+        "Fantasy"
+      ],
+      "overview": "Odysseus, the legendary King of Ithaca, embarks on a long and perilous journey home following the Trojan War. Throughout his voyage, he is forced to confront the whims of gods, mythological monsters, and trials that stretch both his cunning and his humanity to the breaking point.",
+      "actual_audience_score": 80.0,
+      "vote_count": 3781,
+      "tmdb_url": "https://www.themoviedb.org/movie/1368337"
+    },
+    {
+      "tmdb_id": 1275779,
+      "title": "Disclosure Day",
+      "release_date": "2026-06-10",
+      "runtime_min": 146,
+      "genres": [
+        "Science Fiction",
+        "Thriller"
+      ],
+      "overview": "A cybersecurity expert becomes a whistleblower after uncovering secrets about aliens, putting him on the run from a corporation. Meanwhile, a meteorologist experiencing strange phenomena joins forces with him to prove there's life beyond our understanding.",
+      "actual_audience_score": 74.7,
+      "vote_count": 3363,
+      "tmdb_url": "https://www.themoviedb.org/movie/1275779"
+    },
+    {
+      "tmdb_id": 969681,
+      "title": "Spider-Man: Brand New Day",
+      "release_date": "2026-07-29",
+      "runtime_min": 145,
+      "genres": [
+        "Science Fiction",
+        "Action",
+        "Adventure"
+      ],
+      "overview": "Fighting crime full-time as Spider-Man in a world that doesn't remember him—and the pressure of seeing his old friends move on without him—sparks a change in Peter Parker he may not have the power to control. But that transformation might also be the only thing that can stop a shocking new threat to the city and those he loves - a powerful villain no one can even see.",
+      "actual_audience_score": 79.0,
+      "vote_count": 2766,
+      "tmdb_url": "https://www.themoviedb.org/movie/969681"
+    },
+    {
+      "tmdb_id": 1081003,
+      "title": "Supergirl",
+      "release_date": "2026-06-24",
+      "runtime_min": 108,
+      "genres": [
+        "Action",
+        "Adventure",
+        "Science Fiction"
+      ],
+      "overview": "When an unexpected and ruthless adversary strikes too close to home, Kara Zor-El, aka Supergirl, reluctantly joins forces with an unlikely companion on an epic, interstellar journey of vengeance and justice.",
+      "actual_audience_score": 66.8,
+      "vote_count": 2343,
+      "tmdb_url": "https://www.themoviedb.org/movie/1081003"
+    },
+    {
+      "tmdb_id": 1084244,
+      "title": "Toy Story 5",
+      "release_date": "2026-06-17",
+      "runtime_min": 102,
+      "genres": [
+        "Animation",
+        "Family",
+        "Comedy",
+        "Adventure"
+      ],
+      "overview": "When Bonnie receives a Lilypad tablet as a gift and becomes obsessed, Buzz, Woody, Jessie and the rest of the gang's jobs become exponentially harder when they have to go head to head with the all-new threat to playtime.",
+      "actual_audience_score": 83.6,
+      "vote_count": 2187,
+      "tmdb_url": "https://www.themoviedb.org/movie/1084244"
+    },
+    {
+      "tmdb_id": 454639,
+      "title": "Masters of the Universe",
+      "release_date": "2026-06-03",
+      "runtime_min": 141,
+      "genres": [
+        "Action",
+        "Fantasy",
+        "Science Fiction"
+      ],
+      "overview": "After being separated for 15 years, the Sword of Power leads Prince Adam back to Eternia, where he discovers his home shattered under the fiendish rule of Skeletor. To save his family and his world, Adam must join forces with his closest allies, Teela and Duncan/Man-At-Arms, and embrace his true destiny as He-Man — the most powerful man in the universe.",
+      "actual_audience_score": 71.2,
+      "vote_count": 2134,
+      "tmdb_url": "https://www.themoviedb.org/movie/454639"
+    },
+    {
+      "tmdb_id": 1212763,
+      "title": "Evil Dead Burn",
+      "release_date": "2026-07-07",
+      "runtime_min": 110,
+      "genres": [
+        "Horror"
+      ],
+      "overview": "After her husband's abrupt death, Alice seeks solace with his remaining family — descendants of a leading researcher on demonic possession. As her in-laws transform one by one into creatures that feed on fear, she comes to discover that the vows she took in life survive even in death.",
+      "actual_audience_score": 76.8,
+      "vote_count": 1544,
+      "tmdb_url": "https://www.themoviedb.org/movie/1212763"
+    },
+    {
+      "tmdb_id": 980431,
+      "title": "Avatar Aang: The Last Airbender",
+      "release_date": "2026-07-24",
+      "runtime_min": 99,
+      "genres": [
+        "Animation",
+        "Adventure",
+        "Fantasy",
+        "Action"
+      ],
+      "overview": "Avatar Aang, the world's last Airbender, learns of an ancient power that could save his culture from extinction. With the help of his friends, he embarks on a global quest to find it before it falls into the wrong hands and threatens to upend the peace they sacrificed everything to achieve.",
+      "actual_audience_score": 91.4,
+      "vote_count": 1153,
+      "tmdb_url": "https://www.themoviedb.org/movie/980431"
+    },
+    {
+      "tmdb_id": 1101383,
+      "title": "The End of Oak Street",
+      "release_date": "2026-08-12",
+      "runtime_min": 100,
+      "genres": [
+        "Science Fiction",
+        "Mystery",
+        "Thriller"
+      ],
+      "overview": "After a mysterious cosmic event rips Oak Street from suburbia and transports their neighborhood to someplace unknown, the Platt family soon discovers that their very survival depends on them sticking together as they navigate their now unrecognizable surroundings.",
+      "actual_audience_score": 69.4,
+      "vote_count": 1139,
+      "tmdb_url": "https://www.themoviedb.org/movie/1101383"
+    },
+    {
+      "tmdb_id": 1315772,
+      "title": "Minions & Monsters",
+      "release_date": "2026-06-24",
+      "runtime_min": 90,
+      "genres": [
+        "Adventure",
+        "Animation",
+        "Comedy",
+        "Family",
+        "Fantasy"
+      ],
+      "overview": "This is the rambunctious, ridiculous and totally true story of how the Minions conquered Hollywood, became movie stars, lost everything, unleashed monsters onto the world and then banded together to try and save the planet from the mayhem they had just created.",
+      "actual_audience_score": 75.5,
+      "vote_count": 1132,
+      "tmdb_url": "https://www.themoviedb.org/movie/1315772"
+    },
+    {
+      "tmdb_id": 1481343,
+      "title": "The Devil's Mouth",
+      "release_date": "2026-07-29",
+      "runtime_min": 106,
+      "genres": [
+        "Horror",
+        "Thriller"
+      ],
+      "overview": "A group of college friends' Thailand adventure turns deadly when they become trapped in submerged caves with a dangerous predator. As oxygen runs low, past conflicts emerge in their desperate fight for survival.",
+      "actual_audience_score": 65.0,
+      "vote_count": 784,
+      "tmdb_url": "https://www.themoviedb.org/movie/1481343"
+    },
+    {
+      "tmdb_id": 1108427,
+      "title": "Moana",
+      "release_date": "2026-07-08",
+      "runtime_min": 115,
+      "genres": [
+        "Family",
+        "Fantasy",
+        "Comedy",
+        "Adventure"
+      ],
+      "overview": "Teenage Moana answers the Ocean's call and, for the first time, voyages beyond the reef of her island of Motunui with infamous demigod Maui on an unforgettable journey to restore prosperity to her people.",
+      "actual_audience_score": 73.4,
+      "vote_count": 695,
+      "tmdb_url": "https://www.themoviedb.org/movie/1108427"
+    },
+    {
+      "tmdb_id": 1137844,
+      "title": "Mayday",
+      "release_date": "2026-09-03",
+      "runtime_min": 111,
+      "genres": [
+        "Action",
+        "Comedy"
+      ],
+      "overview": "When a U.S. Navy pilot on a top-secret mission during the Cold War gets trapped behind enemy lines, his only chance at survival is to form an alliance with an eccentric ex-KGB agent.",
+      "actual_audience_score": 80.1,
+      "vote_count": 677,
+      "tmdb_url": "https://www.themoviedb.org/movie/1137844"
+    },
+    {
+      "tmdb_id": 1698863,
+      "title": "The Odyssey",
+      "release_date": "2026-07-03",
+      "runtime_min": 86,
+      "genres": [
+        "Adventure",
+        "Fantasy",
+        "Action"
+      ],
+      "overview": "Based on the Ancient Greek epic. After ten years of war, King Odysseus sets sail for Ithaca, eager to reunite with his beloved. But his journey home is far more treacherous than the battlefield, as he must face deadly monsters and vengeful gods to survive.",
+      "actual_audience_score": 40.2,
+      "vote_count": 559,
+      "tmdb_url": "https://www.themoviedb.org/movie/1698863"
+    },
+    {
+      "tmdb_id": 950028,
+      "title": "The Invite",
+      "release_date": "2026-06-25",
+      "runtime_min": 107,
+      "genres": [
+        "Comedy",
+        "Drama",
+        "Romance"
+      ],
+      "overview": "Joe and Angela's marriage is on thin ice. When they invite their enigmatic upstairs neighbors for a dinner party, the night spirals into unexpected places. Have they reignited the spark or lit the match that burns it all down?",
+      "actual_audience_score": 72.8,
+      "vote_count": 544,
+      "tmdb_url": "https://www.themoviedb.org/movie/950028"
+    },
+    {
+      "tmdb_id": 1386315,
+      "title": "The Runner",
+      "release_date": "2026-09-03",
+      "runtime_min": 86,
+      "genres": [
+        "Thriller",
+        "Action"
+      ],
+      "overview": "Maia Marten, a brilliant London lawyer, has her life shattered by a single call on her morning run: her son has been taken. To get him back, she must keep running, obey every ruthless command, and trust no one-each second a test of how far a mother will go to save her child.",
+      "actual_audience_score": 67.8,
+      "vote_count": 515,
+      "tmdb_url": "https://www.themoviedb.org/movie/1386315"
+    },
+    {
+      "tmdb_id": 1288445,
+      "title": "Mutiny",
+      "release_date": "2026-08-19",
+      "runtime_min": 96,
+      "genres": [
+        "Action",
+        "Thriller"
+      ],
+      "overview": "After witnessing his billionaire boss' murder and being framed for the crime, Cole Reed boards a cargo ship on a one-man crusade to avenge his boss' death only to discover an international conspiracy.",
+      "actual_audience_score": 64.4,
+      "vote_count": 416,
+      "tmdb_url": "https://www.themoviedb.org/movie/1288445"
+    },
+    {
+      "tmdb_id": 1358005,
+      "title": "Office Romance",
+      "release_date": "2026-06-04",
+      "runtime_min": 115,
+      "genres": [
+        "Romance",
+        "Comedy"
+      ],
+      "overview": "Jackie, President and CEO of Air Cruz, runs a tight ship in her business, including a rigid anti-fraternization policy for all her employees. When a new sexy lawyer begins working for her, that policy becomes very tested.",
+      "actual_audience_score": 64.2,
+      "vote_count": 379,
+      "tmdb_url": "https://www.themoviedb.org/movie/1358005"
+    },
+    {
+      "tmdb_id": 1560520,
+      "title": "Batman: Knightfall Part 1: Knightfall",
+      "release_date": "2026-06-23",
+      "runtime_min": 79,
+      "genres": [
+        "Animation",
+        "Action",
+        "Adventure",
+        "Science Fiction"
+      ],
+      "overview": "Arkham Asylum has been destroyed, and all its inmates have been unleashed upon Gotham City. As Batman races to round up some of his greatest enemies, he is pushed to his physical and mental limits and into a final confrontation with a new threat: the man called Bane!",
+      "actual_audience_score": 91.9,
+      "vote_count": 338,
+      "tmdb_url": "https://www.themoviedb.org/movie/1560520"
+    },
+    {
+      "tmdb_id": 1307118,
+      "title": "Soulm8te",
+      "release_date": "2026-07-31",
+      "runtime_min": 99,
+      "genres": [
+        "Horror",
+        "Science Fiction",
+        "Thriller"
+      ],
+      "overview": "After a ruthless tech giant acquires a small robotics company, a grieving engineer is tasked with testing their new AI companion. But when he attempts to reprogram her to be a truly sentient soulmate, she develops needs of her own—unleashing a relentless spree of precision-engineered mayhem.",
+      "actual_audience_score": 74.3,
+      "vote_count": 333,
+      "tmdb_url": "https://www.themoviedb.org/movie/1307118"
+    },
+    {
+      "tmdb_id": 1284465,
+      "title": "The Death of Robin Hood",
+      "release_date": "2026-06-18",
+      "runtime_min": 123,
+      "genres": [
+        "Adventure",
+        "Drama",
+        "Action"
+      ],
+      "overview": "Grappling with his past after a life of crime and murder, Robin Hood finds himself gravely injured after a battle he thought would be his last. In the hands of a mysterious woman, he is offered a chance at salvation.",
+      "actual_audience_score": 62.2,
+      "vote_count": 312,
+      "tmdb_url": "https://www.themoviedb.org/movie/1284465"
+    },
+    {
+      "tmdb_id": 1384216,
+      "title": "The Dog Stars",
+      "release_date": "2026-08-26",
+      "runtime_min": 119,
+      "genres": [
+        "Science Fiction",
+        "Thriller",
+        "Adventure"
+      ],
+      "overview": "After the world's population has been ravaged by a pandemic, a man lives a lonesome existence in a Colorado airplane hangar with his dog and a dour gunman he has befriended. When a mysterious transmission comes through on the radio while he’s flying his old Cessna, it sparks a hunt for the provenance of the sound.",
+      "actual_audience_score": 66.3,
+      "vote_count": 276,
+      "tmdb_url": "https://www.themoviedb.org/movie/1384216"
+    },
+    {
+      "tmdb_id": 1477317,
+      "title": "Your Fault: London",
+      "release_date": "2026-06-17",
+      "runtime_min": 123,
+      "genres": [
+        "Romance",
+        "Drama"
+      ],
+      "overview": "Nick and Noah are both embarking on life-changing adventures that are threatening to pull them apart—Nick in business with his father and Noah starting a fresh chapter at Oxford University. Now living separate lives, and meeting new people, they find themselves entangled in temptations, rivalries, and betrayals and their bond is tested like never before. As secrets unravel and temptation rises, they must fight to hold onto each other—or risk losing everything.",
+      "actual_audience_score": 74.4,
+      "vote_count": 197,
+      "tmdb_url": "https://www.themoviedb.org/movie/1477317"
+    },
+    {
+      "tmdb_id": 1516698,
+      "title": "The Last Sunrise",
+      "release_date": "2026-08-26",
+      "runtime_min": 107,
+      "genres": [
+        "Romance",
+        "Drama"
+      ],
+      "overview": "Ry, a college student with a chronic illness, escapes to Mallorca for the summer with her mother, where she unexpectedly falls for a local and begins to embrace living in the moment. But as her condition worsens and long-hidden family secrets come to light, everything she has found before summer's end is threatened.",
+      "actual_audience_score": 67.7,
+      "vote_count": 180,
+      "tmdb_url": "https://www.themoviedb.org/movie/1516698"
+    },
+    {
+      "tmdb_id": 1318621,
+      "title": "Descendants: Wicked Wonderland",
+      "release_date": "2026-07-16",
+      "runtime_min": 98,
+      "genres": [
+        "Fantasy",
+        "TV Movie",
+        "Family",
+        "Adventure"
+      ],
+      "overview": "Now that the Queen of Hearts is nice and Cinderella is safe, things seem perfect for Red and Chloe… But little do they know that changing the past created a new villain — Maddox Hatter. When Maddox captures the Queen of Hearts, Red and Chloe must work alongside Red’s new sister Pink, Luisa Madrigal’s son Luis, and Maddox’s son Max to save her and Wonderland.",
+      "actual_audience_score": 74.9,
+      "vote_count": 180,
+      "tmdb_url": "https://www.themoviedb.org/movie/1318621"
+    },
+    {
+      "tmdb_id": 1291595,
+      "title": "Insidious: Out of the Further",
+      "release_date": "2026-08-19",
+      "runtime_min": 106,
+      "genres": [
+        "Horror",
+        "Thriller"
+      ],
+      "overview": "Gemma, a young mother raising her daughter in the house she grew up in, discovers she can travel into The Further, where she possesses an ability to bring what lives there back to the real world.",
+      "actual_audience_score": 64.8,
+      "vote_count": 156,
+      "tmdb_url": "https://www.themoviedb.org/movie/1291595"
+    },
+    {
+      "tmdb_id": 1493400,
+      "title": "Camp Rock 3",
+      "release_date": "2026-08-13",
+      "runtime_min": 93,
+      "genres": [
+        "Music",
+        "Comedy",
+        "Drama",
+        "TV Movie"
+      ],
+      "overview": "When pop group Connect 3 returns to Camp Rock to search for an opening act for their reunion tour, rising tensions and fierce competition among campers test old friendships and spark unexpected romances.",
+      "actual_audience_score": 64.6,
+      "vote_count": 124,
+      "tmdb_url": "https://www.themoviedb.org/movie/1493400"
+    },
+    {
+      "tmdb_id": 1240889,
+      "title": "Teenage Sex and Death at Camp Miasma",
+      "release_date": "2026-08-06",
+      "runtime_min": 112,
+      "genres": [
+        "Comedy",
+        "Horror",
+        "Romance"
+      ],
+      "overview": "After years of slapdash sequels, the Camp Miasma franchise is handed over to an enthusiastic young director for resurrection. But when she visits the original’s star, a now-reclusive actress shrouded in mystery, the two women fall into a blood-soaked world of desire, fear, and delirium.",
+      "actual_audience_score": 66.1,
+      "vote_count": 122,
+      "tmdb_url": "https://www.themoviedb.org/movie/1240889"
+    },
+    {
+      "tmdb_id": 1308767,
+      "title": "Young Washington",
+      "release_date": "2026-07-02",
+      "runtime_min": 121,
+      "genres": [
+        "History",
+        "War",
+        "Drama"
+      ],
+      "overview": "Before he led a nation, George Washington was a young soldier thrown into a global conflict. With alliances crumbling and war closing in, he must choose who to trust and confront the leader he's becoming.",
+      "actual_audience_score": 78.6,
+      "vote_count": 119,
+      "tmdb_url": "https://www.themoviedb.org/movie/1308767"
+    },
+    {
+      "tmdb_id": 1185806,
+      "title": "PAW Patrol: The Dino Movie",
+      "release_date": "2026-07-23",
+      "runtime_min": 88,
+      "genres": [
+        "Animation",
+        "Adventure",
+        "Family",
+        "Fantasy",
+        "Comedy"
+      ],
+      "overview": "The Paw Patrol lands on a mysterious dinosaur island after a storm, where they meet Rex, a stranded pup. When Humdinger's reckless mining triggers a volcano, the team faces their biggest rescue mission yet to save the island.",
+      "actual_audience_score": 78.7,
+      "vote_count": 119,
+      "tmdb_url": "https://www.themoviedb.org/movie/1185806"
+    },
+    {
+      "tmdb_id": 87513,
+      "title": "Motor City",
+      "release_date": "2026-07-23",
+      "runtime_min": 104,
+      "genres": [
+        "Action",
+        "Thriller",
+        "Crime"
+      ],
+      "overview": "In 1970s Detroit, John Miller falls for a local gangster's girl and lands in prison for a crime he didn't commit. With his life ruined, Miller plots revenge against the man who took his girl away.",
+      "actual_audience_score": 62.5,
+      "vote_count": 115,
+      "tmdb_url": "https://www.themoviedb.org/movie/87513"
+    }
+  ]
+}

@@ -10,7 +10,7 @@ A staged agent workflow, not a chat wrapper:
   6. cultural_scan      — per-market risk review (optionally web-grounded)
   7. pr_recommendations — synthesis for a human to weigh
 
-HOW 500 RESPONSES ARE PRODUCED (see docstring of `_derive_individuals`):
+HOW 500 RESPONSES ARE PRODUCED (see docstring of `derive_individuals`):
 the LLM reasons once per *cohort* (<=28 of them, ~6 batched calls), then each
 persona's individual response is derived from its cohort's verdict plus a
 deterministic, explainable adjustment computed from the traits that vary
@@ -42,6 +42,22 @@ DIMENSION_WEIGHTS = {
     "originality": 0.10, "entertainment": 0.12, "dialogue": 0.06,
     "ending": 0.04, "genre_satisfaction": 0.04, "acting_potential": 0.0,
 }
+
+
+DEFAULT_DIMENSIONS = ["story", "characters", "pacing", "entertainment"]
+
+
+def evaluable_dimensions(analysis: dict) -> list[str]:
+    """The dimensions this material can honestly support a score on.
+
+    The model proposes them in `evaluable_dimensions` (a synopsis cannot speak
+    to dialogue; a full script can), and anything it names that carries no
+    weight is dropped. One definition, because the cohort prompt and the
+    per-persona expansion must score the same list or the weighted overall is
+    computed over dimensions nobody scored.
+    """
+    named = [d for d in (analysis.get("evaluable_dimensions") or []) if d in DIMENSION_WEIGHTS]
+    return named or list(DEFAULT_DIMENSIONS)
 
 
 def _clamp(value: float, low: float = 1.0, high: float = 10.0) -> float:
@@ -163,9 +179,7 @@ def simulate_cohorts(
     state: GlobalState, analysis: dict, cohorts: list[dict], trace: list
 ) -> dict[str, dict]:
     """One batched LLM call per group of cohorts; each cohort gets its own voice."""
-    dimensions = [d for d in analysis.get("evaluable_dimensions", []) if d in DIMENSION_WEIGHTS]
-    if not dimensions:
-        dimensions = ["story", "characters", "pacing", "entertainment"]
+    dimensions = evaluable_dimensions(analysis)
 
     material_summary = json.dumps({
         "genre": analysis.get("genre"), "logline": analysis.get("logline"),
@@ -200,7 +214,7 @@ def simulate_cohorts(
 # Phase V of the pipeline screens the cut scene by scene with the same panel
 # and cohorts. The model scores every scene once per cohort; each viewer's
 # scene scores are then derived from their cohort's, moved by the traits that
-# vary inside it, like `_derive_individuals` does for the dimensions.
+# vary inside it, like `derive_individuals` does for the dimensions.
 
 TALKY_TAGS = {"dialogue", "exposition"}
 ACTION_TAGS = {"action", "finale", "chase", "fight"}
@@ -312,7 +326,7 @@ def derive_scene_responses(
 # ---------------------------------------------------------------- stage 4 --
 
 
-def _derive_individuals(
+def derive_individuals(
     personas_list: list[dict], cohorts: list[dict], verdicts: dict[str, dict],
     dimensions: list[str], analysis: dict, seed: int,
 ) -> list[dict]:
@@ -677,12 +691,10 @@ def run_simulation(
     verdicts = simulate_cohorts(state, analysis, cohorts, trace)
     stage("simulate_cohorts", "complete", cohorts_scored=len(verdicts))
 
-    dimensions = [d for d in analysis.get("evaluable_dimensions", []) if d in DIMENSION_WEIGHTS]
-    if not dimensions:
-        dimensions = ["story", "characters", "pacing", "entertainment"]
+    dimensions = evaluable_dimensions(analysis)
 
     stage("derive_individuals", "running")
-    responses = _derive_individuals(panel, cohorts, verdicts, dimensions, analysis, seed)
+    responses = derive_individuals(panel, cohorts, verdicts, dimensions, analysis, seed)
     stage("derive_individuals", "complete", responses=len(responses))
 
     stage("aggregate", "running")
