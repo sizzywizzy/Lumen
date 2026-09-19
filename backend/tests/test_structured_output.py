@@ -229,3 +229,38 @@ def test_pinning_a_model_turns_the_fallback_chain_off(monkeypatch):
     # Both tiers, so a `pro` prompt is not served by a different model than a
     # `flash` one and then compared with it.
     assert llm._candidates("flash") == llm._candidates("pro") == [("cerebras", "pinned-model")]
+
+
+def test_a_truncated_reply_is_a_result_not_an_exclusion(monkeypatch, tmp_path):
+    """Found mid-sweep: a model that runs out of output budget while satisfying
+    a schema returns 400, and the provider sends nothing rather than partial
+    JSON. Excluding those pairs would hide enforcement's own most interesting
+    failure and flatter the schema arm."""
+    truncated = {
+        "outcome": "schema_refused",  # what the old rule recorded
+        "seconds": 2.0,
+        "error": "HTTP 400: max completion tokens reached before generating a valid document",
+    }
+    assert harness._classify(truncated["error"]) == "truncated"
+    assert harness._outcome(truncated) == "truncated", "a stored result is reclassified on read"
+
+    payload, markdown = _report(monkeypatch, tmp_path, {
+        **{str(n): _pair(ANSWERED, ANSWERED) for n in range(9)},
+        "t": _pair(ANSWERED, truncated),
+    })
+    model = payload["models"]["ollama:m"]
+    assert model["paired_prompts"] == 10, "the truncated pair was excluded from the comparison"
+    assert model["arms"]["schema"]["truncation_rate"] == 0.1
+    # It counts against the arm twice over, as it should: the shape never
+    # arrived, and the agent would have fallen back to its sample output.
+    assert model["arms"]["schema"]["malformed_rate"] == 0.1
+    assert model["arms"]["schema"]["fallback_rate"] == 0.1
+    assert "ran out of output budget" in markdown
+
+
+def test_a_quota_is_still_excluded_after_that_change(monkeypatch, tmp_path):
+    payload, _markdown = _report(monkeypatch, tmp_path, {
+        "a": _pair(ANSWERED, ANSWERED),
+        "b": _pair(LIMITED, ANSWERED),
+    })
+    assert payload["models"]["ollama:m"]["paired_prompts"] == 1

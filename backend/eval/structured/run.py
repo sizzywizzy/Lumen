@@ -41,6 +41,12 @@ REPORT_MD = HERE / "REPORT.md"
 
 ARMS = ("plain", "schema")
 
+# Outcomes that say something about the model rather than about the account or
+# the network, and so belong in the paired comparison. A quota, a refused
+# schema, a dropped connection: those are excluded. An unparseable reply and a
+# reply the model could not finish inside its output budget are results.
+REAL_ATTEMPTS = ("answered", "unparseable", "truncated")
+
 
 def _load(path: Path, default: Any) -> Any:
     if not path.exists():
@@ -122,6 +128,13 @@ def _classify(error: str) -> str:
     subject; the rest are noise to be excluded from the comparison."""
     if "JSONDecodeError" in error:
         return "unparseable"
+    if "max completion tokens" in error or "max_completion_tokens" in error:
+        # The model ran out of output budget part-way through a reply the schema
+        # would not let it end early, so the provider returned nothing rather
+        # than partial JSON. This is a cost of enforcement, not a provider
+        # limitation, and it belongs in the comparison — excluding it would let
+        # the schema arm off its own most interesting failure.
+        return "truncated"
     if "HTTP 400" in error or "INVALID_ARGUMENT" in error:
         # The schema itself was refused: this model does not enforce one.
         return "schema_refused"
@@ -249,15 +262,20 @@ def _rates(records: list[dict[str, Any]]) -> dict[str, Any]:
     """
     attempted = len(records)
     unparseable = sum(1 for r in records if r["outcome"] == "unparseable")
+    truncated = sum(1 for r in records if r["outcome"] == "truncated")
     answered = [r for r in records if r["outcome"] == "answered"]
     off_shape = [r for r in answered if r.get("violation_count")]
+    malformed = unparseable + truncated + len(off_shape)
     return {
         "attempted": attempted,
         "answered": len(answered),
-        "malformed": unparseable + len(off_shape),
-        "malformed_rate": _share(unparseable + len(off_shape), attempted),
+        "malformed": malformed,
+        "malformed_rate": _share(malformed, attempted),
         "unparseable": unparseable,
         "parse_failure_rate": _share(unparseable, attempted),
+        # Ran out of output budget before the shape was complete.
+        "truncated": truncated,
+        "truncation_rate": _share(truncated, attempted),
         # Valid JSON, wrong shape: the failure a schema is meant to remove.
         "off_shape": len(off_shape),
         "violation_rate": _share(len(off_shape), len(answered)),
@@ -274,12 +292,32 @@ def _share(part: int, whole: int) -> Optional[float]:
     return round(part / whole, 4) if whole else None
 
 
+def _outcome(result: dict[str, Any]) -> str:
+    """What a stored result was, classified now rather than when it was written.
+
+    Deriving it here means a sharpened rule applies to results already on disk —
+    the `truncated` class was added after a sweep had recorded several as
+    `schema_refused` — without editing a file the run is still writing to. A
+    running sweep rewrites the whole file every call, so a read-modify-write
+    from outside races it and silently drops whatever landed in between.
+    """
+    error = result.get("error")
+    return _classify(error) if error else result.get("outcome", "not attempted")
+
+
 def do_report(_args) -> int:
     captured = _load(PROMPTS, None)
     results = _load(RESULTS, {})
     if not captured or not results:
         print("Nothing to report: run `capture` then `run` first.", file=sys.stderr)
         return 1
+    results = {
+        model: {
+            prompt_id: {arm: {**result, "outcome": _outcome(result)} for arm, result in record.items()}
+            for prompt_id, record in per_prompt.items()
+        }
+        for model, per_prompt in results.items()
+    }
 
     by_model: dict[str, Any] = {}
     for key, per_prompt in results.items():
@@ -290,7 +328,7 @@ def do_report(_args) -> int:
             prompt_id: record
             for prompt_id, record in per_prompt.items()
             if all(
-                record.get(arm, {}).get("outcome") in ("answered", "unparseable")
+                record.get(arm, {}).get("outcome") in REAL_ATTEMPTS
                 for arm in ARMS
             )
         }
@@ -300,7 +338,7 @@ def do_report(_args) -> int:
                 continue
             for arm in ARMS:
                 outcome = record.get(arm, {}).get("outcome", "not attempted")
-                if outcome not in ("answered", "unparseable"):
+                if outcome not in REAL_ATTEMPTS:
                     excluded[outcome] = excluded.get(outcome, 0) + 1
 
         arms = {arm: _rates([r[arm] for r in usable.values()]) for arm in ARMS}
@@ -311,6 +349,7 @@ def do_report(_args) -> int:
             "change": {
                 "malformed": _delta(arms["plain"]["malformed_rate"], arms["schema"]["malformed_rate"]),
                 "parse_failure": _delta(arms["plain"]["parse_failure_rate"], arms["schema"]["parse_failure_rate"]),
+                "truncation": _delta(arms["plain"]["truncation_rate"], arms["schema"]["truncation_rate"]),
                 "violation": _delta(arms["plain"]["violation_rate"], arms["schema"]["violation_rate"]),
                 "fallback": _delta(arms["plain"]["fallback_rate"], arms["schema"]["fallback_rate"]),
             },
@@ -382,6 +421,8 @@ def _markdown(payload: dict[str, Any]) -> str:
             f"**{_percent(schema['malformed_rate'])}** | **{_percent(model['change']['malformed'])}** |",
             f"| — unparseable reply | {_percent(plain['parse_failure_rate'])} | "
             f"{_percent(schema['parse_failure_rate'])} | {_percent(model['change']['parse_failure'])} |",
+            f"| — ran out of output budget | {_percent(plain['truncation_rate'])} | "
+            f"{_percent(schema['truncation_rate'])} | {_percent(model['change']['truncation'])} |",
             f"| — valid JSON, wrong shape | {_percent(plain['violation_rate'])} | "
             f"{_percent(schema['violation_rate'])} | {_percent(model['change']['violation'])} |",
             f"| Agent would fall back | {_percent(plain['fallback_rate'])} | "
