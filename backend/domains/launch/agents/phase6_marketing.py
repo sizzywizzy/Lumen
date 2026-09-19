@@ -8,7 +8,7 @@ from core import config, llm_output
 from core.messaging.envelope import broadcast, log_event, make_envelope, make_reply
 from core.orchestrator.state import GlobalState, MarketingAsset
 from domains.launch import prompts
-from services import gemini_client
+from services import llm
 
 
 def _strategist(state: GlobalState) -> dict:
@@ -22,7 +22,7 @@ def _strategist(state: GlobalState) -> dict:
         {"demographic": "18-24", "platform": "tiktok", "tone": "chaotic-ironic", "asset_types": ["meme", "reel"]},
         {"demographic": "25-34", "platform": "instagram", "tone": "sleek-noir", "asset_types": ["poster", "reel"]},
     ]}
-    plan = llm_output.mapping(gemini_client.generate_json(
+    plan = llm_output.mapping(llm.generate_json(
         f"Audience report: {state.audience_report.model_dump()}. Budget: ${state.budget_state.cap:,.0f}.",
         system=prompts.STRATEGIST_SYSTEM, mock=fallback,
     ), fallback)
@@ -72,7 +72,7 @@ def _visual(state: GlobalState) -> None:
     state.marketing_assets.append(asset)
 
     for attempt, mock_draft in zip(range(config.MAX_ASSET_REGENERATIONS), prompts.MOCK_MEME_DRAFTS):
-        draft = llm_output.mapping(gemini_client.generate_json(
+        draft = llm_output.mapping(llm.generate_json(
             f"Meme for {state.script_context.get('title')} from scene {scene}, attempt {attempt + 1}. "
             f"Avoid: {asset.content.get('blocked_reasons', [])}",
             system=prompts.VISUAL_SYSTEM, mock=mock_draft,
@@ -122,7 +122,7 @@ def _copywriter(state: GlobalState, plan: dict) -> None:
     release, in one Flash call. Every draft goes through agent_pr_risk like the
     memes do; a blocked draft is escalated rather than retried (bounded cost)."""
     segments = plan.get("segments", [])
-    copy = llm_output.mapping(gemini_client.generate_json(
+    copy = llm_output.mapping(llm.generate_json(
         f"Title: {state.script_context.get('title')}. Campaign segments: {segments}. "
         f"Audience report: {state.audience_report.model_dump()}.",
         system=prompts.COPYWRITER_SYSTEM, mock=prompts.MOCK_COPY,

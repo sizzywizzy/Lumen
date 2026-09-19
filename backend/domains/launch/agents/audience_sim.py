@@ -32,7 +32,7 @@ from core.audience import personas as panel_lib
 from core.messaging.envelope import broadcast, log_event, make_envelope, make_reply
 from core.orchestrator.state import GlobalState
 from domains.launch import audience_prompts as P
-from services import gemini_client, tavily_client
+from services import llm, tavily_client
 
 COHORTS_PER_CALL = 5
 
@@ -84,7 +84,7 @@ def analyse_material(state: GlobalState, material: str, trace: list) -> dict:
         "Analyse this film material for audience research.\n\n"
         f"--- MATERIAL START ---\n{material[:config.SCRIPT_ANALYSIS_MAX_CHARS]}\n--- MATERIAL END ---"
     )
-    analysis, meta = gemini_client.generate_json_traced(
+    analysis, meta = llm.generate_json_traced(
         prompt, tier="pro", system=P.ANALYSIS_SYSTEM, mock=P.MOCK_ANALYSIS
     )
     trace.append({"stage": "analyse_material", **meta})
@@ -140,37 +140,44 @@ def elicit_cohorts(
             f"AUDIENCE COHORTS:\n{json.dumps([_describe_cohort(c) for c in batch], ensure_ascii=False)}\n\n"
             "Give each cohort its own distinct verdict."
         )
-        return gemini_client.generate_json_traced(
+        return llm.generate_json_traced(
             prompt, tier="flash", system=system,
             mock={"cohorts": [{"cohort_id": c["cohort_id"], **offline(c)} for c in batch]},
         )
 
-    results = gemini_client.map_concurrent(batches, run_batch)
+    results = llm.map_concurrent(batches, run_batch)
 
     verdicts: dict[str, dict] = {}
-    sources: list[str] = []
+    answered: list[dict] = []  # one batch's trace per batch, in order; {} if it raised
     for batch, result in zip(batches, results):
         if isinstance(result, Exception):
-            trace.append({"stage": stage, "source": "error", "error": str(result)[:200]})
+            trace.append({"stage": stage, "live": False, "source": "error", "error": str(result)[:200]})
             # a failed batch still needs verdicts, or those personas vanish
             for c in batch:
                 verdicts[c["cohort_id"]] = {**offline(c), "_degraded": True}
-            sources.append("mock")
+            answered.append({})
             continue
         payload, meta = result
-        sources.append(meta.get("source", "unknown"))
+        answered.append(meta)
         rows = payload.get("cohorts") if isinstance(payload, dict) else None
         by_id = {c.get("cohort_id"): c for c in (rows if isinstance(rows, list) else []) if isinstance(c, dict)}
         for c in batch:
             found = by_id.get(c["cohort_id"])
             verdicts[c["cohort_id"]] = clean(found, c) if found else {**offline(c), "_degraded": True}
 
-    live = sources.count("gemini")
+    live = sum(1 for meta in answered if llm.is_live(meta))
+    all_live = bool(batches) and live == len(batches)
+    providers = sorted({meta.get("provider") for meta in answered if llm.is_live(meta)})
     trace.append({
         "stage": stage, "batches": len(batches),
-        "source": "gemini" if batches and live == len(batches) else ("mixed" if live else "mock"),
+        # A partly-live stage is not a live stage: part of its numbers are sample
+        # output, and rounding that up to "live" is the one thing a run must
+        # never do. `source` is the label for a reader — which provider answered,
+        # "mixed" when only some batches did or more than one provider served.
+        "live": all_live,
+        "source": providers[0] if all_live and len(providers) == 1 else ("mixed" if live else llm.MOCK),
         "live_batches": live,
-        "model": next((r[1].get("model") for r in results if not isinstance(r, Exception)), None),
+        "model": next((meta.get("model") for meta in answered if meta), None),
     })
     return verdicts, live, len(batches)
 
@@ -576,7 +583,7 @@ def cultural_scan(
     research: list[dict] = []
     if tavily_client.enabled():
         genre_hint = " ".join(analysis.get("genre", [])[:2])
-        found = gemini_client.map_concurrent(
+        found = llm.map_concurrent(
             market_names, lambda name: tavily_client.research_market(name, genre_hint), max_workers=3
         )
         for name, result in zip(market_names, found):
@@ -598,7 +605,7 @@ def cultural_scan(
         f"TARGET MARKETS: {market_names}"
         f"{research_block}"
     )
-    payload, meta = gemini_client.generate_json_traced(
+    payload, meta = llm.generate_json_traced(
         prompt, tier="pro", system=P.SENSITIVITY_SYSTEM, mock=P.MOCK_SENSITIVITY
     )
     trace.append({"stage": "cultural_scan", **meta, "research_enabled": tavily_client.enabled()})
@@ -638,7 +645,7 @@ def pr_recommendations(state: GlobalState, report: dict, sensitivity: dict, trac
         "MARKET RISK FINDINGS:\n"
         f"{json.dumps(sensitivity.get('markets', []), ensure_ascii=False)[:6000]}"
     )
-    payload, meta = gemini_client.generate_json_traced(
+    payload, meta = llm.generate_json_traced(
         prompt, tier="pro", system=P.PR_SYSTEM, mock=P.MOCK_PR
     )
     trace.append({"stage": "pr_recommendations", **meta})
@@ -709,7 +716,7 @@ def run_simulation(
     recommendations = pr_recommendations(state, report, sensitivity, trace)
     stage("pr_recommendations", "complete")
 
-    live_stages = sum(1 for t in trace if t.get("source") == "gemini")
+    live_stages = sum(1 for t in trace if llm.is_live(t))
     return {
         "analysis": analysis,
         "report": report,

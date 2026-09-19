@@ -11,15 +11,15 @@ function provenanceNote(poster, painting) {
   if (painting) return "Making a new poster in a different style. This one stays up until it's ready.";
   if (!poster) return "There's no poster for this production yet.";
   if (poster.written_by) {
-    return "Lumen drew this in a style picked at random, with a tagline and colours Gemini chose from your script.";
+    return `Lumen drew this in a style picked at random, with a tagline and colours ${poster.written_by} chose from your script.`;
   }
   if (poster.fallback_reason === "no_api_key") {
-    return "Lumen drew this offline, with a tagline and colours for the genre. With a Gemini API key, they come from your script.";
+    return "Lumen drew this offline, with a tagline and colours for the genre. With a model key set, they come from your script.";
   }
   if (poster.fallback_reason === "pr_blocked") {
     return "PR review turned down the drafted taglines, so this poster uses a safe line for the genre.";
   }
-  return "Gemini didn't answer, so this poster uses a tagline and colours for the genre. Try another in a minute.";
+  return "The model didn't answer, so this poster uses a tagline and colours for the genre. Try another in a minute.";
 }
 
 // The production's poster. Polls while one is being made and loads each

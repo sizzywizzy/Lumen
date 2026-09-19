@@ -23,7 +23,7 @@ Every agent in Lumen falls back to deterministic sample output when the model
 is unavailable, which is right for the product and fatal for an evaluation: a
 benchmark that quietly grades its own fallbacks reports the mock's accuracy
 under the model's name. So each prediction carries `live` — whether every
-model call behind it really reached Gemini — and `run.py` reports the count and
+model call behind it really reached a model — and `run.py` reports the count and
 refuses to headline a number when too many films fell back.
 """
 import statistics
@@ -35,7 +35,7 @@ from core.audience import personas as panel_lib
 from domains.launch.agents import audience_sim
 from domains.launch.agents.phase5_audience import LIKED_SCORE
 from eval import dataset
-from services import gemini_client
+from services import llm
 
 # The product's own panel size (config.PERSONA_COUNT), so the evaluation grades
 # the shipped configuration rather than a shrunken stand-in. What actually sets
@@ -132,7 +132,7 @@ def lumen(
     dimensions = audience_sim.evaluable_dimensions(analysis)
     responses = audience_sim.derive_individuals(panel, cohorts, verdicts, dimensions, analysis, seed)
 
-    live = sum(1 for t in trace if t.get("source") == "gemini")
+    live = sum(1 for t in trace if llm.is_live(t))
     # A cohort marked `_degraded` took its offline verdict because the reply
     # failed or skipped it. All of them degraded means the simulation carries no
     # model signal at all, and run.py drops the film rather than grading it.
@@ -175,10 +175,10 @@ def single_call(film: dict[str, Any]) -> dict[str, Any]:
     recorded as unscored rather than silently graded against a canned number.
     """
     try:
-        payload, meta = gemini_client.generate_json_traced(
+        payload, meta = llm.generate_json_traced(
             dataset.brief(film), tier="flash", system=SINGLE_CALL_SYSTEM, mock=None,
         )
-    except gemini_client.GeminiUnavailable as exc:
+    except llm.LLMUnavailable as exc:
         return {"audience_score": None, "tomatometer": None, "live": False, "error": str(exc)[:200]}
 
     def number(value, low=0.0, high=100.0) -> Optional[float]:
@@ -191,9 +191,9 @@ def single_call(film: dict[str, Any]) -> dict[str, Any]:
     return {
         "audience_score": number(payload.get("audience_score")),
         "tomatometer": number(payload.get("percent_who_would_like_it")),
-        "live": meta.get("source") == "gemini",
+        "live": llm.is_live(meta),
         "llm_calls": 1,
-        "live_stages": 1 if meta.get("source") == "gemini" else 0,
+        "live_stages": 1 if llm.is_live(meta) else 0,
         "models": [meta["model"]] if meta.get("model") else [],
     }
 

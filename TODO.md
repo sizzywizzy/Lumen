@@ -1,7 +1,7 @@
 # TODO
 
-What is still open. Last checked against the working tree on 19 September
-2026, when all 298 backend tests and all 33 frontend tests passed offline and
+What is still open. Last checked against the working tree on 20 September
+2026, when all 346 backend tests and all 50 frontend tests passed offline and
 the frontend built cleanly.
 
 Everything left needs an account, a key or a deploy — nothing in the code is
@@ -9,12 +9,66 @@ waiting on a decision.
 
 ## Needs your accounts
 
+- [ ] **A model provider with quota left.** Three were tried on 20 September 2026
+  and each said something different:
+
+  - **Cerebras** answers `402 payment_required` with `param: quota` — the free
+    allowance on this account is spent and it wants a card. Out, under the
+    free-plans-only rule.
+  - **Groq** works. `openai/gpt-oss-20b` and `openai/gpt-oss-120b` are what this
+    account has; `llama-3.3-70b-versatile` is not available. The free tier allows
+    8,000 tokens a minute, which a 510-call sweep takes about two hours to spend,
+    so `eval.structured.run` waits out a 429 rather than recording it.
+  - **Gemini** is still the ~20-requests-a-day tier that started all of this.
+
+  Two bugs came out of trying them, both fixed: urllib's default agent is
+  refused by Cloudflare with `403 error code: 1010`, and Groq rejects
+  `json_object` unless the word "json" appears in the messages — which would
+  have made *every* Lumen agent call fail on Groq, not just the evaluation.
+
+- [ ] **A free Cerebras key, which unblocks two things at once.** Agents now run
+  on whichever provider is configured — Cerebras, Groq, Gemini or a local Ollama,
+  in the order `LUMEN_LLM_PROVIDERS` gives (`backend/services/llm.py`). Nothing
+  else is needed in the code.
+
+  Gemini's roughly 20 requests per model per day is what stopped both the live
+  recapture below and the audience evaluation in `backend/eval`, which still
+  reports 0 of 31 films graded. Cerebras's free tier is wide enough for a full
+  31-film sweep in one sitting. Set `CEREBRAS_API_KEY` and both become possible.
+
+  One thing to do first: `python -m eval.run leakage` has to be re-run after
+  switching. It asks the model which films it already knows, and a different
+  model has a different training cutoff, so the answer does not carry over.
+
+- [ ] **Decide what to do about the actor search.** The evaluation is finished
+  and run (`backend/eval/casting`, 52 briefs, 1,159 actors): the shipped
+  embedding model scores recall@10 of 19% against 35% for a dependency-free
+  TF-IDF ranking, and the interval on that gap does not cross zero.
+  `bge-small-en-v1.5` closes almost all of it (33%) and is a 384-dimension
+  drop-in, so the change is `EMBEDDING_MODEL` plus a re-run of
+  `scripts/generate_actor_embeddings.py` — no migration.
+
+  Not done here because it needs a database to re-embed against, and this one is
+  paused. `match_actors` now refuses a model mismatch rather than returning
+  nonsense, so the swap is safe whenever the database is back.
+
+- [ ] **Run the structured-output experiment.** The harness is finished and
+  tested (`backend/eval/structured`), and its 255-prompt set is captured and
+  committed — collecting prompts needs no key, so that part is done. The sweep
+  itself is 510 calls, which is about a month of Gemini's free tier: it was
+  attempted on 19 September 2026 and every call came back 429.
+
+  To finish: `python -m eval.structured.run run --provider cerebras`, then
+  `report`. One finding is already in hand and documented — Gemini's
+  `response_schema` refuses the `additionalProperties` that OpenAI-style strict
+  mode requires, so schemas are translated per provider.
+
 - [ ] **Recapture with a live model.** The README screenshots and
   `assets/screenshots/pipeline.gif` still come from the offline demo, so the
   cast, scenes and reviews in them are Lumen's sample film.
 
-  Attempted on 19 September 2026 and stopped by quota, not by anything in the
-  code. A capture run seeded a production from an original screenplay through
+  Attempted on 19 September 2026 and stopped by Gemini's daily quota, not by
+  anything in the code — which is what the provider chain above is for. A capture run seeded a production from an original screenplay through
   the real API against a local store, and Phases I and II answered live
   (9 and 5 model calls). The free tier then hit its ceiling of 20 requests per
   model per day, so Phase III's scene breakdown and part of Phase V fell back

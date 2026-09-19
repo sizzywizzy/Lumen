@@ -30,7 +30,7 @@
 Turning a screenplay into a planned, tested and marketed film takes weeks of
 separate jobs: breaking down scenes, vetting cast, solving the schedule,
 clearing each territory, guessing how audiences will react, planning the
-campaign. In Lumen, 30-plus specialist agents split that work between them and
+campaign. In Lumen, 32 specialist agents split that work between them and
 trade requests and answers in one shared message format.
 
 - **Casting.** Finds working actors near the shoot through web search, scores
@@ -131,7 +131,7 @@ flowchart TB
 
     subgraph ext["Optional services"]
         direction TB
-        gemini["Gemini<br/>reasoning · free tier"]
+        gemini["Cerebras · Groq<br/>Gemini · Ollama<br/>reasoning · free tiers"]
         tavily["Tavily<br/>web search"]
         tmdb["TMDb<br/>actor photos + credits"]
         kb[("Actor knowledge base<br/>TMDb + pgvector")]
@@ -276,7 +276,7 @@ advisors' procedures in [skills.md](skills.md).
 |---|---|
 | Frontend | React 18, React Router 7, Vite; hand-rolled CSS with light and dark themes |
 | Backend | Python, FastAPI, Pydantic v2, Uvicorn |
-| AI | Gemini through `google-genai` (free tier only); Tavily web search; TMDb actor photos |
+| AI | Cerebras, Groq, Gemini or a local Ollama, whichever is configured (free tiers only); Tavily web search; TMDb actor photos |
 | Data | Supabase (Postgres), or local JSON with no setup; TMDb actor knowledge base on pgvector |
 | Script formats | PDF, Final Draft, Fountain, plain text |
 | Ops | GitHub Actions CI; Vercel, Render and Supabase for hosting |
@@ -284,7 +284,7 @@ advisors' procedures in [skills.md](skills.md).
 Lumen plans media rather than rendering it: campaign assets are art-direction
 specs, auditions are judged from the role brief and the tape link, and the
 poster is the one image it makes: art Lumen draws itself, with a tagline and
-colours Gemini picks from your script.
+colours the model picks from your script.
 
 ## Getting started
 
@@ -315,7 +315,7 @@ The whole conversation is under **Agents → Agent log**.
 
 | Key in `.env` | Turns on | Cost |
 |---|---|---|
-| `GEMINI_API_KEY` | Live reasoning; Lumen reads your own script | Free tier |
+| `CEREBRAS_API_KEY`, `GROQ_API_KEY`, `GEMINI_API_KEY`, or `OLLAMA_HOST` | Live reasoning; Lumen reads your own script. Any one is enough; set several and they become a fallback chain | Free tier (Ollama: your own machine) |
 | `TAVILY_API_KEY` | Web search for talent scouting and cultural research | Free plan: 1,000 searches a month |
 | `TMDB_API_KEY` | Photos and credits for the actors the scout finds | Free for non-commercial use |
 | `SUPABASE_URL`, `SUPABASE_KEY` | Shared storage instead of `backend/.state/` (required when deployed) | Free plan |
@@ -323,13 +323,14 @@ The whole conversation is under **Agents → Agent log**.
 
 Lumen uses only free plans, so running it costs nothing, and it has no code
 for paid features: no Google Search grounding, image generation or Vertex AI.
-On each run the scout makes two Tavily searches. Gemini suggests actors from
+On each run the scout makes two Tavily searches. The model suggests actors from
 those pages only, and any name the pages don't mention is dropped. When
 exactly one actor on TMDb has that name, TMDb adds a photo and credits,
 labelled as a match by name. Fees and follower counts for these actors are
-labelled as estimates. Free Gemini keys have per-minute and daily request
-limits, so a run may slow down while Lumen waits them out. Google's terms let
-it use free-tier prompts to improve its products, so don't upload a script
+labelled as estimates. Free keys have per-minute and daily request limits, so a
+run may slow down while Lumen waits them out — Gemini's are the tightest, which
+is why a second provider set alongside it is worth the two minutes. Google's
+terms let it use free-tier prompts to improve its products, so don't upload a script
 that must stay confidential. Keep billing off on the Google project behind
 your key: a project without a billing account is never charged.
 
@@ -360,7 +361,8 @@ backend/
 ├── run_demo.py    a full run in the terminal
 ├── core/          orchestrator, GlobalState, A2A envelope, audience engine, auth
 ├── domains/       casting, production and launch agents, background runs, routes
-├── services/      Gemini, Tavily, Supabase, script intake, actor knowledge base
+├── services/      model access, Tavily, Supabase, script intake, actor knowledge base
+├── eval/          three evaluations: audience accuracy, schema enforcement, actor search
 ├── mock_data/     the offline sample: script, candidates, venues, territory rules
 └── tests/         offline pytest suite
 frontend/src/
@@ -370,6 +372,27 @@ frontend/src/
 contracts/         JSON schemas for the A2A envelope and GlobalState
 skills/            SKILL.md procedures the AI advisors follow
 ```
+
+## Checking the claims
+
+Two of the claims above are measurable, so they are measured rather than
+asserted, and both write a report that keeps its own caveats:
+
+- [**Does the audience simulator work?**](backend/eval/README.md) 200 synthetic
+  viewers predicting a Tomatometer is a claim about the real world. This scores
+  it against real audience ratings for films released after the model's training
+  cutoff, with the title withheld, and — the part that matters — against simply
+  asking a model the same question once. If one prompt does as well, the panel
+  machinery is decoration, and the honest thing is to know that.
+- [**Does enforcing a JSON schema help?**](backend/eval/structured/README.md) The
+  agents ask for JSON and then repair what comes back. This takes 255 prompts
+  captured from real runs and asks each one twice, plain and schema-enforced, on
+  one model.
+- [**Does the actor search find the right actor?**](backend/eval/casting/README.md)
+  52 casting briefs written by hand from real parts, each resolved to its actor
+  through TMDb, ranked against a thousand-actor pool with that part held out —
+  and measured against TF-IDF, because if counting shared words does as well then
+  the embedding model is not earning its keep.
 
 Open bugs and the backlog are tracked in [TODO.md](TODO.md).
 

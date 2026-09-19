@@ -8,7 +8,7 @@ from core.orchestrator.graph import Orchestrator
 from core.orchestrator.state import GlobalState
 from domains.launch import audience_prompts
 from domains.launch.agents import phase5_audience
-from services import gemini_client, mock_db
+from services import llm, mock_db
 
 
 def _screen(state=None):
@@ -23,12 +23,12 @@ def _screening_calls(monkeypatch, answer):
     def traced(prompt, *, tier="flash", system=None, mock=None, attempts_per_model=2):
         if system == audience_prompts.SCENE_SCREENING_SYSTEM:
             sent.append(prompt)
-            return answer(prompt, mock), {"source": "gemini", "model": "flash-model"}
+            return answer(prompt, mock), {"live": True, "source": "gemini", "model": "flash-model"}
         return mock, {"source": "mock"}
 
-    monkeypatch.setattr(gemini_client.config, "has_gemini", lambda: True)
-    monkeypatch.setattr(gemini_client, "generate_json_traced", traced)
-    monkeypatch.setattr(gemini_client, "generate_json", lambda prompt, **kw: kw.get("mock"))
+    monkeypatch.setattr(llm.config, "has_gemini", lambda: True)
+    monkeypatch.setattr(llm, "generate_json_traced", traced)
+    monkeypatch.setattr(llm, "generate_json", lambda prompt, **kw: kw.get("mock"))
     return sent
 
 

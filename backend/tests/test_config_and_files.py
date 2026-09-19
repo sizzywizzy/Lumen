@@ -19,12 +19,12 @@ def test_env_values_lose_only_matching_quotes(raw, value):
 
 def test_gemini_needs_an_api_key(monkeypatch):
     """Only a key reaches Gemini; Google Cloud credentials on the machine never do."""
-    from services import gemini_client
+    from services import llm
 
     monkeypatch.setattr(config, "GEMINI_API_KEY", "")
-    monkeypatch.setattr(gemini_client, "_client", None)
-    with pytest.raises(gemini_client.GeminiUnavailable):
-        gemini_client._get_client()
+    monkeypatch.setattr(llm, "_gemini", None)
+    with pytest.raises(llm.LLMUnavailable):
+        llm._get_gemini()
 
 
 def test_a_write_replaces_the_file_whole_and_leaves_no_temp_files(tmp_path):

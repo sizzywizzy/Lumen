@@ -181,7 +181,7 @@ export default function CastingView() {
             </button>
           </div>
           <p className="body-sm muted">
-            The talent scout searches the web for actors in your locality, from agency rosters to local film listings, and Gemini picks the ones who fit your roles, director's notes and per-role budget cap.
+            The talent scout searches the web for actors in your locality, from agency rosters to local film listings, and the model picks the ones who fit your roles, director's notes and per-role budget cap.
           </p>
           <div className="grid grid--2" style={{ gap: 16 }}>
             <div>

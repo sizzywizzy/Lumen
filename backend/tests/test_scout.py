@@ -6,7 +6,7 @@ import pytest
 from core import config
 from core.orchestrator.state import GlobalState
 from domains.casting.agents import agent_scout
-from services import gemini_client, tavily_client
+from services import llm, tavily_client
 from services.casting_kb import tmdb
 
 ROLES = {"ROLE_LEAD": {"name": "Mara Voss", "description": "ex-detective, 30s", "type": "lead"},
@@ -39,8 +39,8 @@ def live(monkeypatch):
     monkeypatch.setattr(tavily_client, "search", search)
 
     def answer(rows):
-        monkeypatch.setattr(gemini_client, "generate_json_traced",
-                            lambda prompt, **kwargs: ({"candidates": rows}, {"source": "gemini", "model": "flash"}))
+        monkeypatch.setattr(llm, "generate_json_traced",
+                            lambda prompt, **kwargs: ({"candidates": rows}, {"live": True, "source": "gemini", "model": "flash"}))
 
     answer.searches = searches
     return answer

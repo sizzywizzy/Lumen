@@ -1,6 +1,6 @@
 """Things that have to be changed in pairs, checked here instead of remembered.
 
-Two of them used to be entries on the TODO list, kept by hand:
+The first two used to be entries on the TODO list, kept by hand:
 
 1.  What a phase writes and what `PhaseNode.owns` says it writes. A finished
     background run copies exactly the declared fields onto the stored state
@@ -12,15 +12,22 @@ Two of them used to be entries on the TODO list, kept by hand:
 2.  An advisor's inputs, and what `skills.md` and AGENT.md Section 8 say they
     are. The run controls are what the dashboard offers and what the API
     accepts, so the three have to agree.
+
+3.  How many agents there are. AGENT.md Section 4 is the roster, and the README
+    quotes its size as a headline figure. Both are prose, so both drift — and a
+    number nobody can check is worth nothing. The roster is pinned here to the
+    agents that actually speak in an offline run, and the README to the roster.
 """
 import re
 
 import pytest
 
 from core import config
+from core.messaging import envelope
 from core.orchestrator.graph import Orchestrator
 from core.orchestrator.state import GlobalState
 from core.skills import registry
+from domains.launch.agents import audience_sim
 from domains.skills import agents
 from domains.skills.router import SkillRunParams
 
@@ -71,7 +78,7 @@ def _covers(path: str, owns: tuple[str, ...]) -> bool:
 def phase_by_phase(request):
     """One offline pipeline run, kept as (node, before, after) per phase."""
     with pytest.MonkeyPatch.context() as patch:
-        patch.setattr(config, "has_gemini", lambda: False)
+        patch.setattr(config, "has_llm", lambda: False)
         patch.setattr(config, "has_tavily", lambda: False)
         orchestrator = Orchestrator()
         state = GlobalState(project_id="PROJ_CONTRACTS")
@@ -180,3 +187,100 @@ def test_the_api_accepts_exactly_the_controls_the_skills_offer():
 
     assert offered - accepted == set(), f"the dashboard offers {sorted(offered - accepted)}; the API rejects them"
     assert accepted - offered == set(), f"the API accepts {sorted(accepted - offered)}, which no skill offers"
+
+
+# --------------------------------------------------------- the agent roster --
+
+
+def _registry_entries() -> dict[str, str]:
+    """Every agent AGENT.md Section 4 registers, mapped to the group it sits
+    under ("Phase III — Script -> Schedule", "Skills — ...").
+
+    Section 4 *is* the roster: one bold `**`agent_x`**` entry per agent,
+    grouped by phase. `_section` stops at the first `###`, so this reads the
+    whole section, to the next `##`.
+    """
+    found = re.search(r"^## 4\. Agent Registry\s*$(.*?)(?=^## )", _repo_file("AGENT.md"), re.S | re.M)
+    assert found, "AGENT.md no longer has a '## 4. Agent Registry' section for the roster to come from"
+
+    entries: dict[str, str] = {}
+    group = ""
+    for line in found.group(1).splitlines():
+        if line.startswith("### "):
+            group = line[4:].strip()
+        named = re.match(r"\*\*`(agent_[a-z0-9_]+)`\*\*", line)
+        if named:
+            entries[named.group(1)] = group
+    return entries
+
+
+@pytest.fixture(scope="module")
+def agents_at_work(phase_by_phase):
+    """Every agent the running system actually has, derived rather than listed.
+
+    Two sources, because agents work in two places: senders in an offline run
+    of all six phases, plus senders in a standalone simulation — which is where
+    `agent_script_analyst` reads the material, Phase V having the Phase I brief
+    already. The four advisors answer one request at a time on their own
+    threads, and running each one here would mean running its prerequisite
+    phases again, so they are taken from the `agent` key in their SKILL.md
+    (AGENT.md Section 8) rather than from a run.
+    """
+    spoke = {event["sender"] for _, _, after in phase_by_phase for event in after["event_log"]}
+
+    state = GlobalState(project_id="PROJ_CONTRACTS_SIM")
+    audience_sim.run_simulation(
+        state,
+        "A retired cartographer walks a drowned coastline, mapping what the sea took. " * 12,
+        panel_size=40,
+        markets=["US", "IN"],
+    )
+    spoke |= {event["sender"] for event in state.event_log}
+    return spoke | {skill.agent for skill in registry.load_all()}
+
+
+def test_every_agent_at_work_is_in_the_registry(agents_at_work):
+    """An agent in the code but not in Section 4 is invisible to everything that
+    reads the roster: the count the README quotes, the checklist in Section 7,
+    and anyone trying to find out who does what. The orchestrator is left out on
+    purpose — it is Section 1 infrastructure, not one of the specialists."""
+    undocumented = sorted(agents_at_work - set(_registry_entries()) - {envelope.ORCHESTRATOR})
+    assert not undocumented, (
+        f"these agents are at work but AGENT.md Section 4 does not register them: {undocumented}. "
+        "Add an entry there — Section 7 is the checklist — or stop sending under that id."
+    )
+
+
+def test_every_registered_agent_is_still_at_work(agents_at_work):
+    """The other direction. An entry left behind after an agent was renamed or
+    removed inflates the number the README quotes, which is the drift this pair
+    of tests exists to stop."""
+    retired = sorted(set(_registry_entries()) - agents_at_work)
+    assert not retired, (
+        f"AGENT.md Section 4 registers {retired}, which nothing at work sends as. "
+        "Remove the entry, or correct the id."
+    )
+
+
+def test_the_readme_quotes_the_number_of_agents_the_registry_holds():
+    """The README's one figure that can go stale in silence, and the reason the
+    two tests above exist: with the roster pinned to what runs, this number is
+    checkable rather than remembered. The same figure is in the repository's
+    GitHub description, which no test here can read — so change both."""
+    count = len(_registry_entries())
+    claim = f"{count} specialist agents"
+    assert claim in _repo_file("README.md"), (
+        f"the README does not say '{claim}'. AGENT.md Section 4 registers {count} agents, "
+        "the orchestrator aside. Update README.md and the repository's GitHub description together."
+    )
+
+
+def test_the_registry_groups_agents_by_every_phase_that_runs():
+    """Section 4 groups the agents by phase, so a seventh phase added to the
+    graph without a group of its own would carry undocumented agents."""
+    grouped = {group for group in _registry_entries().values() if group.startswith("Phase ")}
+    running = Orchestrator().phase_keys()
+    assert len(grouped) == len(running), (
+        f"the orchestrator runs {len(running)} phases but AGENT.md Section 4 groups agents "
+        f"under {len(grouped)}: {sorted(grouped)}. Give the new phase its own group."
+    )

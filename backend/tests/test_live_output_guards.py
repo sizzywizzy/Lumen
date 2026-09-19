@@ -5,14 +5,14 @@ from core.orchestrator.graph import Orchestrator
 from core.orchestrator.state import GlobalState
 from domains.casting import prompts as casting_prompts
 from domains.launch import prompts as launch_prompts
-from services import gemini_client
+from services import llm
 
 
 def _answer_with(monkeypatch, answers: dict):
     """Route each system prompt to a canned reply; every other call gets its mock."""
     def fake(prompt, *, tier="flash", system=None, mock=None):
         return answers.get(system, mock)
-    monkeypatch.setattr(gemini_client, "generate_json", fake)
+    monkeypatch.setattr(llm, "generate_json", fake)
 
 
 def _fresh():
@@ -117,9 +117,9 @@ def test_scouted_candidates_are_held_to_the_scripts_roles(offline, monkeypatch):
     monkeypatch.setattr(config, "has_gemini", lambda: True)
     monkeypatch.setattr(config, "has_tavily", lambda: True)
     monkeypatch.setattr(tavily_client, "search", lambda query, max_results=4: {"results": [page]})
-    monkeypatch.setattr(gemini_client, "generate_json", lambda prompt, **kwargs: kwargs.get("mock"))
-    monkeypatch.setattr(gemini_client, "generate_json_traced",
-                        lambda prompt, **kwargs: (reply, {"source": "gemini", "model": "flash"}))
+    monkeypatch.setattr(llm, "generate_json", lambda prompt, **kwargs: kwargs.get("mock"))
+    monkeypatch.setattr(llm, "generate_json_traced",
+                        lambda prompt, **kwargs: (reply, {"live": True, "source": "gemini", "model": "flash"}))
     state = Orchestrator().run(_fresh(), start="phase1", end="phase2")
 
     roles = set(state.role_requirements)

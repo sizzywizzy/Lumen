@@ -3,7 +3,7 @@ those: a real screenplay no longer inherits the demo's music cue."""
 from core.orchestrator.graph import Orchestrator
 from core.orchestrator.state import GlobalState
 from domains.production import prompts
-from services import gemini_client, mock_db
+from services import llm, mock_db
 
 
 def _music_checked(state: GlobalState) -> list[dict]:
@@ -28,7 +28,7 @@ def test_a_real_screenplay_checks_only_its_own_cues(offline, monkeypatch):
     def fake(prompt, *, tier="flash", system=None, mock=None):
         return breakdown if system == prompts.BREAKDOWN_SYSTEM else mock
 
-    monkeypatch.setattr(gemini_client, "generate_json", fake)
+    monkeypatch.setattr(llm, "generate_json", fake)
     state = GlobalState(project_id="PROJ_REAL", script_context={"raw_text": "INT. DINER - DAY"})
     state.role_requirements = {"ROLE_LEAD": {"name": "Jo"}}
     state = Orchestrator().run(state, start="phase3", end="phase4")

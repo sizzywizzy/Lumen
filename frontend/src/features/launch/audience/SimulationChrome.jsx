@@ -16,7 +16,7 @@ export function SimulationDisclaimer({ text, provenance }) {
         <p style={{ marginTop: 4 }}>{text}</p>
         {mode && (
           <p className="mono-label" style={{ marginTop: 6, opacity: 0.85 }}>
-            Model output: {mode === "live" ? "live Gemini" : mode === "mixed" ? "partly live, partly offline fallback" : "offline fallback (no live model)"}
+            Model output: {mode === "live" ? "a live model" : mode === "mixed" ? "partly live, partly offline fallback" : "offline fallback (no live model)"}
             {provenance?.models_used?.length ? ` · ${provenance.models_used.join(", ")}` : ""}
             {provenance?.research_enabled ? " · web research on" : " · web research off"}
           </p>

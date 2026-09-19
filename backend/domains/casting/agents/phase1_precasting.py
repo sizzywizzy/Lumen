@@ -11,7 +11,7 @@ from core import config, llm_output
 from core.messaging.envelope import broadcast, log_event, make_envelope, make_reply
 from core.orchestrator.state import Candidate, GlobalState
 from domains.casting import prompts
-from services import gemini_client, mock_db, script_intake
+from services import llm, mock_db, script_intake
 
 PR_RED_FLAG_TERMS = ("lawsuit", "outburst", "scandal", "arrest")
 
@@ -81,7 +81,7 @@ def _read_script(state: GlobalState) -> dict:
     if not raw:
         return fallback
     limit = config.SCRIPT_ANALYSIS_MAX_CHARS
-    read = gemini_client.generate_json(
+    read = llm.generate_json(
         f"SCREENPLAY (first {min(len(raw), limit):,} characters):\n{raw[:limit]}",
         tier="pro", system=prompts.SCRIPT_READ_SYSTEM, mock=fallback,
     )
@@ -121,7 +121,7 @@ def _profiler(state: GlobalState) -> None:
         "role_requirements": {r["role_id"]: {"name": r["name"], "description": r["description"], "type": r["type"]} for r in script["roles"]},
         "scoring_weights": dict(DEFAULT_WEIGHTS),
     }
-    mandate = llm_output.mapping(gemini_client.generate_json(
+    mandate = llm_output.mapping(llm.generate_json(
         f"Script context: {brief}. Roles: {script['roles']}. "
         f"Locality: {locality}. Director Notes: {director_notes}. "
         f"Total budget: ${state.budget_state.cap:,.0f}.",
@@ -167,7 +167,7 @@ def _score_candidate(state: GlobalState, candidate: Candidate) -> None:
     red_flag = any(term in press for term in PR_RED_FLAG_TERMS)
     fallback = {"pr_score": 20 if red_flag else 90, "red_flag": red_flag,
                 "reason": "ongoing legal trouble or a recent public incident" if red_flag else "clean record"}
-    raw = llm_output.mapping(gemini_client.generate_json(
+    raw = llm_output.mapping(llm.generate_json(
         f"Candidate press: {press}", system=prompts.PR_SHIELD_SYSTEM, mock=fallback,
     ), fallback)
     # A live verdict is coerced field by field: a score that is not a number
