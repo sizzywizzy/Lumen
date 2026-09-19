@@ -18,6 +18,11 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow" alt="MIT License" /></a>
 </p>
 
+<p align="center">
+  <b><a href="https://lumen-beige-five.vercel.app">See it running</a></b> — the API is on a free
+  instance that sleeps when idle, so the first action takes about a minute to answer.
+</p>
+
 ![Lumen's homepage: drop in a script, walk away with a shoot plan](assets/screenshots/00-home.png)
 
 ## What it does
