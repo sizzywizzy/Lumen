@@ -162,6 +162,72 @@ flowchart TB
 }
 ```
 
+### The agent graph
+
+The phases run in order, but inside them the agents do not: they send each
+other requests, and two of those exchanges genuinely loop. Every edge below is
+an A2A envelope in the source, and every loop has a hard iteration cap, so no
+run can spin.
+
+```mermaid
+flowchart TB
+    classDef loop stroke:#c9803a,stroke-width:3px
+    classDef gate stroke:#b4483c,stroke-width:2px,stroke-dasharray:5 3
+
+    orch{{"agent_director_orchestrator"}}
+
+    P12["<b>Phase I-II · casting</b><br/>casting_scout · market_synergy<br/>pr_shield · finance<br/>audition_analytics · synthesis"]
+    P34["<b>Phase III-IV · production</b><br/>breakdown · scheduler_shoot<br/>location · localization<br/>rights_clearance · qc"]
+    P5["<b>Phase V · screening</b><br/>persona_foundry · script_analyst<br/>viewer · aggregation<br/>recut_advisor · critic"]
+    P6["<b>Phase VI · launch</b><br/>campaign_strategist · reel_cutter<br/>visual · copywriter<br/>pr_risk · publisher"]
+    queue(["Human sign-off queue"])
+
+    orch --> P12 --> P34 --> P5 --> P6 --> queue
+
+    sched["agent_scheduler_shoot"]
+    loc["agent_location"]
+    P34 -.- sched
+    sched -->|"book SCN_004 on the 8th"| loc
+    loc -->|"venue busy — take the 11th"| sched
+
+    visual["agent_visual"]
+    prrisk["agent_pr_risk"]
+    P6 -.- visual
+    visual -->|"verify_brand_safety"| prrisk
+    prrisk -->|"BLOCKED — redraft without the spoiler"| visual
+
+    P12 -.->|"red flag · fee > 10% of budget"| cut(["DISQUALIFIED"])
+    cut -.-> queue
+    loc -.->|"no venue in the window"| queue
+    prrisk -.->|"still blocked after 2 drafts"| queue
+
+    class sched,loc,visual,prrisk loop
+    class cut,queue gate
+```
+
+The two orange loops are the only cycles in the system:
+
+| Cycle | Fires when | Bound | Source |
+|---|---|---|---|
+| `agent_scheduler_shoot` ⇄ `agent_location` | The venue is busy on the day the scheduler asked for, so it counter-offers another and the scheduler re-asks | `MAX_NEGOTIATION_ITERATIONS = 2` | [phase3_schedule.py:189](backend/domains/production/agents/phase3_schedule.py#L189) |
+| `agent_visual` ⇄ `agent_pr_risk` | A meme or poster caption is blocked, and is redrafted with the blocking reasons fed back into the prompt | `MAX_ASSET_REGENERATIONS = 2` | [phase6_marketing.py:74](backend/domains/launch/agents/phase6_marketing.py#L74), [poster_artist.py:89](backend/domains/launch/agents/poster_artist.py#L89) |
+
+Everything else that looks like a loop is deliberately not one:
+
+- **The budget and PR checks prune, they do not reprompt.** An actor quoting
+  over 10% of the budget, or carrying a red flag, is marked `DISQUALIFIED` and
+  the run continues with the rest. `agent_finance` never asks the scout to go
+  and find someone cheaper — the scout's candidates are scored once, and the
+  producer picks from what survives.
+- **Blocked copy escalates instead of redrafting.** `agent_copywriter` sends
+  each draft through `agent_pr_risk` exactly once; a blocked press release or
+  post goes to the sign-off queue for a person to rewrite (`auto_retry: false`).
+  Only `agent_visual` redrafts, because a caption and a colour palette are
+  cheap to regenerate and a press release is not.
+- **Two phase-level fail-fast edges halt the whole run:** no candidate
+  surviving Phase I, and every territory `BLOCKED` after Phase IV. Both queue a
+  human escalation rather than continuing into work that cannot land.
+
 A planning run, end to end:
 
 ```mermaid
