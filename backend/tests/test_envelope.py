@@ -91,3 +91,64 @@ def test_intent_vocabulary_matches_the_sacred_contract():
     """contracts/ is shared across the team — code and contract must not drift."""
     enum = set(json.loads(CONTRACT.read_text(encoding="utf-8"))["properties"]["intent"]["enum"])
     assert ALL_INTENTS == enum
+
+
+# ------------------------------------------------------- the phase stamp --
+
+
+def test_log_event_stamps_the_running_phase():
+    """The trace groups a run's traffic by phase, so the phase has to be on the
+    record rather than guessed from agent names later."""
+    from core.messaging.envelope import running_phase
+
+    state = GlobalState(project_id="PROJ_T")
+    with running_phase("phase3"):
+        log_event(state, make_envelope("agent_scheduler_shoot", "agent_location",
+                                       "check_venue_availability", {}))
+    assert state.event_log[0]["phase"] == "phase3"
+
+
+def test_an_event_logged_outside_a_phase_carries_none():
+    """Advisors and standalone simulations log too, and they belong to no phase."""
+    state = GlobalState(project_id="PROJ_T")
+    log_event(state, broadcast("agent_profiler", "mandate_ready", {}))
+    assert "phase" not in state.event_log[0]
+
+
+def test_the_stamp_is_removed_when_the_phase_ends():
+    from core.messaging.envelope import running_phase
+
+    state = GlobalState(project_id="PROJ_T")
+    with running_phase("phase1"):
+        log_event(state, broadcast("agent_intake", "candidate_ingested", {}))
+    log_event(state, broadcast("agent_intake", "candidate_ingested", {}))
+    assert state.event_log[0]["phase"] == "phase1"
+    assert "phase" not in state.event_log[1]
+
+
+def test_the_stamp_never_changes_the_envelope_an_agent_built():
+    """make_envelope stays exactly the six contract fields; the phase is added
+    by the log, so a payload handed to an agent is not mutated underneath it."""
+    from core.messaging.envelope import running_phase
+
+    state = GlobalState(project_id="PROJ_T")
+    built = make_envelope("agent_qc", ORCHESTRATOR, "qc_result", {})
+    with running_phase("phase4"):
+        logged = log_event(state, built)
+    assert "phase" not in built
+    assert logged["phase"] == "phase4"
+
+
+def test_the_phase_stamp_matches_the_contract():
+    contract = json.loads(CONTRACT.read_text(encoding="utf-8"))
+    assert contract["properties"]["phase"]["pattern"] == "^phase[1-6]$"
+    assert "phase" not in contract["required"]
+
+
+def test_every_phase_the_orchestrator_runs_stamps_a_valid_key():
+    """A phase key the contract's pattern rejects would make the log unparseable."""
+    from core.orchestrator.graph import Orchestrator
+
+    pattern = json.loads(CONTRACT.read_text(encoding="utf-8"))["properties"]["phase"]["pattern"]
+    for key in Orchestrator().phase_keys():
+        assert re.match(pattern, key), f"phase key {key} is not valid in the envelope contract"

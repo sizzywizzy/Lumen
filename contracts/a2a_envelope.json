@@ -51,6 +51,11 @@
     },
     "payload": {
       "type": "object"
+    },
+    "phase": {
+      "type": "string",
+      "pattern": "^phase[1-6]$",
+      "description": "The pipeline phase that was running when this was logged, stamped by log_event. Absent on messages logged outside a phase, such as an advisor run or a standalone simulation."
     }
   }
 }

@@ -6,8 +6,10 @@ Live Agent Terminal can replay the whole conversation.
 """
 import itertools
 import time
+from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any, Iterator, Optional
 
 from core.orchestrator.state import GlobalState
 
@@ -89,7 +91,36 @@ def broadcast(sender: str, intent: str, payload: dict[str, Any]) -> dict[str, An
     return make_envelope(sender=sender, recipient=ORCHESTRATOR, intent=intent, payload=payload)
 
 
+# Which phase is running, for `log_event` to stamp on what it records. A
+# ContextVar rather than a field on GlobalState because it is a property of
+# *when* a message was logged, not of the message or the production: the same
+# agent logs under phase1 during casting and under phase5 during a screening.
+# The orchestrator sets it (core/orchestrator/graph.py); anything logged
+# outside a phase — an advisor, a standalone simulation — simply has no phase.
+_phase: ContextVar[Optional[str]] = ContextVar("lumen_phase", default=None)
+
+
+@contextmanager
+def running_phase(key: Optional[str]) -> Iterator[None]:
+    """Mark everything logged inside this block as belonging to `key`."""
+    token = _phase.set(key)
+    try:
+        yield
+    finally:
+        _phase.reset(token)
+
+
 def log_event(state: GlobalState, envelope: dict[str, Any]) -> dict[str, Any]:
-    """Append an envelope to GlobalState.event_log and return it (chainable)."""
+    """Append an envelope to GlobalState.event_log and return it (chainable).
+
+    Stamps the running phase so the Agent Log and the execution trace can group
+    a run's traffic by the phase that produced it without re-deriving it from
+    agent names — a mapping that would drift the moment an agent moved phase.
+    `make_envelope` deliberately does not carry it: the envelope an agent builds
+    stays exactly the six contract fields (contracts/a2a_envelope.json).
+    """
+    phase = _phase.get()
+    if phase:
+        envelope = {**envelope, "phase": phase}
     state.event_log.append(envelope)
     return envelope

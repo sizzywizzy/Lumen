@@ -13,6 +13,7 @@ orchestrator decides what runs next.
 from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
+from core.messaging.envelope import running_phase
 from core.orchestrator.state import GlobalState
 from services import gemini_client
 
@@ -121,7 +122,7 @@ class Orchestrator:
             # A re-run replaces an earlier halt on this phase rather than stacking it.
             state.clear_escalations(f"{node.key}_halt")
             logged = len(state.event_log)
-            with gemini_client.recording() as tally:
+            with gemini_client.recording() as tally, running_phase(node.key):
                 state = node.run(state)
             state.model_use = {**state.model_use, node.key: _phase_use(node, state, tally, logged)}
             halt_reason = node.fail_fast(state) if node.fail_fast else None
