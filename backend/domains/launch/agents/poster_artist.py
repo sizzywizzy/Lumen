@@ -27,7 +27,7 @@ from core.messaging.envelope import broadcast, log_event, make_envelope
 from core.orchestrator.state import GlobalState
 from domains.launch import prompts
 from domains.launch.agents.phase6_marketing import pr_risk_check
-from services import gemini_client
+from services import llm
 
 ASSET_ID = "AST_POSTER_KEYART"
 SCRIPT_CHARS = 12_000  # the opening pages are plenty to art-direct from
@@ -91,7 +91,7 @@ def _concept(state: GlobalState, facts: dict[str, str], style: dict[str, str]) -
     offline = _offline_concept(facts)
     blocked: list[str] = []
     for attempt in range(config.MAX_ASSET_REGENERATIONS):
-        reply, trace = gemini_client.generate_json_traced(
+        reply, trace = llm.generate_json_traced(
             _concept_prompt(facts, style, blocked), system=prompts.POSTER_SYSTEM, mock=offline,
         )
         draft = llm_output.mapping(reply, offline)

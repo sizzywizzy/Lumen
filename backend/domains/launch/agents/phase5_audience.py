@@ -21,7 +21,7 @@ from core.messaging.envelope import broadcast, log_event, make_envelope, make_re
 from core.orchestrator.state import AudienceReview, GlobalState
 from domains.launch import prompts
 from domains.launch.agents import audience_sim
-from services import gemini_client, mock_db
+from services import llm, mock_db
 
 FRESH_THRESHOLD = 60.0  # a tomatometer at or above this reads as "fresh"
 LIKED_SCORE = 6.0       # a viewer whose overall is at least this counts toward the tomatometer
@@ -140,7 +140,7 @@ def _aggregation(state: GlobalState, scenes: list[dict], panel: list[dict], resp
         ))
         scene = by_id[weakest]
         fallback = prompts.MOCK_RECUT_DIAGNOSIS
-        raw = llm_output.mapping(gemini_client.generate_json(
+        raw = llm_output.mapping(llm.generate_json(
             f"Segment: {segment['label']} ({segment['viewers']} of {len(responses)} viewers) score "
             f"{segment['segment_score']:.1f} on \"{report.weakest_scene_title}\" ({weakest}) against "
             f"{heatmap[weakest]:.1f} for the whole panel.\nScene: {scene.get('summary', '')}\n"
@@ -216,7 +216,7 @@ def _critic(state: GlobalState, panel: list[dict], responses: list[dict]) -> Non
     report = state.audience_report
     cast = _cast(state)
     mock = prompts.mock_critic_reviews(cast, report.weakest_scene_title)
-    raw = gemini_client.generate_json(
+    raw = llm.generate_json(
         f"FILM: {state.script_context.get('title')}\nLOGLINE: {state.script_context.get('logline')}\n"
         f"CAST: {cast}\nTOMATOMETER: {report.tomatometer}\nWEAKEST SCENE: {report.weakest_scene_title}",
         system=prompts.CRITIC_SYSTEM, mock=mock,

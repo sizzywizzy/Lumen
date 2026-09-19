@@ -74,12 +74,14 @@ export function productionTitle(state, fallback) {
 
 // Why a plan carries Lumen's sample output instead of the model's. The
 // backend counts each phase's calls in `model_use` (core/orchestrator/graph.py).
+// The server runs on whichever provider is configured (Cerebras, Groq, Gemini
+// or a local Ollama), so this copy names none of them.
 const SAMPLE_REASONS = {
-  no_api_key: "the server has no Gemini key",
-  all_models_failed: "Gemini didn't answer",
+  no_api_key: "the server has no model key",
+  all_models_failed: "the model didn't answer",
 };
 const SAMPLE_FIXES = {
-  no_api_key: "Set GEMINI_API_KEY on the server and plan again.",
+  no_api_key: "Set a model key on the server and plan again.",
   all_models_failed: "Its free daily limit may be used up. Try again later.",
 };
 

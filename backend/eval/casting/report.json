@@ -1,0 +1,109 @@
+{
+  "generated_at": "2026-09-19T20:45:39Z",
+  "corpus_size": 1159,
+  "queries": 52,
+  "embedding_model": "BAAI/bge-small-en-v1.5",
+  "depth": 50,
+  "chance_recall@5": 0.0043,
+  "chance_recall@10": 0.0086,
+  "indexes": {
+    "semantic": {
+      "queries": 52,
+      "recall@5": 0.1731,
+      "recall@10": 0.1923,
+      "recall@10_interval": [
+        0.108,
+        0.319
+      ],
+      "mrr": 0.0818,
+      "median_rank_when_found": 14.0,
+      "never_found": 27
+    },
+    "semantic_roles_first": {
+      "queries": 52,
+      "recall@5": 0.1731,
+      "recall@10": 0.1731,
+      "recall@10_interval": [
+        0.0938,
+        0.2973
+      ],
+      "mrr": 0.1065,
+      "median_rank_when_found": 11.0,
+      "never_found": 28
+    },
+    "lexical": {
+      "queries": 52,
+      "recall@5": 0.3269,
+      "recall@10": 0.3462,
+      "recall@10_interval": [
+        0.2315,
+        0.482
+      ],
+      "mrr": 0.2047,
+      "median_rank_when_found": 4.0,
+      "never_found": 21
+    },
+    "chance": {
+      "queries": 52,
+      "recall@5": 0.0,
+      "recall@10": 0.0,
+      "recall@10_interval": [
+        0.0,
+        0.0688
+      ],
+      "mrr": 0.0,
+      "median_rank_when_found": null,
+      "never_found": 52
+    },
+    "semantic (bge-small-en-v1.5)": {
+      "queries": 52,
+      "recall@5": 0.2692,
+      "recall@10": 0.3269,
+      "recall@10_interval": [
+        0.2152,
+        0.4624
+      ],
+      "mrr": 0.1697,
+      "median_rank_when_found": 9.0,
+      "never_found": 19
+    }
+  },
+  "contrasts": {
+    "semantic vs lexical": {
+      "gap": -0.1538,
+      "low": -0.2885,
+      "high": -0.0192,
+      "p": 0.9925
+    },
+    "semantic vs chance": {
+      "gap": 0.1923,
+      "low": 0.0962,
+      "high": 0.3077,
+      "p": 0.0001
+    },
+    "semantic_roles_first vs lexical": {
+      "gap": -0.1731,
+      "low": -0.3077,
+      "high": -0.0385,
+      "p": 0.9955
+    },
+    "semantic_roles_first vs chance": {
+      "gap": 0.1731,
+      "low": 0.0769,
+      "high": 0.2885,
+      "p": 0.0001
+    },
+    "semantic (bge-small-en-v1.5) vs lexical": {
+      "gap": -0.0192,
+      "low": -0.1731,
+      "high": 0.1346,
+      "p": 0.6514
+    },
+    "semantic (bge-small-en-v1.5) vs chance": {
+      "gap": 0.3269,
+      "low": 0.2115,
+      "high": 0.4615,
+      "p": 0.0
+    }
+  }
+}

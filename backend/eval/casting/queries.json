@@ -1,0 +1,736 @@
+{
+  "resolved_at": "2026-09-19T20:12:23Z",
+  "labels_written": 52,
+  "resolved": 52,
+  "unresolved": [],
+  "queries": [
+    {
+      "id": "274:1038",
+      "brief": "A trainee at a federal law-enforcement academy in her late twenties, working class, sharp and visibly out of her depth among senior men; must hold a two-hander with an older predator without ever seeming safe. English-speaking.",
+      "film": {
+        "tmdb_id": 274,
+        "title": "The Silence of the Lambs",
+        "year": 1991
+      },
+      "character": "Clarice Starling",
+      "answer": {
+        "tmdb_id": 1038,
+        "name": "Jodie Foster"
+      }
+    },
+    {
+      "id": "807:192",
+      "brief": "A homicide detective a week from retirement, sixty, literate and tired, who has stopped believing the work changes anything; plays against a hot-headed younger partner. English-speaking.",
+      "film": {
+        "tmdb_id": 807,
+        "title": "Se7en",
+        "year": 1995
+      },
+      "character": "Somerset",
+      "answer": {
+        "tmdb_id": 192,
+        "name": "Morgan Freeman"
+      }
+    },
+    {
+      "id": "6977:3810",
+      "brief": "An implacable killer for hire, forties, foreign-accented, with an unsettling stillness and a private code he applies to strangers; almost no raised voice. English-speaking.",
+      "film": {
+        "tmdb_id": 6977,
+        "title": "No Country for Old Men",
+        "year": 2007
+      },
+      "character": "Anton Chigurh",
+      "answer": {
+        "tmdb_id": 3810,
+        "name": "Javier Bardem"
+      }
+    },
+    {
+      "id": "1949:131",
+      "brief": "A newspaper cartoonist in his thirties, boyish and socially awkward, whose obsession with an unsolved case outlasts everyone else's; eager rather than heroic. English-speaking.",
+      "film": {
+        "tmdb_id": 1949,
+        "title": "Zodiac",
+        "year": 2007
+      },
+      "character": "Robert Graysmith",
+      "answer": {
+        "tmdb_id": 131,
+        "name": "Jake Gyllenhaal"
+      }
+    },
+    {
+      "id": "146233:131",
+      "brief": "A young detective, thirties, tightly wound and meticulous, with facial tics and a temper he keeps just in check; carries a procedural thriller alone. English-speaking.",
+      "film": {
+        "tmdb_id": 146233,
+        "title": "Prisoners",
+        "year": 2013
+      },
+      "character": "Detective Loki",
+      "answer": {
+        "tmdb_id": 131,
+        "name": "Jake Gyllenhaal"
+      }
+    },
+    {
+      "id": "273481:1121",
+      "brief": "A quiet Latin American operative in his forties attached to a cross-border task force, courteous and unreadable, with a private motive he never explains. Spanish and English.",
+      "film": {
+        "tmdb_id": 273481,
+        "title": "Sicario",
+        "year": 2015
+      },
+      "character": "Alejandro",
+      "answer": {
+        "tmdb_id": 1121,
+        "name": "Benicio del Toro"
+      }
+    },
+    {
+      "id": "491584:215055",
+      "brief": "An affluent, unruffled man in his thirties whose ease with money makes everyone around him feel poor; charm with something unlit underneath. Korean-speaking.",
+      "film": {
+        "tmdb_id": 491584,
+        "title": "Burning",
+        "year": 2018
+      },
+      "character": "Ben",
+      "answer": {
+        "tmdb_id": 215055,
+        "name": "Steven Yeun"
+      }
+    },
+    {
+      "id": "670:64880",
+      "brief": "A man imprisoned in one room for fifteen years without explanation, forties, who comes out feral and single-minded; heavy physical demands. Korean-speaking.",
+      "film": {
+        "tmdb_id": 670,
+        "title": "Oldboy",
+        "year": 2003
+      },
+      "character": "Oh Dae-su",
+      "answer": {
+        "tmdb_id": 64880,
+        "name": "Choi Min-sik"
+      }
+    },
+    {
+      "id": "7345:11856",
+      "brief": "A turn-of-the-century oil prospector, forties to fifties, a magnetic public speaker and a private misanthrope; the film rests entirely on him. English-speaking.",
+      "film": {
+        "tmdb_id": 7345,
+        "title": "There Will Be Blood",
+        "year": 2007
+      },
+      "character": "Daniel Plainview",
+      "answer": {
+        "tmdb_id": 11856,
+        "name": "Daniel Day-Lewis"
+      }
+    },
+    {
+      "id": "68722:73421",
+      "brief": "A drifting navy veteran in his thirties, alcoholic and physically coiled, drawn to a charismatic older man who offers him a system to live by. English-speaking.",
+      "film": {
+        "tmdb_id": 68722,
+        "title": "The Master",
+        "year": 2012
+      },
+      "character": "Freddie Quell",
+      "answer": {
+        "tmdb_id": 73421,
+        "name": "Joaquin Phoenix"
+      }
+    },
+    {
+      "id": "244786:18999",
+      "brief": "A conservatory conductor in his fifties who teaches by humiliation, entirely certain he is right; needs precise comic timing inside genuine menace. English-speaking.",
+      "film": {
+        "tmdb_id": 244786,
+        "title": "Whiplash",
+        "year": 2014
+      },
+      "character": "Fletcher",
+      "answer": {
+        "tmdb_id": 18999,
+        "name": "J.K. Simmons"
+      }
+    },
+    {
+      "id": "376867:932967",
+      "brief": "A Miami drug dealer in his thirties who becomes an unlikely father figure to a bullied boy; gentle, watchful, morally compromised. English-speaking.",
+      "film": {
+        "tmdb_id": 376867,
+        "title": "Moonlight",
+        "year": 2016
+      },
+      "character": "Juan",
+      "answer": {
+        "tmdb_id": 932967,
+        "name": "Mahershala Ali"
+      }
+    },
+    {
+      "id": "391713:36592",
+      "brief": "A Catholic-school senior, seventeen, from a family with no money, who has renamed herself and is desperate to leave her home town; comic and raw by turns. English-speaking.",
+      "film": {
+        "tmdb_id": 391713,
+        "title": "Lady Bird",
+        "year": 2017
+      },
+      "character": "Lady Bird McPherson",
+      "answer": {
+        "tmdb_id": 36592,
+        "name": "Saoirse Ronan"
+      }
+    },
+    {
+      "id": "492188:4784",
+      "brief": "A Los Angeles divorce lawyer, fifties, expensively warm, who can deliver a four-minute monologue about the double standard applied to mothers. English-speaking.",
+      "film": {
+        "tmdb_id": 492188,
+        "title": "Marriage Story",
+        "year": 2019
+      },
+      "character": "Nora Fanshaw",
+      "answer": {
+        "tmdb_id": 4784,
+        "name": "Laura Dern"
+      }
+    },
+    {
+      "id": "581734:3910",
+      "brief": "A widow in her sixties living out of a van and taking seasonal work, self-contained and undramatic; must hold the screen opposite non-professionals. English-speaking.",
+      "film": {
+        "tmdb_id": 581734,
+        "title": "Nomadland",
+        "year": 2020
+      },
+      "character": "Fern",
+      "answer": {
+        "tmdb_id": 3910,
+        "name": "Frances McDormand"
+      }
+    },
+    {
+      "id": "458737:569",
+      "brief": "The pastor of a dwindling historic church, fifties, ill and drinking, keeping a journal as his faith turns to something harder. English-speaking.",
+      "film": {
+        "tmdb_id": 458737,
+        "title": "First Reformed",
+        "year": 2017
+      },
+      "character": "Ernst Toller",
+      "answer": {
+        "tmdb_id": 569,
+        "name": "Ethan Hawke"
+      }
+    },
+    {
+      "id": "12163:2295",
+      "brief": "A professional wrestler twenty years past his fame, fifties, wrecked body, working a deli counter; enormous physical commitment required. English-speaking.",
+      "film": {
+        "tmdb_id": 12163,
+        "title": "The Wrestler",
+        "year": 2008
+      },
+      "character": "Randy",
+      "answer": {
+        "tmdb_id": 2295,
+        "name": "Mickey Rourke"
+      }
+    },
+    {
+      "id": "473033:19292",
+      "brief": "A diamond-district jeweller and compulsive gambler, forties, talking over everyone, always one deal from ruin; relentless verbal energy. English-speaking.",
+      "film": {
+        "tmdb_id": 473033,
+        "title": "Uncut Gems",
+        "year": 2019
+      },
+      "character": "Howard Ratner",
+      "answer": {
+        "tmdb_id": 19292,
+        "name": "Adam Sandler"
+      }
+    },
+    {
+      "id": "4566:3063",
+      "brief": "A corporate general counsel in her forties, rehearsing her own answers in hotel mirrors, sweating through a decision she is not built for. English-speaking.",
+      "film": {
+        "tmdb_id": 4566,
+        "title": "Michael Clayton",
+        "year": 2007
+      },
+      "character": "Karen Crowder",
+      "answer": {
+        "tmdb_id": 3063,
+        "name": "Tilda Swinton"
+      }
+    },
+    {
+      "id": "965150:2326151",
+      "brief": "A young father, barely thirty, on a package holiday with his eleven-year-old daughter, depressed in a way he hides badly from her and well from himself. Scottish, English-speaking.",
+      "film": {
+        "tmdb_id": 965150,
+        "title": "Aftersun",
+        "year": 2022
+      },
+      "character": "Calum",
+      "answer": {
+        "tmdb_id": 2326151,
+        "name": "Paul Mescal"
+      }
+    },
+    {
+      "id": "674324:2039",
+      "brief": "A fiddle player on a small island, sixties, who abruptly and without cruelty ends a lifelong friendship because he wants to spend what time is left composing. Irish, English-speaking.",
+      "film": {
+        "tmdb_id": 674324,
+        "title": "The Banshees of Inisherin",
+        "year": 2022
+      },
+      "character": "Colm Doherty",
+      "answer": {
+        "tmdb_id": 2039,
+        "name": "Brendan Gleeson"
+      }
+    },
+    {
+      "id": "817758:112",
+      "brief": "A world-famous orchestral conductor, fifties, fluent in German, imperious in a lecture hall and unravelling in private; must plausibly conduct. English and German.",
+      "film": {
+        "tmdb_id": 817758,
+        "title": "Tár",
+        "year": 2022
+      },
+      "character": "Lydia Tár",
+      "answer": {
+        "tmdb_id": 112,
+        "name": "Cate Blanchett"
+      }
+    },
+    {
+      "id": "76341:6885",
+      "brief": "A shaven-headed war captain with a prosthetic arm, forties, driving a war rig across a desert; almost no dialogue, entirely physical. English-speaking.",
+      "film": {
+        "tmdb_id": 76341,
+        "title": "Mad Max: Fury Road",
+        "year": 2015
+      },
+      "character": "Imperator Furiosa",
+      "answer": {
+        "tmdb_id": 6885,
+        "name": "Charlize Theron"
+      }
+    },
+    {
+      "id": "419430:206919",
+      "brief": "A Black photographer in his twenties meeting his white girlfriend's family for the first time; must play mounting unease while staying likeable. English-speaking.",
+      "film": {
+        "tmdb_id": 419430,
+        "title": "Get Out",
+        "year": 2017
+      },
+      "character": "Chris Washington",
+      "answer": {
+        "tmdb_id": 206919,
+        "name": "Daniel Kaluuya"
+      }
+    },
+    {
+      "id": "329865:9273",
+      "brief": "A university linguist in her forties recruited to communicate with something that has landed; grief carried quietly under procedural work. English-speaking.",
+      "film": {
+        "tmdb_id": 329865,
+        "title": "Arrival",
+        "year": 2016
+      },
+      "character": "Louise Banks",
+      "answer": {
+        "tmdb_id": 9273,
+        "name": "Amy Adams"
+      }
+    },
+    {
+      "id": "44214:524",
+      "brief": "A ballet dancer in her twenties, technically perfect and terrified, living with a controlling mother; serious dance ability required. English-speaking.",
+      "film": {
+        "tmdb_id": 44214,
+        "title": "Black Swan",
+        "year": 2010
+      },
+      "character": "Nina Sayers",
+      "answer": {
+        "tmdb_id": 524,
+        "name": "Natalie Portman"
+      }
+    },
+    {
+      "id": "545611:1620",
+      "brief": "A middle-aged laundromat owner and immigrant mother being audited, who turns out to be the least impressive version of herself across every universe; comedy, martial arts and grief. Mandarin, Cantonese and English.",
+      "film": {
+        "tmdb_id": 545611,
+        "title": "Everything Everywhere All at Once",
+        "year": 2022
+      },
+      "character": "Evelyn Wang",
+      "answer": {
+        "tmdb_id": 1620,
+        "name": "Michelle Yeoh"
+      }
+    },
+    {
+      "id": "396535:150903",
+      "brief": "A self-absorbed fund manager, forties, taking his young daughter on a train journey that becomes a survival crisis; an arc from selfishness to sacrifice. Korean-speaking.",
+      "film": {
+        "tmdb_id": 396535,
+        "title": "Train to Busan",
+        "year": 2016
+      },
+      "character": "Seok-woo",
+      "answer": {
+        "tmdb_id": 150903,
+        "name": "Gong Yoo"
+      }
+    },
+    {
+      "id": "1417:16972",
+      "brief": "A fascist army captain in 1944, forties, obsessed with his unborn son and his dead father's watch; immaculate, sadistic, no camp. Spanish-speaking.",
+      "film": {
+        "tmdb_id": 1417,
+        "title": "Pan's Labyrinth",
+        "year": 2006
+      },
+      "character": "Capitán Vidal",
+      "answer": {
+        "tmdb_id": 16972,
+        "name": "Sergi López"
+      }
+    },
+    {
+      "id": "375262:39187",
+      "brief": "An ailing, gout-ridden queen in her forties, petulant and grieving seventeen lost children, manipulated by two women at court; comic and pitiable at once. English-speaking.",
+      "film": {
+        "tmdb_id": 375262,
+        "title": "The Favourite",
+        "year": 2018
+      },
+      "character": "Queen Anne",
+      "answer": {
+        "tmdb_id": 39187,
+        "name": "Olivia Colman"
+      }
+    },
+    {
+      "id": "496243:20738",
+      "brief": "An unemployed father in his fifties, folding pizza boxes in a semi-basement flat, whose easy fatalism curdles over the film. Korean-speaking.",
+      "film": {
+        "tmdb_id": 496243,
+        "title": "Parasite",
+        "year": 2019
+      },
+      "character": "Ki-taek",
+      "answer": {
+        "tmdb_id": 20738,
+        "name": "Song Kang-ho"
+      }
+    },
+    {
+      "id": "426426:1775557",
+      "brief": "A live-in domestic worker in her twenties for a middle-class 1970s family, indigenous, largely silent, the emotional centre of the film; non-professional acceptable. Spanish and Mixtec.",
+      "film": {
+        "tmdb_id": 426426,
+        "title": "Roma",
+        "year": 2018
+      },
+      "character": "Cleo",
+      "answer": {
+        "tmdb_id": 1775557,
+        "name": "Yalitza Aparicio"
+      }
+    },
+    {
+      "id": "505192:123739",
+      "brief": "A casual labourer in his fifties heading a family that shoplifts to live, teaching a child to steal with real tenderness. Japanese-speaking.",
+      "film": {
+        "tmdb_id": 505192,
+        "title": "Shoplifters",
+        "year": 2018
+      },
+      "character": "Osamu Shibata",
+      "answer": {
+        "tmdb_id": 123739,
+        "name": "Lily Franky"
+      }
+    },
+    {
+      "id": "758866:13250",
+      "brief": "A stage actor and director in his late forties, recently widowed, who rehearses a Chekhov production while being driven each day by a young chauffeur. Japanese-speaking.",
+      "film": {
+        "tmdb_id": 758866,
+        "title": "Drive My Car",
+        "year": 2021
+      },
+      "character": "Yūsuke Kafuku",
+      "answer": {
+        "tmdb_id": 13250,
+        "name": "Hidetoshi Nishijima"
+      }
+    },
+    {
+      "id": "60243:559566",
+      "brief": "A middle-class Tehran husband in his forties caring for a father with dementia, refusing to leave the country as his marriage ends; stubborn, sympathetic, wrong. Persian-speaking.",
+      "film": {
+        "tmdb_id": 60243,
+        "title": "A Separation",
+        "year": 2011
+      },
+      "character": "Nader",
+      "answer": {
+        "tmdb_id": 559566,
+        "name": "Payman Maadi"
+      }
+    },
+    {
+      "id": "582:8196",
+      "brief": "A Stasi surveillance officer in his forties, austere and friendless, slowly changed by the couple he is assigned to listen to; almost affectless. German-speaking.",
+      "film": {
+        "tmdb_id": 582,
+        "title": "The Lives of Others",
+        "year": 2006
+      },
+      "character": "Gerd Wiesler",
+      "answer": {
+        "tmdb_id": 8196,
+        "name": "Ulrich Mühe"
+      }
+    },
+    {
+      "id": "598:8596",
+      "brief": "A young gang leader in a Rio favela, early twenties, gleeful and pitiless, who came up from nothing; non-professional acceptable. Portuguese-speaking.",
+      "film": {
+        "tmdb_id": 598,
+        "title": "City of God",
+        "year": 2002
+      },
+      "character": "Zé Pequeno / Dadinho",
+      "answer": {
+        "tmdb_id": 8596,
+        "name": "Leandro Firmino"
+      }
+    },
+    {
+      "id": "21575:81051",
+      "brief": "An illiterate nineteen-year-old of Algerian descent entering a French prison, who learns to read, to speak Corsican and to run things. French and Arabic.",
+      "film": {
+        "tmdb_id": 21575,
+        "title": "A Prophet",
+        "year": 2009
+      },
+      "character": "Malik El Djebena",
+      "answer": {
+        "tmdb_id": 81051,
+        "name": "Tahar Rahim"
+      }
+    },
+    {
+      "id": "194:2405",
+      "brief": "A Montmartre waitress in her twenties, solitary and whimsical, who arranges other people's happiness while avoiding her own; direct address to camera. French-speaking.",
+      "film": {
+        "tmdb_id": 194,
+        "title": "Amélie",
+        "year": 2001
+      },
+      "character": "Amélie Poulain",
+      "answer": {
+        "tmdb_id": 2405,
+        "name": "Audrey Tautou"
+      }
+    },
+    {
+      "id": "531428:1385600",
+      "brief": "A painter in her late twenties in 1770 Brittany, sent to paint a portrait in secret and falling for her subject; contained, watchful. French-speaking.",
+      "film": {
+        "tmdb_id": 531428,
+        "title": "Portrait of a Lady on Fire",
+        "year": 2019
+      },
+      "character": "Marianne",
+      "answer": {
+        "tmdb_id": 1385600,
+        "name": "Noémie Merlant"
+      }
+    },
+    {
+      "id": "336050:1454942",
+      "brief": "A Hungarian Jewish prisoner forced to work in a death camp's crematoria, forties, shot almost entirely in close-up on his face. Hungarian and Yiddish.",
+      "film": {
+        "tmdb_id": 336050,
+        "title": "Son of Saul",
+        "year": 2015
+      },
+      "character": "Saul Ausländer",
+      "answer": {
+        "tmdb_id": 1454942,
+        "name": "Géza Röhrig"
+      }
+    },
+    {
+      "id": "209274:566101",
+      "brief": "A hard-drinking state judge in 1960s Poland, fifties, who tells her novice niece the truth about their family; caustic, black-and-white, spare. Polish-speaking.",
+      "film": {
+        "tmdb_id": 209274,
+        "title": "Ida",
+        "year": 2013
+      },
+      "character": "Wanda",
+      "answer": {
+        "tmdb_id": 566101,
+        "name": "Agata Kulesza"
+      }
+    },
+    {
+      "id": "440298:908548",
+      "brief": "A Polish folk singer from a rough background, twenties into forties, whose affair with a musician spans fifteen years and two sides of a border; must sing. Polish-speaking.",
+      "film": {
+        "tmdb_id": 440298,
+        "title": "Cold War",
+        "year": 2018
+      },
+      "character": "Zula",
+      "answer": {
+        "tmdb_id": 908548,
+        "name": "Joanna Kulig"
+      }
+    },
+    {
+      "id": "290098:1537768",
+      "brief": "A young pickpocket placed as a handmaiden to a Japanese heiress in colonial Korea as part of a con, twenties, who falls for her mark. Korean and Japanese.",
+      "film": {
+        "tmdb_id": 290098,
+        "title": "The Handmaiden",
+        "year": 2016
+      },
+      "character": "Sook-hee",
+      "answer": {
+        "tmdb_id": 1537768,
+        "name": "Kim Tae-ri"
+      }
+    },
+    {
+      "id": "1391:8688",
+      "brief": "A privileged Mexico City teenager on a road trip with his best friend and an older woman, seventeen, all bravado and no idea. Spanish-speaking.",
+      "film": {
+        "tmdb_id": 1391,
+        "title": "Y Tu Mamá También",
+        "year": 2001
+      },
+      "character": "Tenoch Iturbide",
+      "answer": {
+        "tmdb_id": 8688,
+        "name": "Diego Luna"
+      }
+    },
+    {
+      "id": "565310:1625558",
+      "brief": "A Chinese-American woman in her early thirties who returns to Changchun for a staged wedding, the family having hidden a terminal diagnosis from her grandmother. Mandarin and English.",
+      "film": {
+        "tmdb_id": 565310,
+        "title": "The Farewell",
+        "year": 2019
+      },
+      "character": "Billi",
+      "answer": {
+        "tmdb_id": 1625558,
+        "name": "Awkwafina"
+      }
+    },
+    {
+      "id": "666277:1260481",
+      "brief": "A Korean-Canadian playwright in her thirties in New York, reunited after twenty-four years with a childhood friend from Seoul; enormous restraint. Korean and English.",
+      "film": {
+        "tmdb_id": 666277,
+        "title": "Past Lives",
+        "year": 2023
+      },
+      "character": "Nora",
+      "answer": {
+        "tmdb_id": 1260481,
+        "name": "Greta Lee"
+      }
+    },
+    {
+      "id": "615643:1080935",
+      "brief": "A Korean grandmother in her seventies who arrives to live with her daughter's family on an Arkansas farm, profane, card-playing and nothing like a grandmother should be. Korean-speaking.",
+      "film": {
+        "tmdb_id": 615643,
+        "title": "Minari",
+        "year": 2020
+      },
+      "character": "Soonja",
+      "answer": {
+        "tmdb_id": 1080935,
+        "name": "Youn Yuh-jung"
+      }
+    },
+    {
+      "id": "915935:7152",
+      "brief": "A German novelist in her forties living in the French Alps, on trial for her husband's death, giving evidence in a second language she is losing patience with. French, German and English.",
+      "film": {
+        "tmdb_id": 915935,
+        "title": "Anatomy of a Fall",
+        "year": 2023
+      },
+      "character": "Sandra Voyter",
+      "answer": {
+        "tmdb_id": 7152,
+        "name": "Sandra Hüller"
+      }
+    },
+    {
+      "id": "467244:7152",
+      "brief": "The wife of a camp commandant, thirties, running a beautiful garden and household against a wall, proud of her home and entirely incurious. German-speaking.",
+      "film": {
+        "tmdb_id": 467244,
+        "title": "The Zone of Interest",
+        "year": 2023
+      },
+      "character": "Hedwig Höss",
+      "answer": {
+        "tmdb_id": 7152,
+        "name": "Sandra Hüller"
+      }
+    },
+    {
+      "id": "579974:148037",
+      "brief": "A tribal guardian in 1920s India, thirties, immense physical presence, who goes undercover in the city to recover a child taken by the British. Telugu-speaking.",
+      "film": {
+        "tmdb_id": 579974,
+        "title": "RRR",
+        "year": 2022
+      },
+      "character": "Komaram Bheem",
+      "answer": {
+        "tmdb_id": 148037,
+        "name": "N.T. Rama Rao Jr."
+      }
+    },
+    {
+      "id": "480:6497",
+      "brief": "A Delhi father of the bride, fifties, stressed about the cost of the wedding and eventually forced to confront something in his own family. Hindi and English.",
+      "film": {
+        "tmdb_id": 480,
+        "title": "Monsoon Wedding",
+        "year": 2001
+      },
+      "character": "Lalit Verma",
+      "answer": {
+        "tmdb_id": 6497,
+        "name": "Naseeruddin Shah"
+      }
+    }
+  ]
+}

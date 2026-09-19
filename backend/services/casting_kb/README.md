@@ -37,3 +37,19 @@ curl -H "Authorization: Bearer $TOKEN" \
 TMDb does not normally provide physical measurements or appearance traits, so
 the ingestion code stores only explicitly supplied trait fields and does not
 infer sensitive attributes from photos or names.
+
+## Does it work?
+
+[`backend/eval/casting`](../../eval/casting/README.md) measures it: 52 casting
+briefs written from real parts, each resolved to its actor through TMDb, ranked
+against a pool of about a thousand with the part itself held out. It reports
+recall@5, recall@10 and MRR against two baselines — TF-IDF over the same text,
+and a shuffle — because a recall number with nothing to read it against says
+nothing.
+
+One thing that will bite you, and which the evaluation cannot catch for you:
+`actor_embeddings.model_name` records the model each vector came from, and
+`match_actors` does not check it. Change `EMBEDDING_MODEL` to another
+384-dimension model and the stored vectors keep their dimension, pass every
+check here, and mismatch every query in silence. Re-run the embeddings after any
+change to that setting.

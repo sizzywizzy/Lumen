@@ -5,8 +5,11 @@ mock data so anyone can develop and demo without credentials.
 
 What is read, and what for. Every service here has a free plan, and Lumen
 uses nothing beyond it:
-  - Gemini (GEMINI_API_KEY): all agent reasoning, as JSON from Flash models on
-    the free tier. No Google Search grounding, image generation or Vertex AI.
+  - A model provider: all agent reasoning, as JSON. Any of Cerebras
+    (CEREBRAS_API_KEY), Groq (GROQ_API_KEY), Gemini (GEMINI_API_KEY) or a local
+    Ollama (OLLAMA_HOST) will serve it, tried in the order LUMEN_LLM_PROVIDERS
+    gives. Gemini stays on its free tier: no Google Search grounding, image
+    generation or Vertex AI.
   - Supabase (SUPABASE_URL/KEY): accounts, pipeline state, simulations, runs.
   - Tavily (TAVILY_API_KEY): the talent scout's web search and the
     cultural-research step.
@@ -85,15 +88,50 @@ EMBEDDING_MODEL = os.environ.get(
 )
 EMBEDDING_DIMENSIONS = int(os.environ.get("EMBEDDING_DIMENSIONS", "384"))
 
-# Model tiering (AGENT.md guardrails): Flash by default, Pro only for heavy reasoning.
-# NOTE: the previous defaults (gemini-2.0-flash / gemini-2.0-pro) 404 on current
-# API keys — Google retired them for new users. These are ids verified against a
-# live key; both stay env-overridable.
+# ------------------------------------------------------------ model access --
+#
+# Which providers may serve a call, most preferred first. A provider with no
+# credentials is skipped, so this is a preference rather than a requirement: the
+# same list works on a laptop with an Ollama running, on a free Cerebras key and
+# on the deploy, which has only GEMINI_API_KEY set. Every one of them has a free
+# plan and Lumen uses nothing beyond it.
+#
+# Cerebras leads because its free tier allows far more requests a day than
+# Gemini's, which is what makes the audience evaluation in backend/eval
+# runnable in one sitting rather than across a week of quota resets.
+LLM_PROVIDERS = [
+    name.strip().lower()
+    for name in os.environ.get("LUMEN_LLM_PROVIDERS", "cerebras,groq,gemini,ollama").split(",")
+    if name.strip()
+]
+
+# Model tiering (AGENT.md guardrails): the "flash" tier by default, "pro" only
+# for heavy reasoning. Each provider names its own pair, and unset falls back to
+# the flash model — a provider that offers nothing heavier is not a problem.
+#
+# Model ids move. Only the Gemini pair below is verified against a live key; the
+# rest are the current free-tier ids for each provider and may be renamed or
+# retired without notice. A 404 on one moves to the next candidate rather than
+# failing the run, and every id is env-overridable.
 GEMINI_FLASH_MODEL = os.environ.get("GEMINI_FLASH_MODEL", "gemini-3.6-flash")
 GEMINI_PRO_MODEL = os.environ.get("GEMINI_PRO_MODEL", "gemini-3.6-flash")
+CEREBRAS_API_KEY = os.environ.get("CEREBRAS_API_KEY", "")
+CEREBRAS_FLASH_MODEL = os.environ.get("CEREBRAS_FLASH_MODEL", "qwen-3.8-27b")
+CEREBRAS_PRO_MODEL = os.environ.get("CEREBRAS_PRO_MODEL", "gpt-oss-120b")
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+GROQ_FLASH_MODEL = os.environ.get("GROQ_FLASH_MODEL", "openai/gpt-oss-20b")
+GROQ_PRO_MODEL = os.environ.get("GROQ_PRO_MODEL", "openai/gpt-oss-120b")
+# Ollama needs no key: a host that answers is the credential. Blank disables it
+# even when it is named in LLM_PROVIDERS, so the chain never waits on a port
+# nothing is listening to.
+OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "").rstrip("/")
+OLLAMA_FLASH_MODEL = os.environ.get("OLLAMA_FLASH_MODEL", "llama3.1:8b")
+OLLAMA_PRO_MODEL = os.environ.get("OLLAMA_PRO_MODEL", "")
 
-# Tried in order when the configured model is unavailable (404 retired /
-# 429 quota / 503 overloaded), so a run degrades instead of dying.
+# Tried in order when a provider's configured model is unavailable (404 retired
+# / 429 quota / 503 overloaded), so a run degrades instead of dying. Gemini's
+# only: the other providers fall through to the next provider instead, their
+# free tiers being wide enough that a 429 means something is actually wrong.
 GEMINI_FALLBACK_MODELS = [
     m.strip()
     for m in os.environ.get(
@@ -102,12 +140,13 @@ GEMINI_FALLBACK_MODELS = [
     if m.strip()
 ]
 
-# Per-request timeout (ms) and bounded concurrency for batched agent work.
-GEMINI_TIMEOUT_MS = int(os.environ.get("GEMINI_TIMEOUT_MS", "60000"))
+# Per-request timeout (ms) and bounded concurrency for batched agent work. Both
+# read their old GEMINI_* names too, so an existing .env keeps working.
+LLM_TIMEOUT_MS = int(os.environ.get("LLM_TIMEOUT_MS") or os.environ.get("GEMINI_TIMEOUT_MS") or "60000")
 # How much of an uploaded screenplay a single model read gets (profiler, scene
 # breakdown, audience analysis). 120k characters covers a full feature script.
 SCRIPT_ANALYSIS_MAX_CHARS = int(os.environ.get("SCRIPT_ANALYSIS_MAX_CHARS", "120000"))
-GEMINI_MAX_CONCURRENCY = int(os.environ.get("GEMINI_MAX_CONCURRENCY", "3"))
+LLM_MAX_CONCURRENCY = int(os.environ.get("LLM_MAX_CONCURRENCY") or os.environ.get("GEMINI_MAX_CONCURRENCY") or "3")
 
 # Guardrails
 MAX_NEGOTIATION_ITERATIONS = 2  # never unbounded (AGENT.md Section 1)
@@ -122,6 +161,43 @@ PERSONA_COUNT = 200         # synthetic viewers per screening (AGENT.md Phase V)
 
 def has_gemini() -> bool:
     return bool(GEMINI_API_KEY)
+
+
+def has_cerebras() -> bool:
+    return bool(CEREBRAS_API_KEY)
+
+
+def has_groq() -> bool:
+    return bool(GROQ_API_KEY)
+
+
+def has_ollama() -> bool:
+    """A reachable host is Ollama's only credential, so a blank OLLAMA_HOST is
+    what "not configured" means. Nothing here probes the port: an unreachable
+    host fails its one attempt and the chain moves on."""
+    return bool(OLLAMA_HOST)
+
+
+def has_llm() -> bool:
+    """Whether any provider can serve a call. False is the zero-key demo, where
+    every agent returns its own sample output."""
+    return bool(configured_llm_providers())
+
+
+def configured_llm_providers() -> list[str]:
+    """LLM_PROVIDERS, in order, less the ones with no credentials.
+
+    The checks are looked up when this runs rather than captured once, so a test
+    that disables a provider disables it here too — which is the whole of the
+    offline guarantee in tests/conftest.py.
+    """
+    checks = {
+        "gemini": has_gemini,
+        "cerebras": has_cerebras,
+        "groq": has_groq,
+        "ollama": has_ollama,
+    }
+    return [name for name in LLM_PROVIDERS if checks.get(name, lambda: False)()]
 
 
 def has_tavily() -> bool:

@@ -303,7 +303,7 @@ function AdvisorCard({ skill, runs, canEdit, onRun, starting, focused }) {
       {showDetails && (
         <div className="skill-instructions">
           <p className="mono-label muted" style={{ marginBottom: 8 }}>
-            {skill.agent} · phase {skill.phase} · gemini {skill.model} · {skill.path} v{skill.version}
+            {skill.agent} · phase {skill.phase} · {skill.model} tier · {skill.path} v{skill.version}
           </p>
           <pre>{skill.instructions}</pre>
         </div>

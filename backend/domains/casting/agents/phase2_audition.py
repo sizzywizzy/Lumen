@@ -8,7 +8,7 @@ from core.messaging.envelope import broadcast, log_event, make_envelope, make_re
 from core.orchestrator.state import GlobalState
 from domains.casting import prompts
 from domains.casting.agents.phase1_precasting import normalise_weights
-from services import gemini_client
+from services import llm
 
 
 def _character(state: GlobalState, role_id: str) -> str:
@@ -35,7 +35,7 @@ def _audition_analytics(state: GlobalState) -> None:
             {"candidate_id": candidate.id, "role_id": candidate.role_id},
         ))
         fallback = prompts.mock_audition_review(candidate.name, _character(state, candidate.role_id))
-        review = llm_output.mapping(gemini_client.generate_json(
+        review = llm_output.mapping(llm.generate_json(
             f"Role requirements: {state.role_requirements.get(candidate.role_id)}. "
             f"Clip: {candidate.media_url}. Transcript attached.",
             tier="pro",

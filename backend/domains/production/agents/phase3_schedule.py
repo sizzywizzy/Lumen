@@ -11,7 +11,7 @@ from core.messaging.envelope import broadcast, log_event, make_envelope, make_re
 from core.orchestrator.state import GlobalState, StripboardEntry
 from core.shoot_window import read_window
 from domains.production import prompts
-from services import gemini_client, mock_db
+from services import llm, mock_db
 
 MAX_SCENES = 30  # the venue database is small; more scenes than this cannot be placed sensibly
 SCENE_ID_RE = re.compile(r"^SCN_[A-Z0-9_]{1,12}$")
@@ -88,7 +88,7 @@ def _breakdown(state: GlobalState) -> list[dict]:
         venue_types = sorted({v["location_type"] for v in mock_db.load("venues")})
         role_ids = list(state.role_requirements) or [r["role_id"] for r in mock_db.load("script")["roles"]]
         limit = config.SCRIPT_ANALYSIS_MAX_CHARS
-        read = gemini_client.generate_json(
+        read = llm.generate_json(
             f"AVAILABLE VENUE TYPES: {venue_types}\nROLE IDS: {role_ids}\nMAX SCENES: {MAX_SCENES}\n\n"
             f"SCREENPLAY (first {min(len(raw), limit):,} characters):\n{raw[:limit]}",
             tier="pro", system=prompts.BREAKDOWN_SYSTEM, mock={"scenes": demo, "source": "demo"},

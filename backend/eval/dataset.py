@@ -12,7 +12,9 @@ WHY POST-CUTOFF
 Ask a model about a film released before it was trained and it can recall the
 real score instead of predicting one. The whole evaluation would then measure
 memory. `--released-after` sets the boundary and the snapshot records it; pick a
-date you are confident is past the cutoff of the model in GEMINI_FLASH_MODEL.
+date you are confident is past the cutoff of whichever model will answer —
+which is a property of the provider, so moving the window is part of switching
+one (see `leakage` in run.py, which checks the assumption rather than trusting it).
 `probe_leakage` checks the assumption instead of trusting it.
 
 GROUND TRUTH, AND ITS LIMITS
@@ -210,9 +212,9 @@ def probe_leakage(film: dict[str, Any]) -> dict[str, Any]:
     and `run.py --leakage-probe` drops it from the sample. Costs one call per
     film, which is why it is opt-in on a free tier.
     """
-    from services import gemini_client
+    from services import llm
 
-    payload, meta = gemini_client.generate_json_traced(
+    payload, meta = llm.generate_json_traced(
         f"Film: \"{film['title']}\" ({(film.get('release_date') or '')[:4]}).",
         tier="flash",
         system=(

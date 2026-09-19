@@ -113,19 +113,26 @@ add those too if you use them.
 
 ## Limits to know
 
-- **Everything here runs on free plans.** Lumen uses only Gemini's free
-  tier (no Google Search grounding, image generation or Vertex AI), so keep
-  billing off on the Google project behind your key. Google may use free-tier
-  prompts to improve its products. Tavily's free plan allows 1,000 searches a
-  month, and each pipeline run uses two.
-- **The free Gemini tier allows 20 requests per model per day**, and a full
-  pipeline run makes about 25 model calls. A run therefore spills onto the
-  fallback models part-way through (`GEMINI_FALLBACK_MODELS`), and once the
-  day's quota is gone every later phase falls back to sample output: the plan
-  keeps going, and the Overview and Audience pages say which parts are
-  Lumen's sample film rather than a read of the screenplay. Expect roughly two
-  full runs a day on one free key. The quota resets daily on Google's clock,
-  not on first use.
+- **Everything here runs on free plans.** On Gemini, only its free tier (no
+  Google Search grounding, image generation or Vertex AI), so keep billing off
+  on the Google project behind your key; Google may use free-tier prompts to
+  improve its products. Tavily's free plan allows 1,000 searches a month, and
+  each pipeline run uses two.
+- **Which provider you pick decides how many runs a day you get.** A full
+  pipeline run makes about 25 model calls.
+  - **Gemini's free tier allows about 20 requests per model per day**, so a run
+    spills onto the fallback models part-way through
+    (`GEMINI_FALLBACK_MODELS`), and once the day's quota is gone every later
+    phase falls back to sample output: the plan keeps going, and the Overview
+    and Audience pages say which parts are Lumen's sample film rather than a
+    read of the screenplay. Expect roughly two full runs a day on one free key.
+    The quota resets daily on Google's clock, not on first use.
+  - **Cerebras and Groq allow far more**, which is why `LUMEN_LLM_PROVIDERS`
+    puts them first. Setting `CEREBRAS_API_KEY` alongside `GEMINI_API_KEY` is
+    the cheapest way to stop a demo falling back mid-run, and the only way the
+    evaluation in `backend/eval` finishes in one sitting.
+  - **Ollama costs nothing at all** but runs on your own machine, so it is for
+    development rather than a deploy.
 - **Free Render instances sleep** after 15 minutes without traffic, and the
   first request after that takes about a minute. Paid instances stay awake.
 - **Run exactly one API instance.** Background runs live in that one process,

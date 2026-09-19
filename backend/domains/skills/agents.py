@@ -22,7 +22,7 @@ from core.orchestrator.graph import Orchestrator
 from core.orchestrator.state import GlobalState
 from core.skills.registry import Skill
 from domains.launch.agents import audience_sim
-from services import gemini_client, mock_db, tavily_client
+from services import llm, mock_db, tavily_client
 
 StageFn = Callable[..., None]  # stage(key, status, **detail)
 
@@ -140,7 +140,7 @@ def _synthesise(skill: Skill, facts: dict, fallback: dict, trace: list, stage: S
         + json.dumps(facts, ensure_ascii=False, default=str)[:MAX_PROMPT_CHARS]
     )
     stage("advise", "running", model=skill.model)
-    payload, meta = gemini_client.generate_json_traced(
+    payload, meta = llm.generate_json_traced(
         prompt, tier=skill.model, system=skill.instructions, mock=fallback
     )
     trace.append({"stage": "advise", **meta})
@@ -761,7 +761,7 @@ def run_skill(skill: Skill, state: GlobalState, params: dict, stage: StageFn, *,
         "skill": skill.name, "status": "complete", "confidence": result.get("confidence"),
         "findings": len(result.get("findings", [])), "summary": _clip(result.get("summary", ""), 200),
     }))
-    live = sum(1 for t in trace if t.get("source") == "gemini")
+    live = sum(1 for t in trace if llm.is_live(t))
     provenance = {
         "trace": trace,
         "live_llm_calls": live,

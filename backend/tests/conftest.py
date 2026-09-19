@@ -12,6 +12,12 @@ from core.auth import security
 from core.auth.models import Membership, Production, Session, User
 
 
+# Every model provider, so that adding one to .env can never quietly send the
+# test suite to a live endpoint. `configured_llm_providers` reads these by name
+# at call time, so denying them here denies the whole chain.
+NO_PROVIDER = ("has_gemini", "has_cerebras", "has_groq", "has_ollama")
+
+
 @pytest.fixture(scope="session", autouse=True)
 def never_real_state_or_live_models(tmp_path_factory):
     """The floor under every test, whatever it patches or undoes: the stores
@@ -21,7 +27,8 @@ def never_real_state_or_live_models(tmp_path_factory):
     with pytest.MonkeyPatch.context() as patch:
         patch.setattr(config, "LOCAL_STATE_DIR", tmp_path_factory.mktemp("state"))
         patch.setattr(config, "has_supabase", lambda: False)
-        patch.setattr(config, "has_gemini", lambda: False)
+        for check in NO_PROVIDER:
+            patch.setattr(config, check, lambda: False)
         patch.setattr(config, "has_tavily", lambda: False)
         patch.setattr(config, "has_tmdb", lambda: False)
         yield
@@ -63,8 +70,9 @@ def rate_limits_start_empty():
 
 @pytest.fixture
 def offline(monkeypatch):
-    """Force the mock fallbacks, even on a machine with Gemini credentials."""
-    monkeypatch.setattr(config, "has_gemini", lambda: False)
+    """Force the mock fallbacks, even on a machine with model credentials."""
+    for check in NO_PROVIDER:
+        monkeypatch.setattr(config, check, lambda: False)
     monkeypatch.setattr(config, "has_tavily", lambda: False)
 
 

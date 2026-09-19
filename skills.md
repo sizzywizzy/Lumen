@@ -108,14 +108,14 @@ Shared plumbing for all four:
 
 | | |
 |---|---|
-| Code | `backend/services/gemini_client.py` (`generate_json`, `generate_json_traced`, `map_concurrent`) |
-| Purpose | The only place model calls happen. Gemini JSON mode, Flash by default, Pro for heavy reasoning, fallback models on 404/429/503, bounded concurrency. |
+| Code | `backend/services/llm.py` (`generate_json`, `generate_json_traced`, `is_live`, `schema_from_example`, `violations`, `map_concurrent`) |
+| Purpose | The only place model calls happen. JSON output always, the `flash` tier by default and `pro` for heavy reasoning, one chain across every configured provider (Cerebras, Groq, Gemini, Ollama) with the next candidate tried on 404/429/503, bounded concurrency. |
 | Used by | Every agent with a model tier in `AGENT.md`; all four advisors. |
-| Inputs | Prompt, optional system instruction, tier, a `mock` value. |
-| Outputs | Parsed JSON, plus a trace (`source`, `model`, `attempts`, `fell_back`). |
-| Dependencies | `google-genai`, `GEMINI_API_KEY`, `GEMINI_FLASH_MODEL`, `GEMINI_PRO_MODEL`, `GEMINI_FALLBACK_MODELS`, `GEMINI_TIMEOUT_MS`, `GEMINI_MAX_CONCURRENCY`. |
-| Constraints | Never parse prose (AGENT.md guardrail). Callers supply a mock so the zero-key demo runs. |
-| Failure | With no key: the mock is returned and labelled `source: mock`. With a key and every model failing: the mock if one exists, else `GeminiUnavailable`. |
+| Inputs | Prompt, optional system instruction, tier, a `mock` value, and optionally a `schema` to enforce (no agent passes one yet — see `backend/eval/structured`). |
+| Outputs | Parsed JSON, plus a trace (`live`, `source`, `provider`, `model`, `attempts`, `fell_back`). Read `live` through `is_live(trace)`, never by comparing a provider name. |
+| Dependencies | One of `CEREBRAS_API_KEY`, `GROQ_API_KEY`, `GEMINI_API_KEY` or `OLLAMA_HOST`; the order in `LUMEN_LLM_PROVIDERS`; each provider's `*_FLASH_MODEL` / `*_PRO_MODEL`; `LLM_TIMEOUT_MS`, `LLM_MAX_CONCURRENCY`. `google-genai` for Gemini only — the others are plain HTTP. |
+| Constraints | Never parse prose (AGENT.md guardrail). Callers supply a mock so the zero-key demo runs. Coerce a live reply through `core/llm_output.py` before using it; `llm_output.watching()` counts those repairs. |
+| Failure | With no provider: the mock is returned and labelled `source: mock`, `live: false`. With a provider and every candidate failing: the mock if one exists, else `LLMUnavailable`. |
 
 ### B2. Web research
 

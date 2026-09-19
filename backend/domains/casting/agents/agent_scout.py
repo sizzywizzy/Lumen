@@ -19,7 +19,7 @@ from core import config, llm_output
 from core.messaging.envelope import broadcast, log_event, make_envelope
 from core.orchestrator.state import Candidate, GlobalState
 from domains.casting import prompts
-from services import gemini_client, tavily_client
+from services import llm, tavily_client
 from services.casting_kb import tmdb
 
 REGIONAL_AGENCIES = {
@@ -240,20 +240,23 @@ def _live_candidates(brief: str, results: list[dict[str, str]]) -> tuple[list[di
     source "web_results", or no rows with source "offline" and trace["reason"]
     saying why.
     """
-    if not config.has_gemini():
-        return [], {"source": "mock", "reason": "no_api_key"}, "offline"
+    if not config.has_llm():
+        return [], {"live": False, "source": llm.MOCK, "reason": "no_api_key"}, "offline"
     if not results:
         reason = "no_web_results" if config.has_tavily() else "no_search_key"
-        return [], {"source": "mock", "reason": reason}, "offline"
-    data, trace = gemini_client.generate_json_traced(
+        return [], {"live": False, "source": llm.MOCK, "reason": reason}, "offline"
+    data, trace = llm.generate_json_traced(
         brief + _results_block(results) + "Suggest actors from these results only.",
         tier="flash", system=prompts.SCOUT_WEB_SYSTEM, mock={"candidates": []},
     )
-    if trace.get("source") != "gemini":
+    if not llm.is_live(trace):
         return [], {**trace, "reason": "model_failed"}, "offline"
     rows = _named_in_results(_rows(data), results)
     if not rows:
-        return [], {**trace, "source": "mock", "reason": "nobody_found"}, "offline"
+        # A live answer that named nobody in the results is still no cast, so the
+        # trace says sample output — `live` has to be overridden with the source,
+        # or `is_live` would report the model's unusable answer as a result.
+        return [], {**trace, "live": False, "source": llm.MOCK, "reason": "nobody_found"}, "offline"
     return rows, trace, "web_results"
 
 

@@ -14,7 +14,7 @@ from typing import Any, Optional
 
 from core.orchestrator.state import GlobalState
 from domains.launch.agents import poster_artist
-from services import poster_store, supabase_client
+from services import llm, poster_store, supabase_client
 
 # Productions with a poster in progress, and each production's last failure
 # until its next attempt. Kept in memory like advisor runs: the API runs as one
@@ -89,7 +89,7 @@ def public(record: Optional[dict[str, Any]]) -> Optional[dict[str, Any]]:
         return None
     concept = record.get("concept") or {}
     trace = (record.get("provenance") or {}).get("concept") or {}
-    written = trace.get("source") == "gemini"
+    written = llm.is_live(trace)
     return {
         "poster_id": record.get("poster_id"),
         "created_at": record.get("created_at"),

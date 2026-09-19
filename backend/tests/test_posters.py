@@ -23,7 +23,7 @@ from domains.launch import posters, prompts
 from domains.launch.agents import poster_artist
 from domains.launch.agents.phase6_marketing import pr_risk_check
 from main import app
-from services import auth_store, gemini_client, supabase_client
+from services import auth_store, llm, supabase_client
 
 PROJECT = "PROJ_NEON_NIGHTS"
 GENRES = ("neo-noir thriller", "horror", "sci-fi", "romance", "comedy", "western", "fantasy", "action", "drama", "")
@@ -97,9 +97,9 @@ def test_a_spoiler_is_redrafted_and_never_reaches_the_poster(state_dir, offline,
         prompts_sent.append(prompt)
         draft = {"tagline": "The detective dies at the end", "scene": "an open grave in the rain",
                  "alt_text": "a grave", "palette": ["#000000", "#333333", "#ffffff"]}
-        return draft, {"source": "gemini", "model": "flash"}
+        return draft, {"live": True, "source": "gemini", "model": "flash"}
 
-    monkeypatch.setattr(gemini_client, "generate_json_traced", spoiler)
+    monkeypatch.setattr(llm, "generate_json_traced", spoiler)
     record = posters.run(PROJECT, "usr_1")
 
     assert len(prompts_sent) == config.MAX_ASSET_REGENERATIONS
@@ -117,9 +117,9 @@ def test_a_written_concept_colours_the_art_and_is_credited(state_dir, offline, m
     def drafted(prompt, **kwargs):
         systems.append(kwargs.get("system"))
         return ({"tagline": "The city never forgets.", "palette": ["#101820", "#2b4a6f", "#f2c14e"]},
-                {"source": "gemini", "model": "gemini-3.6-flash"})
+                {"live": True, "source": "gemini", "model": "gemini-3.6-flash"})
 
-    monkeypatch.setattr(gemini_client, "generate_json_traced", drafted)
+    monkeypatch.setattr(llm, "generate_json_traced", drafted)
     record = posters.run(PROJECT, "usr_1")
 
     assert systems == [prompts.POSTER_SYSTEM], "one text request, and nothing else"

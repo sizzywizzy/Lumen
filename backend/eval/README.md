@@ -63,7 +63,8 @@ python -m eval.run build --released-after 2026-06-01 --released-before 2026-09-1
 # 2. optional: drop any film the model turns out to remember
 python -m eval.run leakage
 
-# 3. score it — needs GEMINI_API_KEY. Resumable; see below.
+# 3. score it — needs a model provider (CEREBRAS_API_KEY, GROQ_API_KEY,
+#    GEMINI_API_KEY or OLLAMA_HOST). Resumable; see below.
 python -m eval.run predict --predictor single_call --predictor lumen
 
 # 4. compute the metrics and write REPORT.md
@@ -76,13 +77,21 @@ which is the exact failure the committed snapshot prevents.
 
 ## Two things that will bite you
 
-**Free-tier quota.** Gemini's free tier allows roughly 20 requests per model per
-day. At the production panel size of 200, the simulator needs about 5 cohort
-calls a film, so a full 31-film sweep is around 150 calls plus 31 for the
-baseline — several days of quota. This is why `predict` is resumable: every
-film's prediction is written the moment it lands, and a re-run skips films
-already scored live and retries the ones that fell back. Finishing a run across
-three days is a supported way to use this, not a workaround.
+**Free-tier quota — pick the provider before shrinking the panel.** At the
+production panel size of 200 the simulator needs about 5 cohort calls a film, so
+a full 31-film sweep is around 150 calls plus 31 for the baseline. On Gemini's
+free tier, which allows roughly 20 requests per model per day, that is several
+days of quota; on Cerebras or Groq it is one sitting. Set `CEREBRAS_API_KEY` and
+run the sweep there, and the two knobs below stop being necessary at all.
+
+`predict` is resumable either way: every film's prediction is written the moment
+it lands, and a re-run skips films already scored live and retries the ones that
+fell back, so finishing across three days is supported rather than a workaround.
+
+Whichever you use, **the report names the provider and model that answered each
+film**, and switching provider invalidates the leakage check — a different model
+has a different training cutoff, so `python -m eval.run leakage` has to be re-run
+before the numbers mean anything. That is the one cost of moving off Gemini.
 
 Two knobs trade fidelity for quota, and both are recorded in the report:
 
@@ -111,7 +120,7 @@ what ships.
 output when the model is unavailable. That is right for the product and fatal
 for an evaluation: a benchmark that grades its own fallbacks reports the mock's
 accuracy under the model's name. So each prediction records whether every call
-behind it truly reached Gemini, a film any predictor fell back on leaves the
+behind it truly reached a model, a film any predictor fell back on leaves the
 paired comparison entirely, and below a 90% live share the report withholds its
 headline numbers and says why. Offline, the simulator returns about 69.4 for
 every film in the sample — which is exactly what a report must never present as

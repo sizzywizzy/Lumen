@@ -33,8 +33,14 @@ services:
       # The secret (service role) key; see backend/schema_*.sql.
       - key: SUPABASE_KEY
         sync: false
-      # Optional: blank runs every agent on its offline fallback. A free key is
-      # all Lumen uses; it has no paid Gemini features.
+      # Optional: with all of these blank, every agent runs on its offline
+      # fallback. Any one is enough, and free tiers are all Lumen uses. Cerebras
+      # is tried first because its free tier allows far more requests a day than
+      # Gemini's, so a demo run is much less likely to fall back part-way.
+      - key: CEREBRAS_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
       - key: GEMINI_API_KEY
         sync: false
       # Optional (free plan): the talent scout's web search and web-grounded

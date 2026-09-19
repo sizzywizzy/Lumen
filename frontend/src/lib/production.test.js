@@ -114,8 +114,9 @@ describe("saying when a plan is Lumen's sample output", () => {
 
     expect(note.sample).toBe(7);
     expect(note.steps).toBe(9);
-    expect(note.why).toMatch(/no Gemini key/);
-    expect(note.fix).toMatch(/GEMINI_API_KEY/);
+    // No provider is named: the server may be on any of four.
+    expect(note.why).toMatch(/no model key/);
+    expect(note.fix).toMatch(/Set a model key/);
   });
 
   it("says when the producer's own screenplay went unread", () => {
