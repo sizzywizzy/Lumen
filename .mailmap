@@ -1,7 +1,5 @@
-# Canonical identities for shortlog/blame. Display-only: this merges each
-# person's alternate emails and name spellings. No commit is changed.
+# Canonical identity for shortlog and blame. Display-only: this merges the
+# alternate emails and name spellings one person has committed under. No commit
+# is changed by this file.
 Swati Kumari <swati.kumari7205@gmail.com> swatikumari <swati.kumari7205@gmail.com>
 Swati Kumari <swati.kumari7205@gmail.com> swatikumari <149718439+sizzywizzy@users.noreply.github.com>
-Raymond Thomas Roshy <f20230905@goa.bits-pilani.ac.in> raym293 <f20230905@goa.bits-pilani.ac.in>
-Shriya Soni <87068517+Shriya-Soni@users.noreply.github.com> Shriya-Soni <87068517+Shriya-Soni@users.noreply.github.com>
-Shriya Soni <87068517+Shriya-Soni@users.noreply.github.com> Shriya Soni <shriyasoni05@gmail.com>
