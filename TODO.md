@@ -9,27 +9,38 @@ waiting on a decision.
 
 ## Needs your accounts
 
-- [ ] **Hosted demo.**
-  1. Create the Supabase project and run the three `backend/schema_*.sql`
-     files.
-  2. Deploy the API to Render from `render.yaml`.
-  3. Deploy the frontend to Vercel with `VITE_API_URL`.
-  4. Set `LUMEN_CORS_ORIGINS`.
-  5. Link the result from the README ("See it").
-- [ ] **Check the rate limit's client address on Render.** `render.yaml` sets
-  `LUMEN_TRUSTED_PROXY_HOPS=1`, on the assumption that Render's proxy
-  appends the caller's address to `X-Forwarded-For`. After the first deploy,
-  confirm the key differs between two networks. If it doesn't, every sign-in
-  shares one limit.
 - [ ] **Recapture with a live model.** The README screenshots and
-  `assets/screenshots/pipeline.gif` come from the offline demo (no keys). Once
-  `.env` holds a Gemini key, redo them with a real screenplay so the cast,
-  scenes and reviews are the model's.
+  `assets/screenshots/pipeline.gif` still come from the offline demo, so the
+  cast, scenes and reviews in them are Lumen's sample film.
+
+  Attempted on 19 September 2026 and stopped by quota, not by anything in the
+  code. A capture run seeded a production from an original screenplay through
+  the real API against a local store, and Phases I and II answered live
+  (9 and 5 model calls). The free tier then hit its ceiling of 20 requests per
+  model per day, so Phase III's scene breakdown and part of Phase V fell back
+  to sample output. Publishing that would put the sample film's scenes beside
+  a real cast, which is worse than the current images, so nothing was
+  replaced.
+
+  To finish: wait for the daily quota to reset, re-run Phase III and Phase V
+  on the seeded production (`POST /api/production/run/<id>` and
+  `POST /api/launch/run/<id>`, about eight calls between them), confirm every
+  entry in `model_use` reports `live`, then capture the six stills in headless
+  Chrome at 1440x900. The GIF needs a terminal recorder (asciinema with agg,
+  or vhs); none is installed.
 
 ## Done
 
 The September 2026 audit is cleared. Since the last entry:
 
+- The hosted demo is up: <https://lumen-beige-five.vercel.app>, API at
+  <https://lumen-api-mwip.onrender.com>, state in Supabase, cross-origin
+  access restricted to the Vercel address, all three optional keys set.
+  Linked from the README.
+- The sign-in rate limit counts per network on Render, as
+  `LUMEN_TRUSTED_PROXY_HOPS=1` assumed. Checked on the live deploy: an address
+  driven past the limit gets 429 while a second network still gets the plain
+  "incorrect password" answer, so one network cannot lock out another.
 - The old intake form is gone. `/new` had replaced it; `/intake` was reachable
   by address only, so the page, its route, the context call only it made and
   its styles were removed.
