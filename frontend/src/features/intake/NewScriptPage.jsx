@@ -6,6 +6,7 @@ import { useProject } from "../../shared/ProjectContext.jsx";
 import { cn } from "../../lib/utils.js";
 import { hasResults, phaseWords, productionTitle } from "../../lib/production.js";
 import { Card } from "../results/parts.jsx";
+import AgentTrace from "../../shared/AgentTrace.jsx";
 
 const ACCEPTED = /\.(pdf|fdx|fountain|txt|text|md|markdown)$/i;
 const MAX_BYTES = 8 * 1024 * 1024;
@@ -128,6 +129,11 @@ export default function NewScriptPage() {
             })}
           </ol>
         </Card>
+        {phases.length > 0 && (
+          <Card>
+            <AgentTrace phases={phases} status={run?.status} />
+          </Card>
+        )}
       </>
     );
   }

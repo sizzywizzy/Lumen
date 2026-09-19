@@ -48,6 +48,11 @@ trade requests and answers in one shared message format.
   film's poster.
 - **Sign-off queue.** Cast picks, schedule clashes, blocked territories and
   recuts wait on the Overview, each linked to the page where it is decided.
+- **Execution trace.** The run as it happens, phase by phase: which phase is
+  working now, which agents spoke in each one, and when a negotiation loop
+  actually fired — a venue re-offered on another day, a blocked poster
+  redrawn. It stays on the Overview afterwards, so a finished plan shows how
+  it was arrived at and not only what it came to.
 - **Live Agent Terminal.** Every message between agents, filterable by agent
   and content.
 - **AI advisors and teams.** On-demand casting, scheduling, audience and

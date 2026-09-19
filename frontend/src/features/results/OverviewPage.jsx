@@ -10,6 +10,7 @@ import {
 import { PencilNote } from "../../shared/Artifacts.jsx";
 import { ActorTile, Card, CardLink, DayBars, Legend, NoPlanYet, SampleDataNote, Stat, ViewerBar } from "./parts.jsx";
 import ProductionPoster from "./ProductionPoster.jsx";
+import AgentTrace from "../../shared/AgentTrace.jsx";
 import SignOffQueue from "./SignOffQueue.jsx";
 
 function MoneyRow({ icon, title, sub, amount, caption, positive = false }) {
@@ -31,7 +32,7 @@ function MoneyRow({ icon, title, sub, amount, caption, positive = false }) {
 }
 
 export default function OverviewPage() {
-  const { state, projectId } = useProject();
+  const { state, projectId, events, job } = useProject();
   const { activeProduction, canEdit } = useAuth();
   const [roleFilter, setRoleFilter] = useState("all");
 
@@ -195,6 +196,15 @@ export default function OverviewPage() {
             </section>
           )}
         </div>
+
+        {/* How the plan above was arrived at, not just what it came to. */}
+        <Card
+          className="col-12"
+          title="How the agents got here"
+          action={<CardLink to="/logs">Every message</CardLink>}
+        >
+          <AgentTrace phases={job?.phases} events={events} status={job?.status} title="Execution trace" />
+        </Card>
       </div>
       <PencilNote className="page-footnote">{stats.scenes ? "read it top to bottom, it all comes from the script" : ""}</PencilNote>
       <p className="kicker" style={{ padding: "0 4px" }}>

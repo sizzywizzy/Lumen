@@ -347,6 +347,85 @@ export function phaseWords(key) {
   return PHASE_WORDS[key] || "Working";
 }
 
+// ------------------------------------------------------------------ trace ---
+// What the agents actually did, phase by phase, read off the A2A event log.
+// Every number here is counted from real envelopes: the backend stamps the
+// phase on each one as it is logged (core/messaging/envelope.py), so nothing
+// below has to infer a phase from an agent's name — a mapping that would go
+// stale the moment an agent moved phase.
+
+export const PHASE_ORDER = ["phase1", "phase2", "phase3", "phase4", "phase5", "phase6"];
+
+// Lumen has exactly two negotiation loops, and each leaves a specific trace.
+// A single round trip is just a request; the loop is the *extra* passes, so
+// that is what these count. No extra passes, no loop shown.
+function venueRenegotiations(events) {
+  const askedPerScene = {};
+  for (const event of events) {
+    if (event.intent !== "check_venue_availability") continue;
+    const scene = event.payload?.scene_id || "";
+    askedPerScene[scene] = (askedPerScene[scene] || 0) + 1;
+  }
+  return Object.values(askedPerScene).reduce((sum, times) => sum + Math.max(0, times - 1), 0);
+}
+
+// Only agent_visual redraws on a block. A blocked press release sets
+// auto_retry false and goes to a person, so it is not a loop and is not
+// counted as one.
+function blockedRedrafts(events) {
+  return events.filter(
+    (event) =>
+      event.intent === "asset_status_update" &&
+      event.payload?.status === "BLOCKED" &&
+      event.payload?.blocker_details?.auto_retry === true
+  ).length;
+}
+
+/**
+ * One row per phase: its status, who spoke, how much, and which loops fired.
+ *
+ * `phases` is the run record the dashboard polls (key, title, status) and
+ * `events` is GlobalState.event_log. Either may be missing: before a run there
+ * is no record, and while one is in flight its traffic has not been loaded
+ * yet, so the row falls back to status alone rather than to invented detail.
+ */
+export function agentTrace(phases, events = []) {
+  const logged = Array.isArray(events) ? events : [];
+  const rows = (phases || []).length
+    ? phases.map((p) => ({ key: p.key, title: p.title || "", status: p.status || "pending" }))
+    : PHASE_ORDER.map((key) => ({ key, title: "", status: "pending" }));
+
+  return rows.map((phase) => {
+    const mine = logged.filter((event) => event.phase === phase.key);
+    const loops = [];
+    if (phase.key === "phase3") {
+      const rounds = venueRenegotiations(mine);
+      if (rounds) {
+        loops.push({
+          pair: "scheduler_shoot ⇄ location",
+          detail: `${rounds} ${rounds === 1 ? "scene was" : "scenes were"} re-offered another day`,
+        });
+      }
+    }
+    if (phase.key === "phase6") {
+      const blocked = blockedRedrafts(mine);
+      if (blocked) {
+        loops.push({
+          pair: "visual ⇄ pr_risk",
+          detail: `${blocked} ${blocked === 1 ? "draft was" : "drafts were"} blocked and redrawn`,
+        });
+      }
+    }
+    return {
+      ...phase,
+      words: phaseWords(phase.key),
+      messages: mine.length,
+      agents: [...new Set(mine.map((event) => event.sender))].sort(),
+      loops,
+    };
+  });
+}
+
 // ---------------------------------------------------------------- sign-off ---
 
 const TERRITORIES = { US: "US", UK: "UK", UAE: "UAE", FR: "France", IN: "India", JP: "Japan" };

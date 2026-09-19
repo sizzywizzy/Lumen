@@ -1017,6 +1017,48 @@ table.data td:nth-last-child(2) .status-menu { left: auto; right: 0; }
 .stage-label { flex: 1; min-width: 0; }
 .stage-detail { color: var(--on-surface-variant); font-size: 11px; text-align: right; }
 
+/* Agent execution trace — the run as it happens, phase by phase. Shares the
+   stage checklist's language (a rail of status marks, muted until it is this
+   phase's turn) and adds the agent roster and the negotiation loops. */
+.agent-trace__top { margin-bottom: 10px; gap: 8px; flex-wrap: wrap; }
+.agent-trace__count { margin-left: auto; color: var(--on-surface-variant); font-size: 11px; }
+.trace-list { list-style: none; margin: 0; padding: 0; }
+.trace-phase { display: flex; gap: 10px; color: var(--on-surface-variant); }
+.trace-phase__rail { display: flex; flex-direction: column; align-items: center; padding-top: 7px; }
+.trace-phase__rail .material-symbols-outlined { color: var(--outline); }
+/* The spine joining one phase to the next. Not on the last: it would trail
+   into nothing. */
+.trace-phase:not(:last-child) .trace-phase__rail::after {
+  content: ""; flex: 1; width: 1px; min-height: 12px;
+  margin-top: 4px; background: var(--outline); opacity: 0.35;
+}
+.trace-phase__body { flex: 1; min-width: 0; padding: 6px 0 10px; }
+.trace-phase__head { display: flex; align-items: baseline; gap: 8px; }
+.trace-phase__head strong { font-weight: 500; font-size: 14px; line-height: 20px; }
+.trace-phase__messages { margin-left: auto; font-size: 11px; color: var(--on-surface-variant); }
+.trace-phase--running { color: var(--on-surface); }
+.trace-phase--running .trace-phase__rail .material-symbols-outlined { color: var(--highlight); }
+.trace-phase--complete { color: var(--on-surface); }
+.trace-phase--complete .trace-phase__rail .material-symbols-outlined { color: var(--status-success); }
+.trace-phase--failed, .trace-phase--halted { color: var(--status-error); }
+.trace-phase--failed .trace-phase__rail .material-symbols-outlined,
+.trace-phase--halted .trace-phase__rail .material-symbols-outlined { color: var(--status-error); }
+
+.trace-agents { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.trace-agent {
+  font-size: 10px; letter-spacing: 0.04em; padding: 2px 6px;
+  border: 1px solid var(--outline); border-radius: 999px;
+  color: var(--on-surface-variant); white-space: nowrap;
+}
+.trace-loop {
+  display: flex; align-items: center; gap: 6px; margin-top: 6px;
+  padding: 4px 8px; border-radius: var(--radius);
+  background: var(--primary-soft); color: var(--on-surface);
+}
+.trace-loop .material-symbols-outlined { color: var(--highlight); }
+.trace-loop .mono-data { font-size: 11px; }
+.trace-loop small { color: var(--on-surface-variant); font-size: 11px; }
+
 .histogram { display: flex; flex-direction: column; gap: 4px; }
 .histogram-row { display: flex; align-items: center; gap: 10px; }
 .histogram-score { width: 18px; text-align: right; color: var(--on-surface-variant); }

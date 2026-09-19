@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { sampleOutput, signOffs } from "./production.js";
+import { agentTrace, sampleOutput, signOffs } from "./production.js";
 
 function state(escalations, overrides = {}) {
   return {
@@ -127,5 +127,86 @@ describe("saying when a plan is Lumen's sample output", () => {
   it("says nothing when the model answered every step", () => {
     expect(sampleOutput({ model_use: { phase1: { live: 6, sample: 0 } } })).toBeNull();
     expect(sampleOutput({})).toBeNull();
+  });
+});
+
+/**
+ * The execution trace.
+ *
+ * It is the page's answer to "is anything actually happening", so its numbers
+ * have to come from the run rather than from a plausible-looking constant.
+ * These check that it counts real envelopes, groups them by the phase the
+ * backend stamped, and claims a negotiation loop fired only when the log shows
+ * one did.
+ */
+describe("agentTrace", () => {
+  const phases = [
+    { key: "phase3", title: "Script to schedule", status: "complete" },
+    { key: "phase6", title: "Marketing", status: "running" },
+  ];
+  const envelope = (phase, sender, intent, payload = {}) => ({ phase, sender, intent, payload });
+
+  it("groups messages by the phase the backend stamped, not by agent name", () => {
+    const [three, six] = agentTrace(phases, [
+      envelope("phase3", "agent_scheduler_shoot", "check_venue_availability"),
+      envelope("phase3", "agent_location", "venue_offer"),
+      envelope("phase6", "agent_visual", "asset_status_update"),
+    ]);
+
+    expect(three.messages).toBe(2);
+    expect(three.agents).toEqual(["agent_location", "agent_scheduler_shoot"]);
+    expect(six.messages).toBe(1);
+  });
+
+  it("shows a venue negotiation only when a scene was asked about twice", () => {
+    const once = [envelope("phase3", "agent_scheduler_shoot", "check_venue_availability", { scene_id: "SCN_001" })];
+    expect(agentTrace(phases, once)[0].loops).toEqual([]);
+
+    const loops = agentTrace(phases, [...once, once[0]])[0].loops;
+    expect(loops).toHaveLength(1);
+    expect(loops[0].pair).toBe("scheduler_shoot ⇄ location");
+    expect(loops[0].detail).toMatch(/^1 scene was re-offered/);
+  });
+
+  it("counts the extra rounds, not the scenes that had them", () => {
+    const events = ["SCN_001", "SCN_001", "SCN_001", "SCN_002", "SCN_002"].map((scene_id) =>
+      envelope("phase3", "agent_scheduler_shoot", "check_venue_availability", { scene_id })
+    );
+    // SCN_001 was re-asked twice and SCN_002 once: three extra rounds.
+    expect(agentTrace(phases, events)[0].loops[0].detail).toMatch(/^3 scenes were re-offered/);
+  });
+
+  it("reports a redraft only when the block actually triggered a retry", () => {
+    // A blocked press release goes to a person. That is an escalation, not a loop.
+    const escalated = [envelope("phase6", "agent_copywriter", "asset_status_update", {
+      status: "BLOCKED", blocker_details: { auto_retry: false },
+    })];
+    expect(agentTrace(phases, escalated)[1].loops).toEqual([]);
+
+    const retried = [envelope("phase6", "agent_visual", "asset_status_update", {
+      status: "BLOCKED", blocker_details: { auto_retry: true },
+    })];
+    expect(agentTrace(phases, retried)[1].loops[0].pair).toBe("visual ⇄ pr_risk");
+  });
+
+  it("shows every phase as pending before a run has started", () => {
+    const rows = agentTrace(null, []);
+    expect(rows).toHaveLength(6);
+    expect(rows.every((row) => row.status === "pending" && row.messages === 0)).toBe(true);
+    expect(rows[0].words).toMatch(/actors/);
+  });
+
+  it("survives a run whose event log has not been loaded yet", () => {
+    const rows = agentTrace(phases, undefined);
+    expect(rows.map((row) => row.messages)).toEqual([0, 0]);
+    expect(rows[1].status).toBe("running");
+  });
+
+  it("ignores other phases' events and anything logged outside a phase", () => {
+    const rows = agentTrace(phases, [
+      envelope("phase1", "agent_profiler", "mandate_ready"),
+      { sender: "agent_advisor", intent: "mandate_ready", payload: {} },
+    ]);
+    expect(rows.map((row) => row.messages)).toEqual([0, 0]);
   });
 });
