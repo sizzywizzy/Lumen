@@ -92,6 +92,21 @@ Two knobs trade fidelity for quota, and both are recorded in the report:
 - `--panel-size` shrinks the panel, which shrinks the cohort count and so the
   call count. The default is the product's own 200.
 
+What that second knob actually costs, for this 31-film sample:
+
+| `--panel-size` | Cohorts | Calls a film | Calls in total | Days of free quota |
+|---:|---:|---:|---:|---:|
+| 200 (shipped) | 25 | 5 | 186 | ~10 |
+| 120 | 13 | 3 | 124 | ~7 |
+| 80 | 4 | 1 | 62 | ~4 |
+| 40 | 1 | 1 | 62 | ~4 |
+
+Below about 80 the panel collapses to a handful of cohorts and then to a single
+one, at which point the run is no longer testing the thing the product does —
+it is one voice with extra steps, and its number should not be reported as the
+simulator's. 80 is the floor worth running; 200 is the only one that grades
+what ships.
+
 **Offline fallbacks.** Every agent in Lumen falls back to deterministic sample
 output when the model is unavailable. That is right for the product and fatal
 for an evaluation: a benchmark that grades its own fallbacks reports the mock's
