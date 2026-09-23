@@ -85,6 +85,16 @@ chain, which falls through to the next provider on a rate limit; a leakage run
 was caught answering from two at once. `leakage` now refuses to extend a file
 written against a different model, and every probe records which one answered.
 
+**A day's budget is not a minute's.** Both arrive as 429 and they need opposite
+responses. Groq's free tier allows 8,000 tokens a minute *and* 200,000 a day:
+the first clears while you wait, the second refills at a trickle — eleven
+minutes offered for the next 1,840 tokens — so a run that waits it out sleeps
+for hours and still grades its own fallbacks. `predict` now stops when the day's
+budget is gone rather than filling the store with rows that look like
+predictions and are not. Budget the day before starting: a 31-film sweep at the
+shipped panel size is about 186 calls, and it cannot share a day with the
+510-call sweep in `eval/structured`.
+
 **Free-tier quota — pick the provider before shrinking the panel.** At the
 production panel size of 200 the simulator needs about 5 cohort calls a film, so
 a full 31-film sweep is around 150 calls plus 31 for the baseline. On Gemini's

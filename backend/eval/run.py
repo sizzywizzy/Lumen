@@ -20,7 +20,9 @@ from pathlib import Path
 from typing import Any
 
 from core import config
+from domains.launch.agents import audience_sim
 from eval import dataset, metrics, predictors
+from services import llm
 
 HERE = Path(__file__).parent
 PREDICTIONS = HERE / "predictions.json"
@@ -164,9 +166,43 @@ def _bind(name: str, args: argparse.Namespace):
     return predictors.REGISTRY[name]
 
 
+_exhausted = False
+
+
+def _watch_for_a_spent_budget() -> None:
+    """Stop the run when the day's tokens are gone rather than scoring mocks.
+
+    A film scored after the budget runs out is scored entirely by the
+    simulator's offline fallbacks, and a sweep that keeps going fills the store
+    with rows that look like predictions and are not.
+    """
+    global _exhausted
+    original = llm.generate_json_traced
+
+    def watched(prompt, **kwargs):
+        global _exhausted
+        data, meta = original(prompt, **kwargs)
+        if meta.get("error") and llm.is_daily_limit(str(meta["error"])):
+            _exhausted = True
+        return data, meta
+
+    llm.generate_json_traced = watched
+    audience_sim.llm.generate_json_traced = watched
+
+
 def cmd_predict(args: argparse.Namespace) -> int:
+    global _exhausted
+    _exhausted = False
     films = dataset.load()["films"]
     pinned = pin(args)
+    _watch_for_a_spent_budget()
+    # A free tier is the binding constraint, not the model. One call at a time
+    # and a long wait is the difference between scoring the simulator and
+    # scoring its offline fallbacks.
+    config.LLM_MAX_CONCURRENCY = max(1, args.concurrency)
+    config.LLM_MAX_RETRY_WAIT_S = args.patience
+    print(f"  {config.LLM_MAX_CONCURRENCY} call(s) at a time, waiting up to "
+          f"{config.LLM_MAX_RETRY_WAIT_S:.0f}s on a rate limit")
     print(f"scoring with {pinned or 'the configured provider chain — pass --provider to pin one'}")
     store = _load(PREDICTIONS, {})
     for name in args.predictor:
@@ -184,6 +220,9 @@ def cmd_predict(args: argparse.Namespace) -> int:
             print(f"  ({skipped} already scored live, skipping)")
         for index, film in enumerate(todo, 1):
             key = str(film["tmdb_id"])
+            if _exhausted:
+                print("  stopping: the provider's daily token budget is spent.")
+                break
             try:
                 rows[key] = predict(film)
             except Exception as exc:  # noqa: BLE001 — one bad film must not lose the rest
@@ -485,6 +524,14 @@ def main(argv: list[str] | None = None) -> int:
     pred = sub.add_parser("predict", help="score every film with each predictor")
     pred.add_argument("--predictor", action="append", choices=sorted(predictors.REGISTRY))
     add_model_arguments(pred)
+    pred.add_argument("--concurrency", type=int, default=1,
+                      help="cohort calls in flight at once (default 1). The product uses 3; on a "
+                           "free tier three large prompts at once blow a per-minute token limit "
+                           "and every batch falls back, which grades the fallbacks")
+    pred.add_argument("--patience", type=float, default=90.0,
+                      help="seconds to wait out a rate limit before giving up on a model "
+                           "(default 90; the product waits 20, which is right for a web request "
+                           "and wrong for an overnight run)")
     pred.add_argument("--delay", type=float, default=1.0)
     pred.add_argument("--force", action="store_true")
     pred.add_argument("--limit", type=int, default=0,

@@ -264,3 +264,44 @@ def test_a_quota_is_still_excluded_after_that_change(monkeypatch, tmp_path):
         "b": _pair(LIMITED, ANSWERED),
     })
     assert payload["models"]["ollama:m"]["paired_prompts"] == 1
+
+
+def test_a_days_budget_is_not_a_minutes_and_is_not_waited_out():
+    """Both are 429 and they are not the same thing. A per-minute limit clears
+    while you wait; a daily one refills at a trickle — Groq offered eleven
+    minutes for the next 1,840 tokens — so a run that waits it out sleeps for
+    hours and still ends up grading its own fallbacks."""
+    daily = ("HTTP 429: on tokens per day (TPD): Limit 200000, Used 199778. "
+             "Please try again in 11m38.976s")
+    minute = ("HTTP 429: on tokens per minute (TPM): Limit 8000, Used 7727. "
+              "Please try again in 12.5s")
+
+    assert llm.is_daily_limit(daily) and not llm.is_daily_limit(minute)
+    assert harness._classify(daily) == "quota_exhausted"
+    assert harness._classify(minute) == "rate_limited"
+
+    class _Failed(Exception):
+        retry_after = None
+
+    assert llm._backoff(_Failed(daily), 0) is None, "a daily limit was slept on"
+    assert llm._backoff(_Failed(minute), 0) is not None
+
+
+def test_a_wait_written_in_minutes_is_read_in_minutes():
+    """"11m38.976s" read by a rule expecting "12.5s" yields eleven seconds, and
+    the retry lands straight back on the limit."""
+    assert harness._retry_seconds("Please try again in 12.5s") == 13.5
+    assert harness._retry_seconds("Please try again in 2m10s") == 90.0  # capped
+    assert harness._retry_seconds("no number here") == 20.0
+
+
+def test_a_spent_budget_is_excluded_from_the_pairing(monkeypatch, tmp_path):
+    """It says nothing about the model, only about the account and the day."""
+    spent = {"outcome": "quota_exhausted", "seconds": 0.3, "error": "tokens per day (TPD)"}
+    payload, _markdown = _report(monkeypatch, tmp_path, {
+        "a": _pair(ANSWERED, ANSWERED),
+        "b": _pair(ANSWERED, spent),
+    })
+    model = payload["models"]["ollama:m"]
+    assert model["paired_prompts"] == 1
+    assert model["excluded"] == {"quota_exhausted": 1}

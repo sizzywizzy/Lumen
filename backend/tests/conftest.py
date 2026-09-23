@@ -42,6 +42,7 @@ def never_real_state_or_live_models(tmp_path_factory):
 # at a provider it never configured. Restoring them is cheaper than remembering.
 MODEL_SETTINGS = (
     "LLM_PROVIDERS", "GEMINI_FALLBACK_MODELS", "EMBEDDING_MODEL",
+    "LLM_MAX_CONCURRENCY", "LLM_MAX_RETRY_WAIT_S",
     "CEREBRAS_FLASH_MODEL", "CEREBRAS_PRO_MODEL", "GROQ_FLASH_MODEL", "GROQ_PRO_MODEL",
     "GEMINI_FLASH_MODEL", "GEMINI_PRO_MODEL", "OLLAMA_FLASH_MODEL", "OLLAMA_PRO_MODEL",
 )

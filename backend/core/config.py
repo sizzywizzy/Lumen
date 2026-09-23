@@ -140,6 +140,14 @@ GEMINI_FALLBACK_MODELS = [
     if m.strip()
 ]
 
+# The longest a rate-limited call will wait before giving up on a model. Twenty
+# seconds is right for a request someone is waiting on: past that, falling back
+# to sample output beats holding the page. A batch job wants the opposite, and
+# `eval.run predict` raises it, because on a free tier a 429 asking for 40
+# seconds is the normal case and treating it as a failure turns a whole
+# evaluation into a grading of its own fallbacks.
+LLM_MAX_RETRY_WAIT_S = float(os.environ.get("LLM_MAX_RETRY_WAIT_S") or "20")
+
 # Per-request timeout (ms) and bounded concurrency for batched agent work. Both
 # read their old GEMINI_* names too, so an existing .env keeps working.
 LLM_TIMEOUT_MS = int(os.environ.get("LLM_TIMEOUT_MS") or os.environ.get("GEMINI_TIMEOUT_MS") or "60000")

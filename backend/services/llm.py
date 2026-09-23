@@ -64,8 +64,8 @@ _RETRYABLE_TEXT = ("RESOURCE_EXHAUSTED", "UNAVAILABLE", "INTERNAL")
 _GONE_STATUS = {404}
 _GONE_TEXT = ("NOT_FOUND",)
 # A rate-limited reply can say how long to wait. Longer waits than this are
-# better spent on the next candidate, whose quota is its own.
-MAX_RETRY_WAIT_S = 20.0
+# better spent on the next candidate, whose quota is its own — read from config
+# at call time so a batch job can raise it without the product inheriting it.
 
 # Sent on every provider request; see `_post_json`.
 USER_AGENT = "Lumen/1.0 (+https://github.com/swatikumari/Lumen)"
@@ -508,14 +508,29 @@ def _retryable(exc: Exception) -> bool:
     return _status(exc) in _RETRYABLE_STATUS or any(text in str(exc) for text in _RETRYABLE_TEXT)
 
 
+def is_daily_limit(error: str) -> bool:
+    """Whether a 429 is a day's budget rather than a minute's.
+
+    The two look identical and are not. A per-minute limit clears while you
+    wait, so waiting is right. A daily one refills at a trickle — Groq offered
+    eleven minutes for the next 1,840 tokens — so a run that waits it out spends
+    hours sleeping and still ends up grading its own fallbacks. Worth stopping
+    for instead, and saying so.
+    """
+    text = (error or "").lower()
+    return any(mark in text for mark in ("per day", "(tpd)", "(rpd)", "tpd:", "rpd:"))
+
+
 def _backoff(exc: Exception, attempt: int) -> Optional[float]:
     """Seconds to wait before trying the same model again, or None to move on to
     the next candidate. Free tiers are rate-limited per minute and usually say
     how long to wait; waiting that long beats burning the retry at once."""
+    if is_daily_limit(str(exc)):
+        return None  # tomorrow's problem; do not sleep through it
     asked = getattr(exc, "retry_after", None)
     if asked is None:
         return 1.5 * (attempt + 1) + random.random()
-    return asked + random.random() / 2 if asked <= MAX_RETRY_WAIT_S else None
+    return asked + random.random() / 2 if asked <= config.LLM_MAX_RETRY_WAIT_S else None
 
 
 # --------------------------------------------------------------- the surface --

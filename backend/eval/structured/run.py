@@ -138,6 +138,10 @@ def _classify(error: str) -> str:
     if "HTTP 400" in error or "INVALID_ARGUMENT" in error:
         # The schema itself was refused: this model does not enforce one.
         return "schema_refused"
+    if llm.is_daily_limit(error):
+        # A day's budget, not a minute's: no amount of waiting inside this run
+        # will clear it, and every later prompt will hit the same wall.
+        return "quota_exhausted"
     if "429" in error or "RESOURCE_EXHAUSTED" in error:
         return "rate_limited"
     if "402" in error or "payment_required" in error:
@@ -154,9 +158,14 @@ def _classify(error: str) -> str:
 def _retry_seconds(error: str, fallback: float = 20.0) -> float:
     """How long a rate-limited provider asked us to wait. Groq says it in the
     message body ("Please try again in 12.5s"); others just say no."""
-    found = re.search(r"try again in ([\d.]+)\s*s", error)
+    # "12.5s" and "11m38.976s" both appear, and reading only the first number of
+    # the second one waits twelve seconds for something eleven minutes away.
+    found = re.search(r"try again in (?:(\d+)m)?([\d.]+)s", error)
+    if not found:
+        return fallback
     try:
-        return min(90.0, float(found.group(1)) + 1.0) if found else fallback
+        minutes = float(found.group(1) or 0)
+        return min(90.0, minutes * 60 + float(found.group(2)) + 1.0)
     except (TypeError, ValueError):
         return fallback
 
@@ -245,6 +254,11 @@ def do_run(args) -> int:
                 continue  # already scored live; a re-run retries only the failures
             record[arm] = _ask(prompt, arm)
             _save(RESULTS, results)  # after every call, so a stop loses nothing
+            if record[arm]["outcome"] == "quota_exhausted":
+                print(f"\n  {args.provider} has spent its daily token budget. Everything from "
+                      f"here would record the same thing, so this stops now — re-run when the "
+                      f"budget refills and it picks up where it left off.")
+                return 0
             outcome = record[arm]["outcome"]
             mark = "ok" if outcome == "answered" else outcome
             count = record[arm].get("violation_count")
