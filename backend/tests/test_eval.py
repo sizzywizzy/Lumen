@@ -292,3 +292,76 @@ def test_a_resumed_run_keeps_live_rows_and_retries_the_rest(tmp_path, monkeypatc
     assert rows["1"]["audience_score"] == 77.7, "a live row is kept, not re-spent"
     assert rows["2"]["live"] is False, "the fallen-back film was retried (and fell back again)"
     assert rows["2"].get("panel_size") == 40, "the retry actually ran the simulator"
+
+
+# ------------------------------------------------------- one model, not a chain --
+
+
+def test_pinning_collapses_the_chain_to_one_model(monkeypatch):
+    """A chain is exactly wrong here. Under load Groq answers 429, the call falls
+    through to Gemini, and half the films get scored by a model the other half
+    never saw — which was happening before this existed."""
+    import argparse
+
+    from core import config
+    from eval import run as harness
+    from services import llm
+
+    monkeypatch.setattr(config, "has_groq", lambda: True)
+    monkeypatch.setattr(config, "GROQ_API_KEY", "k")
+    monkeypatch.setattr(config, "GEMINI_FALLBACK_MODELS", ["a", "b"])
+
+    pinned = harness.pin(argparse.Namespace(provider="groq", model="one-model"))
+    assert pinned == "groq:one-model"
+    assert llm._candidates("flash") == llm._candidates("pro") == [("groq", "one-model")]
+    assert config.GEMINI_FALLBACK_MODELS == []
+
+    # No --provider leaves the configured chain alone, so nothing changes for
+    # anyone not asking to pin.
+    assert harness.pin(argparse.Namespace(provider=None)) == ""
+
+
+def test_pinning_an_unconfigured_provider_stops_the_run(monkeypatch):
+    import argparse
+
+    from core import config
+    from eval import run as harness
+
+    for check in ("has_gemini", "has_cerebras", "has_groq", "has_ollama"):
+        monkeypatch.setattr(config, check, lambda: False)
+    with pytest.raises(SystemExit, match="not configured"):
+        harness.pin(argparse.Namespace(provider="groq", model=None))
+
+
+def test_a_leakage_file_from_another_model_is_refused(monkeypatch, tmp_path):
+    """A training cutoff belongs to one model, so two models' answers cannot be
+    merged into one check — the merged file would filter the sample by neither."""
+    import argparse
+
+    from core import config
+    from eval import run as harness
+
+    monkeypatch.setattr(config, "has_groq", lambda: True)
+    monkeypatch.setattr(config, "GROQ_API_KEY", "k")
+    monkeypatch.setattr(harness, "LEAKAGE", tmp_path / "leakage.json")
+    harness._save(harness.LEAKAGE, {"audited_by": "gemini:gemini-3.6-flash", "1": {"leaked": False}})
+
+    with pytest.raises(SystemExit, match="cannot be merged"):
+        harness.cmd_leakage(argparse.Namespace(provider="groq", model=None, force=False, delay=0))
+
+
+def test_the_probe_records_which_model_answered(monkeypatch):
+    """Without this, a finished file cannot be told apart from one the fallback
+    chain answered with two."""
+    from eval import dataset
+    from services import llm
+
+    monkeypatch.setattr(llm, "generate_json_traced", lambda *a, **k: (
+        {"recognise": False, "audience_rating_out_of_100": None, "confidence": "none"},
+        {"live": True, "source": "groq", "provider": "groq", "model": "openai/gpt-oss-20b"},
+    ))
+    probed = dataset.probe_leakage(
+        {"tmdb_id": 1, "title": "A Film", "release_date": "2026-07-01", "actual_audience_score": 70.0}
+    )
+    assert probed["provider"] == "groq" and probed["model"] == "openai/gpt-oss-20b"
+    assert probed["leaked"] is False

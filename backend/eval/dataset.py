@@ -242,4 +242,8 @@ def probe_leakage(film: dict[str, Any]) -> dict[str, Any]:
         # score came from memory rather than from the synopsis.
         "leaked": bool(gap is not None and gap <= 10.0),
         "source": meta.get("source"),
+        # Which model was asked. Without it a finished file cannot be told apart
+        # from one the fallback chain answered with two.
+        "provider": meta.get("provider"),
+        "model": meta.get("model"),
     }
