@@ -1,0 +1,4476 @@
+{
+  "gemini:gemini-3.6-flash": {
+    "c318c915a72c97c1": {
+      "plain": {
+        "outcome": "rate_limited",
+        "seconds": 7.62,
+        "error": "_AttemptFailed: ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to"
+      },
+      "schema": {
+        "outcome": "rate_limited",
+        "seconds": 0.49,
+        "error": "_AttemptFailed: ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to"
+      }
+    },
+    "31f1a3d4693ef291": {
+      "plain": {
+        "outcome": "rate_limited",
+        "seconds": 0.42,
+        "error": "_AttemptFailed: ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to"
+      },
+      "schema": {
+        "outcome": "rate_limited",
+        "seconds": 0.4,
+        "error": "_AttemptFailed: ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to"
+      }
+    }
+  },
+  "groq:openai/gpt-oss-20b": {
+    "c318c915a72c97c1": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 2.76,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 2.82,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "31f1a3d4693ef291": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.56,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.63,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "47456495559d984b": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.61,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.61,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "00036d9de68a6f35": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 2.47,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 2.15,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "5dadc5bc86249755": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.23,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 2.57,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "2faffc532c299b19": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 20.69,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.47,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "c97c7e72834f4590": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.51,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.49,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "491e04be08006c0c": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 21.45,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 21.91,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "006540fe649aa956": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.68,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.72,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "6884bee803c3e28d": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 2.52,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "markets[0].overall_note: missing",
+          "markets[1].overall_note: missing",
+          "markets[2].overall_note: missing",
+          "markets[3]: expected an object, got a string",
+          "markets[4]: expected an object, got a string",
+          "markets[5]: expected an object, got a string",
+          "markets[6]: expected an object, got a string",
+          "markets[7]: expected an object, got a string",
+          "markets[8]: expected an object, got a string",
+          "markets[9]: expected an object, got a string"
+        ],
+        "violation_count": 11
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 21.16,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "2dc540ee0de505f4": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 21.76,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "reviews[0].score: expected a string, got a number",
+          "reviews[1].score: expected a string, got a number",
+          "reviews[2].score: expected a string, got a number"
+        ],
+        "violation_count": 3
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.69,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "39221124b0fa5050": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.32,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 21.07,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "f847a2fffdc42f84": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 2.46,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 42.11,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "d8ce2d4286e23b42": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.72,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.87,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "1a17bf941b18777f": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.69,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.55,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "c534cc60f53b128f": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.44,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 20.78,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "7b9c1455c11ee9e2": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.73,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.83,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "9a874c87b2349a3e": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.97,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "standout_moment: expected a string, got null"
+        ],
+        "violation_count": 1
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.01,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "b3b1a5f12011b10a": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 21.76,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.16,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "240450d6b8c1d561": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 21.98,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.88,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "2f7807b61afabe1b": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 21.16,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.77,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "52c3e7d08086deae": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 23.07,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "cohorts[3].disliked: missing",
+          "cohorts[3].liked: missing",
+          "cohorts[3].one_line_reaction: missing",
+          "cohorts[3].polarizing_within_cohort: missing",
+          "cohorts[3].preferred_venue: missing",
+          "cohorts[3].would_finish_rate: missing",
+          "cohorts[3].would_recommend_rate: missing",
+          "cohorts[3].would_watch_rate: missing"
+        ],
+        "violation_count": 8
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 2.31,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "8f418015ae65d337": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.7,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 20.88,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "4601e6921069c387": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.23,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.05,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "ef862575bb31413c": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.73,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.45,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "dd3b99661ed72459": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.44,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.61,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "5e839ddaf8d149fd": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.71,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.71,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "34c97253c6385a99": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.32,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 2.01,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "41b9bd82f0049d98": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.7,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.54,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "45d2b05875ff5976": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.99,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "segments[0].platform: expected a string, got an array",
+          "segments[1].platform: expected a string, got an array",
+          "segments[2].platform: expected a string, got an array",
+          "segments[3].platform: expected a string, got an array"
+        ],
+        "violation_count": 4
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.2,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "540ff229ec425157": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.04,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 21.19,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "1996d06dc985af76": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.03,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "predicted_lift.segment_score: expected a string, got a number",
+          "predicted_lift.tomatometer: expected a string, got an integer"
+        ],
+        "violation_count": 2
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.9,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "4fdb49dac2ff145a": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.5,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 21.93,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "781a2ab831b43e43": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.84,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.37,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "9f286cfd71d06564": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 21.66,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.91,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "869f79cbcf67cc7c": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.11,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 2.44,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "b7b5694ce6e53d94": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 21.7,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "role_requirements.ROLE_LEAD.name: missing",
+          "role_requirements.ROLE_LEAD.age_range: not in the shape",
+          "role_requirements.ROLE_LEAD.gender: not in the shape",
+          "role_requirements.ROLE_LEAD.ethnicity: not in the shape",
+          "role_requirements.ROLE_LEAD.primary_language: not in the shape",
+          "role_requirements.ROLE_LEAD.accent: not in the shape",
+          "role_requirements.ROLE_LEAD.experience_years: not in the shape",
+          "role_requirements.ROLE_LEAD.genre_experience: not in the shape",
+          "role_requirements.ROLE_LEAD.physical_requirements: not in the shape",
+          "role_requirements.ROLE_LEAD.budget_allocation: not in the shape"
+        ],
+        "violation_count": 20
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 21.19,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "bf7eddc3c059085e": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.59,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.15,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "562cbdf4046fff4d": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.74,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "role_requirements.ROLE_LEAD.age_range: not in the shape",
+          "role_requirements.ROLE_LEAD.gender: not in the shape",
+          "role_requirements.ROLE_LEAD.ethnicity: not in the shape",
+          "role_requirements.ROLE_LEAD.nationality: not in the shape",
+          "role_requirements.ROLE_LEAD.language: not in the shape",
+          "role_requirements.ROLE_LEAD.experience_years: not in the shape",
+          "role_requirements.ROLE_LEAD.budget_range: not in the shape",
+          "role_requirements.ROLE_ANTAG.age_range: not in the shape",
+          "role_requirements.ROLE_ANTAG.gender: not in the shape",
+          "role_requirements.ROLE_ANTAG.ethnicity: not in the shape"
+        ],
+        "violation_count": 14
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 21.6,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "5038afa004b82959": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.85,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "reviews[0].score: expected a string, got an integer",
+          "reviews[1].score: expected a string, got an integer",
+          "reviews[2].score: expected a string, got an integer"
+        ],
+        "violation_count": 3
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 21.9,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "84a4179ccb65e38b": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.92,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.95,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "c9da969734d39885": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.28,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 21.82,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "c72ab9162882cc73": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.93,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "cohorts[3].disliked: missing",
+          "cohorts[3].liked: missing",
+          "cohorts[3].one_line_reaction: missing",
+          "cohorts[3].polarizing_within_cohort: missing",
+          "cohorts[3].preferred_venue: missing",
+          "cohorts[3].would_finish_rate: missing",
+          "cohorts[3].would_recommend_rate: missing",
+          "cohorts[3].would_watch_rate: missing"
+        ],
+        "violation_count": 8
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 42.77,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "e8b38262f4bbda9d": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.44,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.52,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "b54ca05266137e89": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 21.89,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "role_requirements.ROLE_LEAD.description: missing",
+          "role_requirements.ROLE_LEAD.age_range: not in the shape",
+          "role_requirements.ROLE_LEAD.gender: not in the shape",
+          "role_requirements.ROLE_LEAD.nationality: not in the shape",
+          "role_requirements.ROLE_LEAD.accent: not in the shape",
+          "role_requirements.ROLE_LEAD.language: not in the shape",
+          "role_requirements.ROLE_LEAD.look: not in the shape",
+          "role_requirements.ROLE_LEAD.physical_requirements: not in the shape",
+          "role_requirements.ROLE_LEAD.experience_level: not in the shape",
+          "role_requirements.ROLE_LEAD.budget_share: not in the shape"
+        ],
+        "violation_count": 20
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.91,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "cf388f146279130a": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.93,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 20.96,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "14ca5d569d714a9c": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.76,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.65,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "03e724f1afa8b26b": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.1,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "predicted_lift.segment_score: expected a string, got a number",
+          "predicted_lift.tomatometer: expected a string, got an integer"
+        ],
+        "violation_count": 2
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 20.96,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "e372391ae8fcecab": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.63,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "role_requirements.ROLE_LEAD.description: missing",
+          "role_requirements.ROLE_LEAD.type: missing",
+          "role_requirements.ROLE_LEAD.gender: not in the shape",
+          "role_requirements.ROLE_LEAD.age_range: not in the shape",
+          "role_requirements.ROLE_LEAD.nationality: not in the shape",
+          "role_requirements.ROLE_LEAD.accent: not in the shape",
+          "role_requirements.ROLE_LEAD.acting: not in the shape",
+          "role_requirements.ROLE_LEAD.physical: not in the shape",
+          "role_requirements.ROLE_LEAD.language: not in the shape",
+          "role_requirements.ROLE_LEAD.budget_constraint: not in the shape"
+        ],
+        "violation_count": 20
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.08,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "e8a7ff5d77430790": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 23.42,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "cohorts[0].disliked: missing",
+          "cohorts[0].liked: missing",
+          "cohorts[0].one_line_reaction: missing",
+          "cohorts[0].polarizing_within_cohort: missing",
+          "cohorts[0].preferred_venue: missing",
+          "cohorts[0].would_finish_rate: missing",
+          "cohorts[0].would_recommend_rate: missing",
+          "cohorts[0].would_watch_rate: missing"
+        ],
+        "violation_count": 8
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 3.09,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "a3aff490c8a8e1f0": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 20.58,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.96,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "45f8cdfeca490c18": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.65,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.02,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "e6de5a959bca3810": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.08,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "predicted_lift.segment_score: expected a string, got a number",
+          "predicted_lift.tomatometer: expected a string, got an integer"
+        ],
+        "violation_count": 2
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 20.87,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "d4c39710229e09b5": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 2.19,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 21.82,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "ebb703c11270125d": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 20.87,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.6,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "76a92eecdffed87b": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.32,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "reviews[0].score: expected a string, got an integer",
+          "reviews[1].score: expected a string, got a number",
+          "reviews[2].score: expected a string, got a number"
+        ],
+        "violation_count": 3
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 2.05,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "f3292e3e4fa98503": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 20.66,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.69,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "15739cdfdcb5d5b4": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.91,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.62,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "1b628c17c105b295": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.4,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.07,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "7e39b69546042a08": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 3.24,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 42.71,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "30b7f377cf758d49": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.79,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "predicted_lift.segment_score: expected a string, got a number",
+          "predicted_lift.tomatometer: expected a string, got an integer"
+        ],
+        "violation_count": 2
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.84,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "1cd05554ebd56b1d": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.77,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.16,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "09cb5698df3c3b79": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.87,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "markets[2].overall_note: missing"
+        ],
+        "violation_count": 1
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 2.76,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "c7abefbce70d433a": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 21.98,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.04,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "26cc483fde8e29a9": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.67,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.29,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "e47797e6e1972f20": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.31,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 20.8,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "94762f03a2acce96": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 61.4,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "predicted_lift.segment_score: expected a string, got a number",
+          "predicted_lift.tomatometer: expected a string, got a number"
+        ],
+        "violation_count": 2
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 81.72,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "036d4e3f384dba1c": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.71,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 81.61,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "ecfca9c4814d1fe4": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 2.78,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "cohorts[2].disliked: missing",
+          "cohorts[2].liked: missing",
+          "cohorts[2].one_line_reaction: missing",
+          "cohorts[2].polarizing_within_cohort: missing",
+          "cohorts[2].preferred_venue: missing",
+          "cohorts[2].would_finish_rate: missing",
+          "cohorts[2].would_recommend_rate: missing",
+          "cohorts[2].would_watch_rate: missing"
+        ],
+        "violation_count": 8
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 2.79,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "6ca00682cfaaad2e": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.8,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.74,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "adf78d9f34f5bb10": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.43,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 21.82,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "86ff9d03825e27a8": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 81.13,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 61.2,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "67d807c4387122f3": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 41.31,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.92,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "2f2889b8bb1bab97": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 2.03,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.01,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "1fb1cfefe65864e9": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.64,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 61.09,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "f81a0ca18a523f5f": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 21.59,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "segments[0].platform: expected a string, got an array",
+          "segments[1].platform: expected a string, got an array",
+          "segments[2].platform: expected a string, got an array"
+        ],
+        "violation_count": 3
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.03,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "cb56392b802b9cd8": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 83.51,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "markets[2].overall_note: missing"
+        ],
+        "violation_count": 1
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.08,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "1f4cf876b5c8cf64": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.52,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 2.48,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "7794f9fbccbd2c3d": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 41.42,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.94,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "c89941d5bf0f847b": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.72,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "genre: expected an array, got a string"
+        ],
+        "violation_count": 1
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 3.02,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "71c4c9cb993343c9": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.57,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 21.88,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "6d096985ba4a0fdd": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.6,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "role_requirements.ROLE_LEAD.age_range: not in the shape",
+          "role_requirements.ROLE_LEAD.nationality: not in the shape",
+          "role_requirements.ROLE_LEAD.accent: not in the shape",
+          "role_requirements.ROLE_LEAD.gender: not in the shape",
+          "role_requirements.ROLE_LEAD.experience: not in the shape",
+          "role_requirements.ROLE_LEAD.skills: not in the shape",
+          "role_requirements.ROLE_LEAD.physical_requirements: not in the shape",
+          "role_requirements.ROLE_LEAD.mandatory_criteria: not in the shape",
+          "role_requirements.ROLE_LEAD.preferred_criteria: not in the shape",
+          "role_requirements.ROLE_ANTAG.age_range: not in the shape"
+        ],
+        "violation_count": 18
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 41.35,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "fa74eec56a230a02": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.74,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.16,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "810a0e2b3f65d7e2": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 3.48,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "segments[0].platform: expected a string, got an array",
+          "segments[1].platform: expected a string, got an array",
+          "segments[2].platform: expected a string, got an array"
+        ],
+        "violation_count": 3
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 81.46,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "55ac57dce1a8d5b2": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 82.12,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.52,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "0e182812cc920da7": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.65,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 40.88,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "9609b85e0e6372ae": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 23.08,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.72,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "648433d58f48bc5a": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.17,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.77,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "2a7d680f4ee2c8d0": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.61,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 2.08,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "f3ee7248a669d4ee": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.8,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 23.11,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "8f4d4aa3b1e9f800": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.6,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.77,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "143734574901186e": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 21.8,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "reviews[0].score: expected a string, got an integer",
+          "reviews[1].score: expected a string, got an integer",
+          "reviews[2].score: expected a string, got an integer"
+        ],
+        "violation_count": 3
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.67,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "70b365c876672918": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 2.76,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "reviews[0].score: expected a string, got a number",
+          "reviews[1].score: expected a string, got a number",
+          "reviews[2].score: expected a string, got a number"
+        ],
+        "violation_count": 3
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 61.52,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "d82ccef936de3316": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.39,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "role_requirements.ROLE_LEAD.description: missing",
+          "role_requirements.ROLE_LEAD.name: missing",
+          "role_requirements.ROLE_LEAD.type: missing",
+          "role_requirements.ROLE_LEAD.gender: not in the shape",
+          "role_requirements.ROLE_LEAD.age_range: not in the shape",
+          "role_requirements.ROLE_LEAD.ethnicity: not in the shape",
+          "role_requirements.ROLE_LEAD.accent: not in the shape",
+          "role_requirements.ROLE_LEAD.skills: not in the shape",
+          "role_requirements.ROLE_LEAD.tone: not in the shape",
+          "role_requirements.ROLE_LEAD.target_demographics: not in the shape"
+        ],
+        "violation_count": 20
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 21.46,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "232d2292eb5e50e1": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 2.38,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.48,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "903813ce37622200": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.63,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 24.32,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "43b8a85a3a1b6f62": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 2.04,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 2.31,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "83d9df1f3e00c3ac": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.59,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 81.2,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "f04259be0e689e44": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.57,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "cohorts[2].scene_scores.SCN_004: missing",
+          "cohorts[2].scene_scores.SCS_004: not in the shape"
+        ],
+        "violation_count": 2
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.56,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "e9c8bc9996e87af0": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.69,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.87,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "237708e8b5517a5c": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.72,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "reviews[0].score: expected a string, got an integer",
+          "reviews[1].score: expected a string, got an integer",
+          "reviews[2].score: expected a string, got an integer"
+        ],
+        "violation_count": 3
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 42.52,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "cbdfa4f63d71847f": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 23.02,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.91,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "ed8955937b00ff94": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 5.53,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.62,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "9913ed33b527af13": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.71,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "reviews[0].score: expected a string, got a number",
+          "reviews[1].score: expected a string, got an integer",
+          "reviews[2].score: expected a string, got a number"
+        ],
+        "violation_count": 3
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.75,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "59554b11172d9b5b": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.73,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "role_requirements.ROLE_LEAD.description: missing",
+          "role_requirements.ROLE_LEAD.name: missing",
+          "role_requirements.ROLE_LEAD.type: missing",
+          "role_requirements.ROLE_LEAD.age_range: not in the shape",
+          "role_requirements.ROLE_LEAD.gender: not in the shape",
+          "role_requirements.ROLE_LEAD.ethnicity: not in the shape",
+          "role_requirements.ROLE_LEAD.language: not in the shape",
+          "role_requirements.ROLE_LEAD.accent: not in the shape",
+          "role_requirements.ROLE_LEAD.driving_skill: not in the shape",
+          "role_requirements.ROLE_LEAD.acting_experience_years: not in the shape"
+        ],
+        "violation_count": 23
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 21.48,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "1825afed09e5112f": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 21.25,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "audition_score: expected an integer, got null"
+        ],
+        "violation_count": 1
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.9,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "972199b795f29d09": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.02,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 41.25,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "0b90586c129ddfaf": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 20.84,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 40.83,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "65da9145d44d1f94": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 41.09,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 41.38,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "ee8bc7559a3187c4": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 61.27,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.61,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "93e59c01cce7ca21": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 61.52,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 21.53,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "1f563188e0c185e8": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 81.51,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "audition_score: expected an integer, got null",
+          "standout_moment: expected a string, got null"
+        ],
+        "violation_count": 2
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 61.07,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "73f826e4585c9dd2": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.59,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 61.03,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "fa7a850961e37a04": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 2.68,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "role_requirements.ROLE_LEAD.description: missing",
+          "role_requirements.ROLE_LEAD.required_age_range: not in the shape",
+          "role_requirements.ROLE_LEAD.gender: not in the shape",
+          "role_requirements.ROLE_LEAD.nationality: not in the shape",
+          "role_requirements.ROLE_LEAD.language: not in the shape",
+          "role_requirements.ROLE_LEAD.accent: not in the shape",
+          "role_requirements.ROLE_LEAD.experience_genre: not in the shape",
+          "role_requirements.ROLE_LEAD.experience_years: not in the shape",
+          "role_requirements.ROLE_LEAD.physical_requirements: not in the shape",
+          "role_requirements.ROLE_LEAD.character_traits: not in the shape"
+        ],
+        "violation_count": 22
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 21.14,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "3807479f4fdcf401": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.96,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.02,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "6adc68a954baa125": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 61.23,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.72,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "dea514c9272e4d69": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 21.09,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "predicted_lift.segment_score: expected a string, got a number",
+          "predicted_lift.tomatometer: expected a string, got an integer"
+        ],
+        "violation_count": 2
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 41.46,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "8ab2d12ef82d90be": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.2,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.3,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "00e286443ed7856a": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.78,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.72,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "34bffd8b26353f4e": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 41.11,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 81.43,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "51852724cb71a837": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 2.33,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.92,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "06782be7fa666ecc": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 23.39,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "cohorts[3].scene_scores.SCN_004: missing",
+          "cohorts[3].scene_scores.SCH_004: not in the shape"
+        ],
+        "violation_count": 2
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 23.94,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "6df0068f7cf38742": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.71,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.72,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "e2031746bea8b83f": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 21.53,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.97,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "3de035b11990c6e0": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 81.47,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.83,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "2431dd2c17c214a2": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 2.78,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.72,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "72712dcf20bfd947": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.33,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 41.12,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "50a9bf2fba341b4d": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.17,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "role_requirements.ROLE_LEAD.description: missing",
+          "role_requirements.ROLE_LEAD.name: missing",
+          "role_requirements.ROLE_LEAD.type: missing",
+          "role_requirements.ROLE_LEAD.age_range: not in the shape",
+          "role_requirements.ROLE_LEAD.gender: not in the shape",
+          "role_requirements.ROLE_LEAD.ethnicity: not in the shape",
+          "role_requirements.ROLE_LEAD.accent: not in the shape",
+          "role_requirements.ROLE_LEAD.language: not in the shape",
+          "role_requirements.ROLE_LEAD.prior_genre: not in the shape",
+          "role_requirements.ROLE_LEAD.background: not in the shape"
+        ],
+        "violation_count": 22
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 21.18,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "02aa165c62bdebf0": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 20.73,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 81.03,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "4250238b7f3026e2": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.67,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 21.78,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "825852314e2217c3": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.16,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.55,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "558d18a0b53d4748": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 23.31,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "cohorts[3].one_line_reaction: missing",
+          "cohorts[3].would_recommend_rate: missing"
+        ],
+        "violation_count": 2
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.5,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "acb629478dd2c373": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.71,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.34,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "3184886f316c2da0": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 42.5,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.96,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "f64037d3c70203ee": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.83,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.78,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "477c9a6f9364970f": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 40.97,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 81.73,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "d0cabd4a4d43c120": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.32,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.19,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "268563e6af163e53": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 41.86,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "role_requirements.ROLE_LEAD.description: missing",
+          "role_requirements.ROLE_LEAD.name: missing",
+          "role_requirements.ROLE_LEAD.type: missing",
+          "role_requirements.ROLE_LEAD.gender: not in the shape",
+          "role_requirements.ROLE_LEAD.age_range: not in the shape",
+          "role_requirements.ROLE_LEAD.ethnicity: not in the shape",
+          "role_requirements.ROLE_LEAD.experience: not in the shape",
+          "role_requirements.ROLE_LEAD.voice: not in the shape",
+          "role_requirements.ROLE_LEAD.height_range_cm: not in the shape",
+          "role_requirements.ROLE_LEAD.physical_traits: not in the shape"
+        ],
+        "violation_count": 24
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.82,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "5ce05334026ea07a": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.05,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "predicted_lift.segment_score: expected a string, got a number",
+          "predicted_lift.tomatometer: expected a string, got an integer"
+        ],
+        "violation_count": 2
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.72,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "9a9ae39df02fa77f": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.3,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 24.41,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "ee6492d587a5a031": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.23,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "posts[0].asset_type: not in the shape",
+          "posts[1].asset_type: not in the shape",
+          "posts[2].asset_type: not in the shape",
+          "posts[3].asset_type: not in the shape"
+        ],
+        "violation_count": 4
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.87,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "816b7e7eb7fb4354": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 42.8,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "cohorts[4].disliked: missing",
+          "cohorts[4].liked: missing",
+          "cohorts[4].one_line_reaction: missing",
+          "cohorts[4].polarizing_within_cohort: missing",
+          "cohorts[4].preferred_venue: missing",
+          "cohorts[4].would_finish_rate: missing",
+          "cohorts[4].would_recommend_rate: missing",
+          "cohorts[4].would_watch_rate: missing"
+        ],
+        "violation_count": 8
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 2.52,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "a6599567d37ef4a8": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 64.53,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 83.23,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "215ae58dc92745ba": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 82.78,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 42.85,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "067750216961feb6": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.8,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "predicted_lift.segment_score: expected a string, got a number",
+          "predicted_lift.tomatometer: expected a string, got an integer"
+        ],
+        "violation_count": 2
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.78,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "fb17fe99f6568347": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 21.68,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.01,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "337631b037800038": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 82.77,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 2.32,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "5c627bf9452bbfc8": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.82,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 61.85,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "0c2f3a4010dbb038": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.06,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "segments[0].platform: expected a string, got an array",
+          "segments[1].platform: expected a string, got an array",
+          "segments[2].platform: expected a string, got an array"
+        ],
+        "violation_count": 3
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.0,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "befb3868eeab5a6b": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 20.76,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 20.67,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "f2557c4b67b8f349": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.67,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 81.12,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "52b04c2306faed3c": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 61.78,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.98,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "df7ea674cd566558": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 61.17,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "predicted_lift.segment_score: expected a string, got a number",
+          "predicted_lift.tomatometer: expected a string, got an integer"
+        ],
+        "violation_count": 2
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 21.22,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "48f1ca59fdb13943": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.86,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 82.2,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "191e9fc6e54bb41f": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 61.15,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.12,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "9cf5f7464762e20f": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.43,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 2.35,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "bcd97685542bf06b": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.73,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 60.99,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "3e67742fc45c204c": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 42.65,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.44,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "0587a814e901c704": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.93,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.82,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "65116fc5d21b143d": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 42.33,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 2.73,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "168f4232ca999aeb": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 2.77,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 2.35,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "bd83e1882e3bfacd": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 43.15,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 23.51,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "46b56ddc7513e21f": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 83.46,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 2.94,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "e282e764506371fa": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 2.63,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "press_release: missing"
+        ],
+        "violation_count": 1
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.33,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "f509634f1c7473c7": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 81.49,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 61.19,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "d4072703e7fc07b5": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 61.28,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.9,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "86d3de58b757552a": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.37,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 5922.63,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "dc1f703e0b5cca53": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.7,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.69,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "61d632507739d7c8": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 41.22,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.85,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "e28d24edda60d522": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.39,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "segments[0].platform: expected a string, got an array",
+          "segments[1].platform: expected a string, got an array",
+          "segments[2].platform: expected a string, got an array",
+          "segments[3].platform: expected a string, got an array"
+        ],
+        "violation_count": 4
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.31,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "d7ba25f74e00eec0": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.87,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.03,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "aa5334653ae17cf6": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.73,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 61.28,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "a75761a412130bd8": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 2.21,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 42.75,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "5639d166b60a6ec6": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.16,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.02,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "beacb2b8980855bb": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.06,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "segments[0].platform: expected a string, got an array",
+          "segments[1].platform: expected a string, got an array",
+          "segments[2].platform: expected a string, got an array"
+        ],
+        "violation_count": 3
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.42,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "01dc9ac6f71b45fd": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.67,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 40.81,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "7fcaaba36a0937df": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 81.51,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.11,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "19482d4903cbcd32": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.92,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "cohorts[4].disliked: missing",
+          "cohorts[4].liked: missing",
+          "cohorts[4].one_line_reaction: missing",
+          "cohorts[4].polarizing_within_cohort: missing",
+          "cohorts[4].preferred_venue: missing",
+          "cohorts[4].would_finish_rate: missing",
+          "cohorts[4].would_recommend_rate: missing",
+          "cohorts[4].would_watch_rate: missing"
+        ],
+        "violation_count": 8
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 3.07,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "8b5406db113acb58": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.88,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 20.96,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "1ca5e913ac999068": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 21.65,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 20.86,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "0a22a9627dc156d2": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.58,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 40.97,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "48bf2ff10c3d96c8": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 81.5,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.27,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "877144bdbce77b51": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.72,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.02,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "034e85bc624d6164": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.8,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.19,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "3b6f4953e4c8236f": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 81.46,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "predicted_lift.segment_score: expected a string, got a number",
+          "predicted_lift.tomatometer: expected a string, got a number"
+        ],
+        "violation_count": 2
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.75,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "1b4b172b6c5d0554": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 21.57,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.7,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "51dce1874e2fba7b": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.99,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.07,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "17d3971d2740a117": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 20.89,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "predicted_lift.segment_score: expected a string, got a number",
+          "predicted_lift.tomatometer: expected a string, got a number"
+        ],
+        "violation_count": 2
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 81.52,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "af6dcafa4f1c6e04": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.03,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 41.37,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "629208902ef6b5a9": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 61.3,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.62,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "943ee40e569e795e": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 40.93,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "standout_moment: expected a string, got null"
+        ],
+        "violation_count": 1
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 41.28,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "451791c28790e2fa": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 20.85,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 61.12,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "43404c7c16326ffd": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 21.57,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 21.58,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "55e5be3d91e0147e": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 42.18,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.1,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "6c91410dbf76dead": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.67,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.6,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "0d60fa268fd442ea": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.37,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 81.57,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "199e89276ca1f691": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 21.64,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "segments[0].platform: expected a string, got an array",
+          "segments[1].platform: expected a string, got an array",
+          "segments[2].platform: expected a string, got an array",
+          "segments[3].platform: expected a string, got an array"
+        ],
+        "violation_count": 4
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.31,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "ee70f062f9677989": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 62.46,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "reviews[0].score: expected a string, got an integer",
+          "reviews[1].score: expected a string, got a number",
+          "reviews[2].score: expected a string, got an integer"
+        ],
+        "violation_count": 3
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 41.9,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "cb6dbac18682eed6": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.67,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 61.35,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "17a0fb6138226095": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.47,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 20.75,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "e142275571b512ad": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.65,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 41.12,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "a946d4fbf87ae5c4": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.81,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.8,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "7c5392ac6f0a9997": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 21.11,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.83,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "31d49bfa69eeb103": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.86,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.24,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "08bf4db836d4989a": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.58,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.46,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "485eec8ac59f73d1": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 40.94,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.81,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "f25219c05829c2d2": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 81.66,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 81.13,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "9a8771d070d34502": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 61.1,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 40.83,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "dbd03a09131d11f4": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.02,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 2.0,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "4d90b7fbc2b63451": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.6,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 40.8,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "b4cb93e9313fb10f": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.64,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 81.19,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "7f0720cb26f64051": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 21.64,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "segments[0].platform: expected a string, got an array",
+          "segments[1].platform: expected a string, got an array",
+          "segments[2].platform: expected a string, got an array"
+        ],
+        "violation_count": 3
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.4,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "c207c0398cdcf9b8": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.13,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.28,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "cf2e54d118673612": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.01,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.95,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "c83270bb2532ed4e": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.57,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 2.13,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "66ce33908d0861f3": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.86,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.13,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "0248da2ca423d3f3": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.21,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "role_requirements.ROLE_LEAD.description: missing",
+          "role_requirements.ROLE_LEAD.name: missing",
+          "role_requirements.ROLE_LEAD.type: missing",
+          "role_requirements.ROLE_LEAD.age_range: not in the shape",
+          "role_requirements.ROLE_LEAD.gender: not in the shape",
+          "role_requirements.ROLE_LEAD.nationality: not in the shape",
+          "role_requirements.ROLE_LEAD.language: not in the shape",
+          "role_requirements.ROLE_LEAD.experience: not in the shape",
+          "role_requirements.ROLE_LEAD.physical_requirements: not in the shape",
+          "role_requirements.ROLE_LEAD.height_min: not in the shape"
+        ],
+        "violation_count": 20
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 21.14,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "198b7a691352668e": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 21.28,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "standout_moment: expected a string, got null"
+        ],
+        "violation_count": 1
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.21,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "6f422d4ff5f53aba": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.22,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "segments[0].platform: expected a string, got an array",
+          "segments[1].platform: expected a string, got an array",
+          "segments[2].platform: expected a string, got an array",
+          "segments[3].platform: expected a string, got an array"
+        ],
+        "violation_count": 4
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 61.83,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "48ce89df7dcecdd2": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 60.93,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 40.89,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "e02525acf5cd0448": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 2.6,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.88,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "bdccd1e61d5d4edd": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.92,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.48,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "bfa2fc9ce5bca6f4": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 23.36,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "cohorts[4].disliked: missing",
+          "cohorts[4].liked: missing",
+          "cohorts[4].one_line_reaction: missing",
+          "cohorts[4].polarizing_within_cohort: missing",
+          "cohorts[4].preferred_venue: missing",
+          "cohorts[4].would_finish_rate: missing",
+          "cohorts[4].would_recommend_rate: missing",
+          "cohorts[4].would_watch_rate: missing"
+        ],
+        "violation_count": 8
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 2.83,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "8688349f8cc7ddf7": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 42.17,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 62.48,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "44750e56c880981e": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.55,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "segments[0].platform: expected a string, got an array",
+          "segments[1].platform: expected a string, got an array",
+          "segments[2].platform: expected a string, got an array"
+        ],
+        "violation_count": 3
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.59,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "886c752ca2713865": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 42.06,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.46,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "9cf887aeebd2bbff": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.9,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.43,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "5241ab343871ad49": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.24,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.57,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "44a6cfdf2a36aa94": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.67,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.66,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "18367b58386f5272": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 22.45,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 21.96,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "27ff820f4f1ab9bc": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 2.27,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 2.34,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "8e4e4cbb9c2eebf1": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 42.56,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.62,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "96a73cbb6aabc2e0": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.48,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.76,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "759c7b5682544aa9": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.93,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 21.03,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "9d49f061a24eb1d1": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 82.3,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "role_requirements.ROLE_LEAD.description: missing",
+          "role_requirements.ROLE_LEAD.type: missing",
+          "role_requirements.ROLE_LEAD.gender: not in the shape",
+          "role_requirements.ROLE_LEAD.age_range: not in the shape",
+          "role_requirements.ROLE_LEAD.ethnicity: not in the shape",
+          "role_requirements.ROLE_LEAD.language: not in the shape",
+          "role_requirements.ROLE_LEAD.accent: not in the shape",
+          "role_requirements.ROLE_LEAD.acting_experience: not in the shape",
+          "role_requirements.ROLE_LEAD.action_experience: not in the shape",
+          "role_requirements.ROLE_LEAD.look: not in the shape"
+        ],
+        "violation_count": 26
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.1,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "b5747c285bcfedbc": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.56,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 81.09,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "c6c2e509c2a4b8ff": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 41.19,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.88,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "c59366b595244290": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.94,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 2.43,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "61c0186c3e10977d": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.39,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 20.84,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "2d75f69766890cee": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.9,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 61.32,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "f07b034eae1a4b2b": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.96,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.98,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "037e0c7838a25a33": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 23.05,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 2.78,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "e2ce2875a8370750": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 21.81,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 23.04,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "a7d5366b9fbbe7ab": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.84,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.78,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "50669c5f58be01fb": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.28,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.92,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "7856464fa00438d4": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.52,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 21.81,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "91af1df4d917a846": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.2,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "segments[0].budget_allocation: not in the shape",
+          "segments[0].platform: expected a string, got an array",
+          "segments[1].budget_allocation: not in the shape",
+          "segments[1].platform: expected a string, got an array",
+          "segments[2].budget_allocation: not in the shape",
+          "segments[2].platform: expected a string, got an array"
+        ],
+        "violation_count": 6
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 82.03,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "748d62fae084d327": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.59,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 1.88,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "b694d25d6524c7a3": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 20.92,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "audition_score: expected an integer, got null",
+          "standout_moment: expected a string, got null"
+        ],
+        "violation_count": 2
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 21.08,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "ab47cf7e29f88e22": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 2.52,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 22.45,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "2a756843462603e3": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.95,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.89,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "5da974de8ab5d6f9": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 81.48,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 0.66,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "22235c5e69f6242a": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 3.14,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "evaluable_dimensions: missing",
+          "material_quality: missing",
+          "potentially_polarizing: missing"
+        ],
+        "violation_count": 3
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 23.45,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "f3622e86b8e7c098": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 1.56,
+        "model": "openai/gpt-oss-20b",
+        "violations": [
+          "reviews[0].score: expected a string, got an integer",
+          "reviews[1].score: expected a string, got an integer",
+          "reviews[2].score: expected a string, got an integer"
+        ],
+        "violation_count": 3
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 41.95,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    },
+    "ea8c85caf8473f86": {
+      "plain": {
+        "outcome": "answered",
+        "seconds": 0.93,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      },
+      "schema": {
+        "outcome": "answered",
+        "seconds": 20.84,
+        "model": "openai/gpt-oss-20b",
+        "violations": [],
+        "violation_count": 0
+      }
+    }
+  }
+}

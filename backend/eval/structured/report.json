@@ -1,0 +1,102 @@
+{
+  "generated_at": "2026-09-23T09:38:35Z",
+  "prompts_captured_at": "2026-09-19T19:21:02Z",
+  "prompt_set": {
+    "distinct": 255,
+    "with_a_schema": 255,
+    "matrix": {
+      "productions": 12,
+      "materials": 7
+    }
+  },
+  "models": {
+    "gemini:gemini-3.6-flash": {
+      "paired_prompts": 0,
+      "excluded": {
+        "rate_limited": 4
+      },
+      "arms": {
+        "plain": {
+          "attempted": 0,
+          "answered": 0,
+          "malformed": 0,
+          "malformed_rate": null,
+          "unparseable": 0,
+          "parse_failure_rate": null,
+          "truncated": 0,
+          "truncation_rate": null,
+          "off_shape": 0,
+          "violation_rate": null,
+          "violations_per_answer": null,
+          "fallback_rate": null,
+          "median_seconds": null
+        },
+        "schema": {
+          "attempted": 0,
+          "answered": 0,
+          "malformed": 0,
+          "malformed_rate": null,
+          "unparseable": 0,
+          "parse_failure_rate": null,
+          "truncated": 0,
+          "truncation_rate": null,
+          "off_shape": 0,
+          "violation_rate": null,
+          "violations_per_answer": null,
+          "fallback_rate": null,
+          "median_seconds": null
+        }
+      },
+      "change": {
+        "malformed": null,
+        "parse_failure": null,
+        "truncation": null,
+        "violation": null,
+        "fallback": null
+      }
+    },
+    "groq:openai/gpt-oss-20b": {
+      "paired_prompts": 255,
+      "excluded": {},
+      "arms": {
+        "plain": {
+          "attempted": 255,
+          "answered": 255,
+          "malformed": 66,
+          "malformed_rate": 0.2588,
+          "unparseable": 0,
+          "parse_failure_rate": 0.0,
+          "truncated": 0,
+          "truncation_rate": 0.0,
+          "off_shape": 66,
+          "violation_rate": 0.2588,
+          "violations_per_answer": 1.686,
+          "fallback_rate": 0.0,
+          "median_seconds": 2.77
+        },
+        "schema": {
+          "attempted": 255,
+          "answered": 255,
+          "malformed": 0,
+          "malformed_rate": 0.0,
+          "unparseable": 0,
+          "parse_failure_rate": 0.0,
+          "truncated": 0,
+          "truncation_rate": 0.0,
+          "off_shape": 0,
+          "violation_rate": 0.0,
+          "violations_per_answer": 0.0,
+          "fallback_rate": 0.0,
+          "median_seconds": 20.96
+        }
+      },
+      "change": {
+        "malformed": -0.2588,
+        "parse_failure": 0.0,
+        "truncation": 0.0,
+        "violation": -0.2588,
+        "fallback": 0.0
+      }
+    }
+  }
+}
