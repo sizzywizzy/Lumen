@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-23T09:38:35Z",
+  "generated_at": "2026-09-23T09:43:41Z",
   "prompts_captured_at": "2026-09-19T19:21:02Z",
   "prompt_set": {
     "distinct": 255,
@@ -72,7 +72,7 @@
           "violation_rate": 0.2588,
           "violations_per_answer": 1.686,
           "fallback_rate": 0.0,
-          "median_seconds": 2.77
+          "median_seconds": null
         },
         "schema": {
           "attempted": 255,
@@ -87,7 +87,7 @@
           "violation_rate": 0.0,
           "violations_per_answer": 0.0,
           "fallback_rate": 0.0,
-          "median_seconds": 20.96
+          "median_seconds": null
         }
       },
       "change": {

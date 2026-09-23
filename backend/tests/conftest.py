@@ -5,6 +5,8 @@ test that touches it gets its own tmp directory and an explicitly disabled
 Supabase backend, so a developer's populated `.state/` (or a configured
 SUPABASE_URL in their `.env`) can never leak into a test run or be written to.
 """
+import copy
+
 import pytest
 
 from core import config
@@ -32,6 +34,26 @@ def never_real_state_or_live_models(tmp_path_factory):
         patch.setattr(config, "has_tavily", lambda: False)
         patch.setattr(config, "has_tmdb", lambda: False)
         yield
+
+
+# Settings that name a model or a provider. The evaluation harnesses pin a run
+# by assigning to these directly — that is how the product is steered everywhere
+# else — so a test that pins one would otherwise leave every later test pointed
+# at a provider it never configured. Restoring them is cheaper than remembering.
+MODEL_SETTINGS = (
+    "LLM_PROVIDERS", "GEMINI_FALLBACK_MODELS", "EMBEDDING_MODEL",
+    "CEREBRAS_FLASH_MODEL", "CEREBRAS_PRO_MODEL", "GROQ_FLASH_MODEL", "GROQ_PRO_MODEL",
+    "GEMINI_FLASH_MODEL", "GEMINI_PRO_MODEL", "OLLAMA_FLASH_MODEL", "OLLAMA_PRO_MODEL",
+)
+
+
+@pytest.fixture(autouse=True)
+def model_settings_are_put_back():
+    """Undo any pinning a test did, whether or not it used monkeypatch."""
+    was = {name: getattr(config, name) for name in MODEL_SETTINGS}
+    yield
+    for name, value in was.items():
+        setattr(config, name, copy.copy(value))
 
 
 @pytest.fixture

@@ -171,8 +171,9 @@ def _ask(prompt: dict[str, Any], arm: str, waits: int = 4) -> dict[str, Any]:
     Lumen's prompts are long, so without this a sweep is mostly holes.
     """
     schema = prompt["schema"] if arm == "schema" else None
-    started = time.time()
+    waited = 0.0
     for attempt in range(waits + 1):
+        started = time.time()
         try:
             data, trace = llm.generate_json_traced(
                 prompt["prompt"],
@@ -184,18 +185,26 @@ def _ask(prompt: dict[str, Any], arm: str, waits: int = 4) -> dict[str, Any]:
             break
         except llm.LLMUnavailable as exc:
             kind = _classify(str(exc))
+            spent = time.time() - started
             if kind == "rate_limited" and attempt < waits:
-                time.sleep(_retry_seconds(str(exc)))
+                pause = _retry_seconds(str(exc))
+                time.sleep(pause)
+                waited += spent + pause
                 continue
             return {
                 "outcome": kind,
-                "seconds": round(time.time() - started, 2),
+                "seconds": round(spent, 2),
+                "waited": round(waited, 2),
                 "error": str(exc)[:300],
             }
     problems = llm.violations(data, prompt["schema"])
     return {
         "outcome": "answered",
+        # The call itself. `waited` is this harness sleeping off a rate limit,
+        # kept apart because it is a fact about the free tier and about how many
+        # tokens the request carried, not about what the request asked for.
         "seconds": round(time.time() - started, 2),
+        "waited": round(waited, 2),
         "model": trace.get("model"),
         "violations": problems[:10],
         "violation_count": len(problems),
@@ -284,8 +293,16 @@ def _rates(records: list[dict[str, Any]]) -> dict[str, Any]:
         ) if answered else None,
         # What the product would actually have done: fall back to sample output.
         "fallback_rate": _share(attempted - len(answered), attempted),
-        "median_seconds": round(statistics.median([r["seconds"] for r in records]), 2) if records else None,
+        # Only from results that recorded their waiting apart from their call.
+        # Earlier runs folded the two together, and a median over those would say
+        # enforcement is slow when what it measured was a free tier's per-minute
+        # limit.
+        "median_seconds": _median_call([r for r in records if "waited" in r]),
     }
+
+
+def _median_call(records: list[dict[str, Any]]) -> Optional[float]:
+    return round(statistics.median([r["seconds"] for r in records]), 2) if records else None
 
 
 def _share(part: int, whole: int) -> Optional[float]:
@@ -432,6 +449,14 @@ def _markdown(payload: dict[str, Any]) -> str:
             f"| Median seconds a call | {_figure(plain['median_seconds'])} | "
             f"{_figure(schema['median_seconds'])} | |",
             "",
+            *([] if plain["median_seconds"] is not None else [
+                "Latency is blank because this run folded the harness's own rate-limit waiting "
+                "into each call's time, which made enforcement look several times slower than "
+                "plain prompting when the calls that never waited took the same time in both "
+                "arms. Later runs record the waiting separately.",
+                "",
+            ]),
+            "",
         ]
         if model["excluded"]:
             reasons = ", ".join(f"{count} x {reason}" for reason, count in sorted(model["excluded"].items()))
@@ -486,11 +511,18 @@ def _verdict(model: dict[str, Any]) -> str:
             "reading anything else into the run."
         )
     if gain > floor:
+        # The fallback clause only when it moved. "from 0.0% to 0.0%" is a
+        # sentence that looks like a finding and says nothing.
+        fallback = (
+            f", and the share of calls an agent would have had to fall back on from "
+            f"{_percent(plain['fallback_rate'])} to {_percent(schema['fallback_rate'])}"
+            if model["change"]["fallback"] else
+            f". Neither arm ever failed outright, so no call would have fallen back to sample "
+            f"output either way — the whole difference is in the shape of what came back"
+        )
         return (
             f"**Enforcing the schema helped.** Replies not in the asked-for shape fell from "
-            f"{_percent(plain['malformed_rate'])} to {_percent(schema['malformed_rate'])}, and the "
-            f"share of calls an agent would have had to fall back on from "
-            f"{_percent(plain['fallback_rate'])} to {_percent(schema['fallback_rate'])}."
+            f"{_percent(plain['malformed_rate'])} to {_percent(schema['malformed_rate'])}{fallback}."
         )
     if (plain["malformed_rate"] or 0) < floor:
         return (

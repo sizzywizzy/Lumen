@@ -77,6 +77,14 @@ which is the exact failure the committed snapshot prevents.
 
 ## Two things that will bite you
 
+**Pin the provider, and pin the same one twice.** `leakage` asks a model which
+films it already knows and `predict` asks it to score them, so both have to be
+the same model — otherwise the sample is filtered by one model's memory and
+graded by another's guesses. Without `--provider` each uses the configured
+chain, which falls through to the next provider on a rate limit; a leakage run
+was caught answering from two at once. `leakage` now refuses to extend a file
+written against a different model, and every probe records which one answered.
+
 **Free-tier quota — pick the provider before shrinking the panel.** At the
 production panel size of 200 the simulator needs about 5 cohort calls a film, so
 a full 31-film sweep is around 150 calls plus 31 for the baseline. On Gemini's

@@ -66,23 +66,86 @@ def cmd_build(args: argparse.Namespace) -> int:
     return 0
 
 
+# ------------------------------------------------------------------- model --
+
+
+def pin(args: argparse.Namespace) -> str:
+    """One provider, one model, no fallback chain. Returns what was pinned.
+
+    Without this, a run uses the configured chain — and a chain is exactly wrong
+    here. Under load Groq answers 429, the call falls through to Gemini, and half
+    the films get audited or scored by a model the other half never saw. Both
+    numbers this directory reports are about *a* model's behaviour, so a run that
+    silently mixes two measures nothing. Found by watching a leakage run print
+    the google-genai SDK's warning while it was meant to be on Groq.
+
+    A leakage check is the sharper case: a training cutoff is a property of one
+    model, so the answer does not carry from one to another at all.
+    """
+    provider = getattr(args, "provider", None)
+    if not provider:
+        return ""
+    config.LLM_PROVIDERS = [provider]
+    chosen = getattr(args, "model", None) or {
+        "cerebras": config.CEREBRAS_FLASH_MODEL,
+        "groq": config.GROQ_FLASH_MODEL,
+        "gemini": config.GEMINI_FLASH_MODEL,
+        "ollama": config.OLLAMA_FLASH_MODEL,
+    }[provider]
+    for name in ("CEREBRAS", "GROQ", "GEMINI", "OLLAMA"):
+        setattr(config, f"{name}_FLASH_MODEL", chosen)
+        setattr(config, f"{name}_PRO_MODEL", chosen)
+    config.GEMINI_FALLBACK_MODELS = []
+    if not config.configured_llm_providers():
+        raise SystemExit(f"{provider} is not configured. Set its key (or OLLAMA_HOST) first.")
+    return f"{provider}:{chosen}"
+
+
+def add_model_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--provider", choices=["cerebras", "groq", "gemini", "ollama"],
+                        help="pin every call to this provider instead of using the fallback "
+                             "chain, so one model answers the whole run")
+    parser.add_argument("--model", default=None, help="override that provider's configured model")
+
+
 # ---------------------------------------------------------------- leakage --
 
 
 def cmd_leakage(args: argparse.Namespace) -> int:
     films = dataset.load()["films"]
-    results = _load(LEAKAGE, {})
+    pinned = pin(args)
+    stored = _load(LEAKAGE, {})
+    audited_by = stored.pop("audited_by", None) if isinstance(stored, dict) else None
+    results = {k: v for k, v in stored.items() if isinstance(v, dict) and "leaked" in v}
+
+    if pinned and audited_by and audited_by != pinned:
+        # Whose memory was checked is the whole content of this file. Mixing two
+        # models' answers gives a sample filtered by neither.
+        raise SystemExit(
+            f"{LEAKAGE.name} was written against {audited_by} and this run is {pinned}. "
+            "A training cutoff belongs to one model, so the two cannot be merged: delete "
+            f"{LEAKAGE.name} and re-run, or pass --provider to match."
+        )
+    print(f"auditing with {pinned or 'the configured provider chain — pass --provider to pin one'}\n")
+
     for index, film in enumerate(films, 1):
         key = str(film["tmdb_id"])
         if key in results and not args.force:
             continue
         results[key] = dataset.probe_leakage(film)
-        _save(LEAKAGE, results)
+        _save(LEAKAGE, {"audited_by": pinned or audited_by, **results})
         flag = "LEAKED" if results[key]["leaked"] else "ok"
         print(f"  [{index}/{len(films)}] {film['title'][:40]:<40} {flag}")
         time.sleep(args.delay)
     leaked = [r for r in results.values() if r["leaked"]]
+    answered = {r.get("model") for r in results.values() if r.get("model")}
     print(f"{len(leaked)} of {len(results)} films recalled with a rating within 10 points.")
+    if len(answered) > 1:
+        print(
+            f"  WARNING: {sorted(answered)} each answered part of this. A training cutoff is one "
+            f"model's, so this file is not a usable check. Delete {LEAKAGE.name} and re-run "
+            "with --provider."
+        )
     return 0
 
 
@@ -103,6 +166,8 @@ def _bind(name: str, args: argparse.Namespace):
 
 def cmd_predict(args: argparse.Namespace) -> int:
     films = dataset.load()["films"]
+    pinned = pin(args)
+    print(f"scoring with {pinned or 'the configured provider chain — pass --provider to pin one'}")
     store = _load(PREDICTIONS, {})
     for name in args.predictor:
         predict = _bind(name, args)
@@ -414,10 +479,12 @@ def main(argv: list[str] | None = None) -> int:
     leak = sub.add_parser("leakage", help="ask the model which films it already knows")
     leak.add_argument("--delay", type=float, default=1.0)
     leak.add_argument("--force", action="store_true")
+    add_model_arguments(leak)
     leak.set_defaults(func=cmd_leakage)
 
     pred = sub.add_parser("predict", help="score every film with each predictor")
     pred.add_argument("--predictor", action="append", choices=sorted(predictors.REGISTRY))
+    add_model_arguments(pred)
     pred.add_argument("--delay", type=float, default=1.0)
     pred.add_argument("--force", action="store_true")
     pred.add_argument("--limit", type=int, default=0,
